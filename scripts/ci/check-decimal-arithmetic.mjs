@@ -26,7 +26,7 @@
  *   node scripts/ci/check-decimal-arithmetic.mjs --list    # print every site
  *   node scripts/ci/check-decimal-arithmetic.mjs --write   # lower the baseline
  */
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,11 +41,46 @@ const BASELINE = path.join(
   "ci",
   "decimal-arithmetic-baseline.json",
 );
-const SCHEMA_DIR = path.join(ROOT, "packages", "database", "prisma", "schema");
-const SCAN_ROOTS = [path.join(ROOT, "apps"), path.join(ROOT, "packages")];
+/* ── Polyrepo awareness — phase A30, defect D024/D025 ────────────────────────
+ *
+ * These were monorepo paths. `readdirSync` on the missing schema directory THREW
+ * ENOENT, which is why the guard job failed after check-policy.mjs was fixed — the
+ * same defect, one script along. Every gate inherited from the monorepo has it.
+ *
+ * POLICY_ROOT/POLICY_REPO let this run against a sibling repository's tree, the same
+ * way check-policy.mjs does, so the gate travels to the code instead of guessing where
+ * the code went. Where the schema is genuinely absent — as in unierp-workspace, which
+ * holds no application source — the gate reports that it is DELEGATED rather than
+ * throwing or, worse, reporting a clean zero.
+ */
+const TARGET = process.env.POLICY_ROOT ? path.resolve(process.env.POLICY_ROOT) : ROOT;
+const SELF = process.env.POLICY_REPO || path.basename(TARGET);
+
+// Post-extraction homes. A repo not listed here simply has none of these paths.
+const SCHEMA_CANDIDATES = [
+  // Explicit override: the reusable workflow checks out unierp-data alongside the target
+  // so the schema is available to a repo that holds only source. Without it, a repo with
+  // source but no schema learns no Decimal field names and finds 0 sites — a false clean,
+  // which is the whole defect being repaired.
+  ...(process.env.DECIMAL_SCHEMA_DIR ? [path.resolve(process.env.DECIMAL_SCHEMA_DIR)] : []),
+  path.join(TARGET, "packages", "database", "prisma", "schema"), // monorepo layout
+  path.join(TARGET, "prisma", "schema"), // unierp-data
+];
+const SCHEMA_DIR = SCHEMA_CANDIDATES.find((d) => existsSync(d)) ?? null;
+
+const SCAN_ROOTS = [
+  path.join(TARGET, "apps"),
+  path.join(TARGET, "packages"),
+  path.join(TARGET, "src"), // every extracted library and service
+  path.join(TARGET, "app"), // unierp-web route tree
+].filter((d) => existsSync(d));
+
+/** True when this repo holds neither the schema nor any source to scan. */
+const DELEGATED = SCHEMA_DIR === null && SCAN_ROOTS.length === 0;
 
 function decimalFieldNames() {
   const names = new Set();
+  if (!SCHEMA_DIR) return names;
   for (const file of readdirSync(SCHEMA_DIR)) {
     if (!file.endsWith(".prisma")) continue;
     const src = readFileSync(path.join(SCHEMA_DIR, file), "utf8");
@@ -131,6 +166,49 @@ if (process.argv.includes("--write")) {
     "utf8",
   );
   console.log(`Decimal-arithmetic baseline written: ${sites.length}`);
+  process.exit(0);
+}
+
+// A repo with neither the schema nor any source has nothing to measure. Reporting "0
+// sites, below the baseline of 703" here would be a false clean reading — precisely the
+// D024 failure this gate is being repaired for. Say what is true instead: not measured
+// here, and name where it must be.
+// Source present but no schema: the gate would learn zero Decimal field names and report
+// zero sites. That is the false-clean failure mode, not a pass. Fail loudly and say how to
+// supply the schema.
+if (SCHEMA_DIR === null && SCAN_ROOTS.length > 0) {
+  console.error(
+    `Decimal-arithmetic ratchet CANNOT RUN in ${SELF}.
+
+` +
+      `It found source to scan but no Prisma schema, so it cannot learn which fields are
+` +
+      `Decimal — and would report 0 sites regardless of how many exist. That reading would
+` +
+      `be false, so this exits 1 instead.
+
+` +
+      `Supply the schema with DECIMAL_SCHEMA_DIR, as .github/workflows/policy-gate.yml
+` +
+      `does by checking out unierp-data beside the target repository:
+` +
+      `  DECIMAL_SCHEMA_DIR=<unierp-data>/prisma/schema \
+` +
+      `  POLICY_ROOT=<repo> POLICY_REPO=<name> node scripts/ci/check-decimal-arithmetic.mjs`,
+  );
+  process.exit(1);
+}
+
+if (DELEGATED) {
+  console.log(
+    `Decimal-arithmetic ratchet: DELEGATED — ${SELF} holds no Prisma schema and no
+` +
+      `application source, so there is nothing to measure. This gate must run in the
+` +
+      `repositories that hold the money code (unierp-api, unierp-data), via
+` +
+      `.github/workflows/policy-gate.yml. Reporting 0 here would be a false clean.`,
+  );
   process.exit(0);
 }
 

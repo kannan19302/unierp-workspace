@@ -17,10 +17,16 @@
  *   node scripts/ci/check-policy.mjs --report   # list actual violations with file:line
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+// POLICY_ROOT lets the reusable workflow run this script from a checkout of
+// unierp-workspace against a DIFFERENT repository's tree — which is how a rule ends up
+// running in the repo that owns its files (phase A30). POLICY_REPO names that repo when
+// the directory basename is not the repository name, as on some CI runners.
+const ROOT = process.env.POLICY_ROOT
+  ? resolve(process.env.POLICY_ROOT)
+  : join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 const BASELINE_PATH = join(ROOT, ".quality-policy-baseline.json");
 const SKIP = new Set([
   "node_modules",
@@ -51,11 +57,106 @@ function walk(dir, exts, out = []) {
   return out;
 }
 
-const files = (dir, exts) =>
-  existsSync(join(ROOT, dir)) ? walk(join(ROOT, dir), exts) : [];
+/* ── Polyrepo path resolution — phase A30, defect D024 ───────────────────────
+ *
+ * Every rule below names a MONOREPO path: apps/api/src, apps/web/app,
+ * packages/database/prisma. None of those exist any more. `files()` used to return []
+ * for a missing directory, so after extraction the ratchets silently reported ZERO
+ * while the real counts were 4 raw-SQL files, 319 hardcoded hex values and 4,025
+ * hardcoded pixels — a gate reading "clean" over untouched debt. One HARD rule had
+ * already been made honest ("missing targets are now reported rather than skipped"),
+ * and it is the only reason anyone noticed: it failed, and main has been red since
+ * extraction.
+ *
+ * The fix is not to translate the paths. A gate in the orchestration repo cannot read
+ * a sibling repository's files — CI checks out one repo — so translated paths would
+ * pass locally, where the siblings are on disk, and fail in CI forever.
+ *
+ * So each monorepo prefix now declares which repository OWNS it. A rule runs where its
+ * files live, and anywhere else it is explicitly DELEGATED, named in the output, and
+ * cross-checked against docs/policy-gate-owners.json. Silence is what we are removing;
+ * a delegation that is not declared is a failure.
+ */
+const OWNERSHIP = [
+  { prefix: "apps/api/", repo: "unierp-api" },
+  { prefix: "apps/web/", repo: "unierp-web" },
+  { prefix: "apps/idp/", repo: "unierp-idp" },
+  { prefix: "apps/console/", repo: "unierp-console" },
+  { prefix: "apps/developer/", repo: "unierp-developer" },
+  { prefix: "apps/mobile/", repo: "unierp-mobile" },
+  { prefix: "packages/database/", repo: "unierp-data" },
+  { prefix: "packages/shared/", repo: "unierp-shared" },
+  { prefix: "packages/ui/", repo: "unierp-design-system" },
+  { prefix: "packages/framework/", repo: "unierp-framework" },
+  { prefix: "packages/contracts/", repo: "unierp-contracts" },
+  { prefix: "packages/kernel/", repo: "unierp-kernel" },
+  { prefix: "packages/auth/", repo: "unierp-auth" },
+];
+
+/** The repository this run is inside. */
+const SELF_REPO =
+  process.env.POLICY_REPO || ROOT.split(/[\/]/).filter(Boolean).pop();
+
+/** rule id -> Set of repos its off-repo targets belong to. */
+const delegated = new Map();
+/** rule id -> true if at least one target WAS readable here. A rule can span repos: the
+ *  control-plane-seeded-to-tenant rule checks a seed in unierp-data AND an auth service in
+ *  unierp-idp. Skipping the whole rule on the first delegation would leave the other half
+ *  unchecked everywhere — so delegation is tracked per target, and a partially-local rule
+ *  still runs and still reports. */
+const checkedLocally = new Set();
+
+const noteDelegation = (repo) => {
+  if (!CURRENT_RULE) return;
+  if (!delegated.has(CURRENT_RULE)) delegated.set(CURRENT_RULE, new Set());
+  delegated.get(CURRENT_RULE).add(repo);
+};
+
+/**
+ * Translate a monorepo path to a path in THIS repository, or report that it is not
+ * ours. Returns null when the path belongs elsewhere — the caller records a delegation
+ * rather than treating the absence as a clean result.
+ */
+function resolvePath(p) {
+  const norm = p.split("\\").join("/");
+  // An absolute path has already been resolved — files() returns absolute paths from walk(),
+  // and read() is then called with them. Translating a second time produced
+  // join(ROOT, "D:/UniERP/...") and read() silently returned "" for every file, so each rule
+  // scanned nothing and reported a clean 0. Exactly the failure being fixed, reintroduced by
+  // the fix. Caught by checking the gate's output against a grep of the same files.
+  if (isAbsolute(norm) || /^[A-Za-z]:/.test(norm)) {
+    return { local: p, owner: SELF_REPO };
+  }
+  const owner = OWNERSHIP.find((o) => norm.startsWith(o.prefix));
+  if (!owner) return { local: join(ROOT, p), owner: SELF_REPO };
+  if (owner.repo !== SELF_REPO) return { local: null, owner: owner.repo };
+  return { local: join(ROOT, norm.slice(owner.prefix.length)), owner: SELF_REPO };
+}
+
+/** Set by each rule before scanning, so a delegation is attributed to the right rule. */
+let CURRENT_RULE = null;
+
+const files = (dir, exts) => {
+  const { local, owner } = resolvePath(dir);
+  if (local === null) {
+    noteDelegation(owner);
+    return [];
+  }
+  if (!existsSync(local)) return [];
+  if (CURRENT_RULE) checkedLocally.add(CURRENT_RULE);
+  return walk(local, exts);
+};
+
 const read = (f) => {
+  const { local, owner } = resolvePath(f);
+  if (local === null) {
+    noteDelegation(owner);
+    return "";
+  }
   try {
-    return readFileSync(f, "utf8");
+    const src = readFileSync(local, "utf8");
+    if (CURRENT_RULE) checkedLocally.add(CURRENT_RULE);
+    return src;
   } catch {
     return "";
   }
@@ -119,28 +220,30 @@ const HARD = [
       // NEITHER does — a control that quietly covers less than it claims is
       // worse than no control, which is why this reports a missing target
       // instead of skipping it.
+      // Relative, NOT join(ROOT, ...). Pre-joining makes the path absolute, and
+      // resolvePath() passes absolute paths through untranslated — so ownership was lost
+      // and the seed reported MISSING in every repo instead of delegating to unierp-data.
       const seedCandidates = [
-        join(ROOT, "packages/database/prisma/seed.ts"),
-        join(ROOT, "node_modules/@unerp/database/prisma/seed.ts"),
+        "packages/database/prisma/seed.ts",
+        "node_modules/@unerp/database/prisma/seed.ts",
       ];
+      // Each target belongs to a specific repository post-extraction. read() records a
+      // delegation for anything owned elsewhere, so an absent file is either "not this
+      // repo's business" (delegated, reported by name) or a genuine missing target in a
+      // repo that DOES own it — which still fails, because the original reasoning holds:
+      // a control that quietly covers less than it claims is worse than no control.
       const seed = seedCandidates.find((f) => read(f));
-      if (!seed) {
-        hits.push(
-          `${seedCandidates.map((f) => relative(ROOT, f)).join(" | ")}  MISSING — ` +
-            "the seed is in neither the workspace nor the installed package; " +
-            "update the target list if it moved again.",
-        );
-      }
-
       const targets = [
-        ...(seed ? [seed] : []),
-        join(ROOT, "apps/idp/src/modules/auth/auth.service.ts"),
+        ...(seed ? [seed] : seedCandidates.slice(0, 1)),
+        "apps/idp/src/modules/auth/auth.service.ts",
       ];
       for (const f of targets) {
         const src = read(f);
         if (!src) {
+          const { local } = resolvePath(f);
+          if (local === null) continue; // owned by another repo; delegation already recorded
           hits.push(
-            `${relative(ROOT, f)}  MISSING — this gate cannot check a file that is not there; ` +
+            `${f}  MISSING — this gate cannot check a file that is not there; ` +
               "update the target list if the file moved.",
           );
           continue;
@@ -609,9 +712,15 @@ console.log("\nPolicy gate — docs/ai/IMPLEMENTATION_PLAN.md § 11\n");
 // HARD
 console.log("HARD rules (zero tolerance):");
 for (const rule of HARD) {
+  CURRENT_RULE = rule.id;
   const hits = rule.scan();
-  if (hits.length === 0) {
-    console.log(`   ✅ ${rule.label}`);
+  CURRENT_RULE = null;
+  const away = delegated.has(rule.id) ? [...delegated.get(rule.id)].sort().join(", ") : null;
+  if (away && !checkedLocally.has(rule.id)) {
+    console.log(`   →  ${rule.label}`);
+    console.log(`      delegated to ${away} — none of its files are in this repo`);
+  } else if (hits.length === 0) {
+    console.log(`   ✅ ${rule.label}${away ? `  (also enforced in ${away})` : ""}`);
   } else {
     exitCode = 1;
     console.log(`   ❌ ${rule.label} — ${hits.length} violation(s)`);
@@ -638,9 +747,24 @@ const counts = {};
 
 console.log("\nRATCHET rules (existing debt grandfathered; increases fail):");
 for (const rule of RATCHET) {
+  CURRENT_RULE = rule.id;
   const hits = rule.scan();
-  counts[rule.id] = hits.length;
+  CURRENT_RULE = null;
   const was = baseline[rule.id];
+
+  // A delegated rule must NOT be counted or baselined here. Recording 0 for a rule whose
+  // files live in another repository is exactly what produced a baseline of 0 against
+  // 4,025 real hardcoded pixels, 319 hex values and 4 raw-SQL files — and then printed it
+  // as a clean reading (D024).
+  const ratchetAway = delegated.has(rule.id)
+    ? [...delegated.get(rule.id)].sort().join(", ")
+    : null;
+  if (ratchetAway && !checkedLocally.has(rule.id)) {
+    console.log(`   →  ${rule.label}: delegated to ${ratchetAway}`);
+    if (was !== undefined) counts[rule.id] = was; // preserve; never overwrite with a false 0
+    continue;
+  }
+  counts[rule.id] = hits.length;
 
   if (fresh || update) {
     console.log(`   ·  ${rule.label}: ${hits.length}`);

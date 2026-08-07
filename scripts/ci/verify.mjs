@@ -56,6 +56,31 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-policy.mjs"]],
   },
   {
+    name: "Workflow files",
+    why: "A workflow with `true:` instead of `on:` never runs; a step behind `if: hashFiles(...)` passes by being absent.",
+    cmd: ["node", ["scripts/ci/check-workflows.mjs"]],
+  },
+  {
+    name: "Policy-gate coverage",
+    why: "A delegated policy rule must actually run in the repo that owns its files. A30 / D024.",
+    cmd: ["node", ["scripts/ci/check-policy-coverage.mjs"]],
+  },
+  {
+    name: "Repo hygiene",
+    why: "No scratch files or self-nested config at a repository root. R5 / phase A14.",
+    cmd: ["node", ["scripts/ci/check-repo-hygiene.mjs"]],
+  },
+  {
+    name: "Programme integrity",
+    why: "Phase IDs are permanent; plan documents are amended, never regenerated. docs/programme/README.md § 0.",
+    // Listed here as well as in ci.yml deliberately. ROADMAP.md's "close the
+    // verify / CI divergence" item exists because CI runs gates verify does not,
+    // so a contributor runs the documented pre-push command, is told the change
+    // is clean, and fails CI on something they had no local way to check. A gate
+    // added to only one of the two reproduces exactly that.
+    cmd: ["node", ["scripts/check-plan-integrity.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

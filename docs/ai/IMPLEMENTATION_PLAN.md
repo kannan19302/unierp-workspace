@@ -234,6 +234,19 @@ a pipeline green has caused a production incident, not delivered a feature.
 
 ## 10. Phase plan
 
+> **Decomposed.** The five coarse phases below remain the frame. Their decomposition into 278
+> executable phases across 11 tracks lives in [`../programme/`](../programme/README.md) — a
+> sibling folder, deliberately not in `docs/ai/`, so rule 1 of `README.md § 0` is not violated.
+> That folder has its own law, its own append-only defect log, and a blocking CI gate
+> (`scripts/check-plan-integrity.mjs`) that prevents an agent from renumbering a phase,
+> regenerating a document, or dropping an exit criterion.
+>
+> **Read [`../programme/00-BASELINE.md`](../programme/00-BASELINE.md) before starting any work.**
+> It re-verifies R1–R8 below against the polyrepo as it stands, with the command that proves each
+> claim. Two of the eight read as addressed and are not — and a ninth problem nobody was tracking
+> turned out to be worse than either. Phase-to-wave mapping is in
+> [`../programme/01-PRIORITY-AND-SEQUENCING.md § 6`](../programme/01-PRIORITY-AND-SEQUENCING.md).
+
 ### Phase 0 — Foundation restoration ⬅ **WE ARE HERE. Nothing else starts until this is done.**
 
 The platform is broad but structurally compromised (`ARCHITECTURE_REVIEW.md`). Feature work
@@ -249,6 +262,18 @@ during Phase 0 is limited to what is required to prove the foundation.
 | R6  | Coverage gate that can actually fail a build                       | ≥ 80% enforced                               |
 | R7  | Dependency and licence scanning enforced                           | Zero high/critical; zero non-open licences   |
 | R8  | Observability: SLOs, dashboards, alerts, runbooks                  | On-call can diagnose without reading code    |
+
+**Verified status as of 2026-08-07** (evidence per item in
+[`../programme/00-BASELINE.md § 2`](../programme/00-BASELINE.md)):
+
+| Closed | Partial | **Open — and reads as addressed** |
+| :----- | :------ | :-------------------------------- |
+| **R1** (0 `@ts-nocheck`, was 3,241/3,241) · **R3** (gate blocking in CI) · **R8** (SLOs, dashboards, runbooks) | **R2** (split done, but `core.prisma` is 31,092 lines — criterion is 3,000) · **R4** (CD exists; signing, SBOM, health gate, rehearsed rollback do not) · **R7** (job exists; advisories not re-measured) | **R5** (11 repair scripts still tracked in `unierp-mobile`) · **R6** (`all: false`, no `thresholds` — coverage still cannot fail) |
+
+Plus one item that was in no remediation list: the layer gate is declared in 21 repositories and
+the script exists in **zero** of them, so it has never executed
+([D013](../programme/90-DEFECT-LOG.md)). It is the mechanism `ARCHITECTURE.md` cites as making the
+layered polyrepo "not a convention".
 
 ### Phase 1 — Depth
 
@@ -297,3 +322,4 @@ load test rather than by argument.
 | Date       | Change                                                          | By          |
 | :--------- | :-------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; Phase 0 defined as foundation restoration | Claude Code |
+| 2026-08-07 | § 10 amended: R1–R8 re-verified against the polyrepo, and the five coarse phases decomposed into 278 executable phases in `docs/programme/`. No phase, rule or layer order changed. | Claude Code |

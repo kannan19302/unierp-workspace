@@ -83,3 +83,43 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### A01 · PROGRESS · 2026-08-07T14:42:52Z · kannan19302@MSI/unierp-workspace
+
+```
+BLOCKED ON A DECISION — the chosen registry cannot host this scope.
+
+GitHub Packages requires the npm scope to equal the GitHub account or org that owns
+the repository. Verified against GitHub's own docs:
+  "the name of the personal account or organization account to which the package
+   will be scoped"
+
+Measured:
+  packages are scoped        @unerp/*        (20 packages)
+  repositories are owned by  kannan19302     (a User account, not an org)
+  GitHub org "unerp"         404 — does not exist
+  GitHub org "unierp"        EXISTS — but the scope is @unerp, no 'i', so it does
+                             not match either
+  npm scope @unerp           FREE (404 on registry.npmjs.org)
+
+So `npm publish @unerp/kernel` to npm.pkg.github.com under kannan19302 cannot work.
+
+ROADMAP.md's "GitHub Packages is the obvious candidate, since the OIDC-federated
+publish tokens already exist there" is wrong for this reason, and A01's own
+deliverable text repeats it. Both need amending whichever way this goes.
+
+Three ways out, costed:
+  A  create GitHub org "unerp", transfer all 30 repos    → scope matches natively,
+     but 30 transfers, 30 remote URLs, and every published doc link breaks
+  B  npmjs.com with scope @unerp                          → scope is free, free for
+     public packages, installable with NO auth (best for the AGPL/open-source goal),
+     zero transfers, zero renames. npm now supports OIDC trusted publishing from
+     GitHub Actions, so the OIDC advantage is no longer exclusive to GH Packages
+  C  rename the scope to @kannan19302/* or @unierp/*      → every package.json and
+     every import across ~660k lines
+
+Recommending B. Awaiting the decision before touching any .npmrc — a published
+package name is permanent, so this is worth getting right rather than fast.
+
+Nothing changed in the tree for A01 yet.
+```
+

@@ -389,3 +389,11 @@ Work has NOT started. This block exists so no other agent takes this phase.
 Verification run only — testing the ADP flow end to end from a fresh clone. No work done on A05.
 ```
 
+### A05 · RELEASED · 2026-08-07T17:41:13Z · kannan19302@MSI/unierp-workspace
+
+```
+status → OPEN
+
+Claimed only to verify ADP end to end from a fresh clone. No work performed; returning it to READY.
+```
+

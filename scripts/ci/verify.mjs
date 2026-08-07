@@ -56,6 +56,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-policy.mjs"]],
   },
   {
+    name: "Policy-gate coverage",
+    why: "A delegated policy rule must actually run in the repo that owns its files. A30 / D024.",
+    cmd: ["node", ["scripts/ci/check-policy-coverage.mjs"]],
+  },
+  {
     name: "Repo hygiene",
     why: "No scratch files or self-nested config at a repository root. R5 / phase A14.",
     cmd: ["node", ["scripts/ci/check-repo-hygiene.mjs"]],

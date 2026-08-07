@@ -148,6 +148,83 @@ L11–L12.** This dependency was missing from the plan as first written and is n
 
 ---
 
+### D020 · 🔴 CRITICAL · The extension kill switch is per-process, so it does not work in production
+
+**Found:** 2026-08-07 by phase A16's threat model. **Fixed by:** [A17](10-TRACK-A-FOUNDATION.md).
+**Threat:** `unierp-sandbox/docs/THREAT-MODEL.md` T12.
+
+**Reproduction:**
+
+```bash
+grep -n 'private disabled\|private cpuWindow' unierp-sandbox/src/index.ts
+# 147:  private disabled = new Set<string>();
+# 148:  private cpuWindow = new Map<string, { windowStart: number; cpuMs: number }>();
+```
+
+Revocation state is an **instance field on `SandboxRunner`**. Every API replica holds its own set,
+so `disable()` on one replica leaves the extension running on all the others. It is also not
+persisted, so a restart or rolling deploy re-enables everything — including extensions an operator
+revoked deliberately and extensions the CPU breaker tripped automatically.
+
+`PLATFORM_ARCHITECTURE § 8.3` requires this kill switch to be reachable from the Platform Admin
+Console. **An operator using it during an incident would see it succeed while the extension kept
+executing.** That is why this is Critical rather than High: it is the control someone reaches for
+when something is already going wrong, and it lies.
+
+There is a test — *"fails closed once the kill switch is thrown"* — and it passes, because it
+exercises one `SandboxRunner` instance. The test is correct and the claim is still false.
+
+---
+
+### D021 · 🔴 CRITICAL · The egress allowlist is a hostname string match, not SSRF protection
+
+**Found:** 2026-08-07 by phase A16. **Fixed by:** [A17](10-TRACK-A-FOUNDATION.md).
+**Threat:** `THREAT-MODEL.md` T13.
+
+**Reproduction:**
+
+```bash
+grep -cE 'dns|lookup|resolve4|isPrivate|169\.254' unierp-sandbox/src/index.ts   # → 0
+```
+
+`assertEgressAllowed` compares `new URL(url).hostname` against an install-time approved set and
+resolves nothing. So an approved hostname under the extension author's control that resolves to
+`169.254.169.254`, `127.0.0.1`, or any RFC 1918 address passes the check and reaches the host's own
+network — cloud instance metadata included. The allowlist is also checked only on the initial URL,
+so a redirect leaves the final destination unchecked, and no scheme restriction exists.
+
+**This also makes `ARCHITECTURE.md`'s "no filesystem" claim only half true.** It holds for the
+isolate; whether it holds for the egress path depends entirely on what `host.httpFetch` accepts,
+which the sandbox does not constrain.
+
+Two tests cover this — allow and deny by hostname — and both pass. They test the mechanism that
+exists, not the threat it appears to defend against.
+
+---
+
+### D022 · 🔴 High · One tenant's extension can OOM the process serving every tenant
+
+**Found:** 2026-08-07 by phase A16. **Fixed by:** [A17](10-TRACK-A-FOUNDATION.md).
+**Threat:** `THREAT-MODEL.md` T11, with T19.
+
+**Reproduction:**
+
+```bash
+grep -cE 'maxBytes|byteLength|payloadSize|length >' unierp-sandbox/src/index.ts   # → 0
+grep -cE 'concurren|semaphore|maxIsolates|inFlight' unierp-sandbox/src/index.ts   # → 0
+```
+
+Bridge arguments and results cross as JSON and **nothing caps their size**. An extension inside a
+32 MB isolate can hand the host a ~30 MB string, which the host then `JSON.parse`s on the host
+heap — where there is no per-extension cap at all. Compounding it, `run()` creates an isolate per
+invocation with **no concurrency limit**, each reserving up to `memoryMb`, so the per-isolate
+budget is enforced while the aggregate is not.
+
+The isolate boundary holds throughout. The blast radius is the shared API process, which serves
+every tenant.
+
+---
+
 ### D001 · 🔴 High · `core.prisma` is 31,092 lines; R2's exit criterion is not met
 
 **Found:** 2026-08-07. **Fixed by:** [A03](10-TRACK-A-FOUNDATION.md), gated by A04.
@@ -395,6 +472,26 @@ payroll and patient records.
 *broken*. The defect is that a claim of this consequence is unproven, and Track G — 30 phases of
 customer-authored code — is blocked on it for exactly that reason.
 
+> **AMENDED 2026-08-07 by phase A16 — this defect's premise was wrong in two ways.**
+>
+> 1. *"393 lines is not obviously enough"* used line count as a proxy for rigour. It is a bad
+>    proxy. The design is careful: a real `isolated-vm` isolate rather than `node:vm`, host-side
+>    scope re-checks, no Prisma client or connection string or settable tenant id ever handed in,
+>    a frozen global, `finally { dispose() }`.
+> 2. *"unverified by any adversarial test"* was false. `src/sandbox.spec.ts` has **18 targeted
+>    tests**, including one that denies the exact `node:vm` escape the previous implementation
+>    allowed.
+>
+> The severity stands but the reasoning changes, and the corrected version is sharper: **the tests
+> verify the mitigations that were designed, and nine threats were never designed for.** Three are
+> now filed separately as **D020** (the kill switch does not work across replicas), **D021** (the
+> hostname allowlist is not SSRF protection) and **D022** (unbounded bridge payloads and isolate
+> concurrency). Full analysis in `unierp-sandbox/docs/THREAT-MODEL.md`.
+>
+> The lesson worth keeping: *a component with passing tests and a wrong claim looks exactly like a
+> component with passing tests.* Counting lines and counting tests both missed it; reading it did
+> not.
+
 ---
 
 ### D012 · 🟡 Low · Builder editors are 9-line stubs behind complete list pages
@@ -475,6 +572,9 @@ it was detected._
 | D017 | 🟠 Med | 86 non-test files exceed the 1,000-line hard ceiling `CODE_STANDARDS § 4` calls unjustifiable; nothing enforces it | L01, L07–L09 | OPEN |
 | D018 | 🟠 Med | `CODE_STANDARDS § 10`'s R13 lint rules (size, complexity, naming, silent catch, TODO discipline) were never implemented and had no phase | L01–L06 | OPEN |
 | **D019** | 🔴 High | **`workflow_call` used in 0 repos — every CI file is a hand copy, contradicting workspace's stated invariant. Makes A07/A08 30× and temporary.** | A29 | OPEN |
+| **D020** | 🔴 **Crit** | **Extension kill switch is per-process and unpersisted — an operator using it in an incident would see it succeed while the extension kept running** | A17 | OPEN |
+| **D021** | 🔴 **Crit** | **Egress "allowlist" is a hostname string match — DNS rebinding reaches cloud metadata and localhost; redirects unchecked; no scheme restriction** | A17 | OPEN |
+| **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | OPEN |
 
 ---
 

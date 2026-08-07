@@ -228,7 +228,12 @@ function currentWave(plan, ws) {
 function ready(plan, blocks) {
   const out = [];
   for (const [id, p] of Object.entries(plan)) {
-    if (["DONE", "WITHDRAWN", "WIP"].includes(p.status)) continue;
+    // BLOCKED is excluded, and that was a bug when it was not: releasing A01 as BLOCKED
+    // with a reason, then running start, handed A01 straight back — which defeats the
+    // entire purpose of --release and would have had an agent re-derive the same blocker
+    // indefinitely. A BLOCKED phase is reachable only by naming it: `--phase A01`, which
+    // is the deliberate "the blocker is cleared, try again" path.
+    if (["DONE", "WITHDRAWN", "WIP", "BLOCKED"].includes(p.status)) continue;
     const unmet = p.deps.filter((d) => plan[d] && plan[d].status !== "DONE");
     if (unmet.length) continue;
     const claim = claimOf(id, blocks);
@@ -577,10 +582,28 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   const sel = select(plan, blocks, ws);
 
   if (forced) {
-    const cand = sel.all.find((c) => c.id === forced);
+    let cand = sel.all.find((c) => c.id === forced);
+    const p = plan[forced];
+    if (!p) die(`no phase ${forced}`);
+
+    // Naming a BLOCKED phase explicitly is the sanctioned "the blocker is cleared, try
+    // again" path — that is the whole reason --release records WHY it was blocked. It is
+    // excluded from automatic selection (see ready()), not from deliberate retry.
+    if (!cand && p.status === "BLOCKED") {
+      const unmet = p.deps.filter((d) => plan[d] && plan[d].status !== "DONE");
+      if (!unmet.length) {
+        const prior = logBlocks().find((b) => b.id === forced && b.event === "RELEASED");
+        say(`  ${forced} is BLOCKED. Retrying it deliberately because you named it.`);
+        if (prior) {
+          say(`  It was released ${hoursSince(prior.at).toFixed(1)}h ago for this reason:\n`);
+          for (const l of prior.body.split("\n").slice(0, 6)) say(`      ${l}`);
+          say(`\n  If that is still true, stop now — nothing has changed.\n`);
+        }
+        cand = { id: forced, ...p, staleClaim: null };
+      }
+    }
+
     if (!cand) {
-      const p = plan[forced];
-      if (!p) die(`no phase ${forced}`);
       const unmet = p.deps.filter((d) => plan[d] && plan[d].status !== "DONE");
       const claim = claimOf(forced, blocks);
       die(

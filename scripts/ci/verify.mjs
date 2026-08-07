@@ -56,6 +56,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-policy.mjs"]],
   },
   {
+    name: "Workflow files",
+    why: "A workflow with `true:` instead of `on:` never runs; a step behind `if: hashFiles(...)` passes by being absent.",
+    cmd: ["node", ["scripts/ci/check-workflows.mjs"]],
+  },
+  {
     name: "Policy-gate coverage",
     why: "A delegated policy rule must actually run in the repo that owns its files. A30 / D024.",
     cmd: ["node", ["scripts/ci/check-policy-coverage.mjs"]],

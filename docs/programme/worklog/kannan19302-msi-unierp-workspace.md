@@ -185,3 +185,11 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### A01 · RELEASED · 2026-08-07T14:59:15Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+Re-releasing after fixing the ADP defect that handed this straight back. Configuration complete and pushed across 21 PRs; first half of the exit criterion passes (18 -> 0). Blocked on three account actions no agent can perform: create the npm org 'unerp', enable trusted publishing for the 13 packages, tag a first release. Resume with: node scripts/start.mjs --phase A01
+```
+

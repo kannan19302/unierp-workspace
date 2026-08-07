@@ -13,3 +13,9 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### A05 · PROGRESS · 2026-08-07T17:50:52Z · kannan19302@MSI/w
+
+```
+End-to-end verification of the ADP flow from a fresh clone of main. No production work.
+```
+

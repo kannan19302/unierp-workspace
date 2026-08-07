@@ -102,7 +102,7 @@ one governing set for the whole platform and it lives in the **\`unierp-workspac
 
 - **[\`AGENTS.md\`](${CANON})** — the operating contract for every coding agent, whichever vendor
 - \`docs/ai/\` — the ten governance documents (product, technical, flow, design, schema, standards)
-- \`docs/programme/\` — the 308-phase development plan
+- \`docs/programme/\` — the 309-phase development plan
 ${
   track
     ? `\nThis repository's work is mostly **Track ${track[0]}**: \`docs/programme/${track[1]}\`.\n`
@@ -117,7 +117,7 @@ node scripts/start.mjs        # picks the next phase, CLAIMS it, prints the work
 node scripts/start.mjs --who  # what other agents are holding right now
 \`\`\`
 
-The plan is 308 phases across 20 documents. An agent that reads it partially produces work that
+The plan is 309 phases across 20 documents. An agent that reads it partially produces work that
 contradicts a phase it never opened, which is worse than not reading it. \`start.mjs\` extracts
 exactly one phase — and claims it with a pushed commit, so two agents never take the same work.
 

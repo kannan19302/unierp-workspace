@@ -148,6 +148,65 @@ L11–L12.** This dependency was missing from the plan as first written and is n
 
 ---
 
+### D024 · 🔴 CRITICAL · `main`'s own CI has been red since extraction, so nothing has been gated
+
+**Found:** 2026-08-07, checking CI before merging the programme PR.
+**Fixed by:** a new phase — **A30** — with A11 and A29.
+
+`unierp-workspace`'s `ci.yml` header states the contract:
+
+> *"CONTRACT: no code with a failing check reaches main, and nothing merges red."*
+
+**`main` is red, and has been for at least five consecutive runs:**
+
+```bash
+gh run list --branch main --workflow CI --limit 5 --json conclusion,createdAt,headSha
+#  failure  2026-08-07T04:37  71555ffa   ← current HEAD
+#  failure  2026-08-07T03:43  5d6c6715
+#  failure  2026-08-07T03:43  6ff67933
+#  failure  2026-08-06T01:35  4a32a981
+#  failure  2026-08-05T20:13  5fa7abbb
+```
+
+**The cause.** `scripts/ci/check-policy.mjs` has a HARD rule,
+`control-plane-seeded-to-tenant`, whose targets are **monorepo paths**:
+
+```
+packages/database/prisma/seed.ts
+apps/idp/src/modules/auth/auth.service.ts
+```
+
+Both files exist — as `unierp-data/prisma/seed.ts` and
+`unierp-idp/src/modules/auth/auth.service.ts`. **But `unierp-workspace` is checked out alone in
+CI and has no `apps/` or `packages/` directory at all**, so the gate reports two missing targets,
+counts them as violations, and exits 1. Nine rule targets across the file point at monorepo paths:
+
+```bash
+grep -oE '"(apps|packages)/[^"]+"' scripts/ci/check-policy.mjs | sort -u   # → 9
+```
+
+**The gate's own reasoning is correct and must be preserved.** Its comment says:
+
+> *"`read()` returns null for a missing file, so the gate silently stopped checking it — a
+> control that quietly covers less than it claims is worse than no control. Missing targets are
+> now reported rather than skipped."*
+
+That is the D013 lesson applied properly. Whoever wrote it was right. **Do not fix this by
+skipping missing targets — that reverts the fix and re-hides the problem.**
+
+**Why this is Critical.** A gate that *always* fails is as useless as one that never fails, and it
+is worse in one specific way: people stop reading it. Five red runs on `main` means every merge
+since extraction has happened over a red build, so the "nothing merges red" contract has not held
+for days — and the next genuine violation will arrive in a job that was already failing.
+
+**The structural cause, and why the fix is not a path edit.** A gate living in the orchestration
+repo cannot check files owned by sibling repos, because CI checks out one repository. These rules
+have to run **in the repo that owns the file**, which is exactly what D019's missing
+`workflow_call` mechanism is for. Editing the paths would make the gate pass locally — where the
+siblings are on disk — and fail in CI forever.
+
+---
+
 ### D023 · 🔴 High · The four verticals were archived before their code moved
 
 **Found:** 2026-08-07, when pushing agent entrypoints returned 403 on four repositories.
@@ -623,6 +682,7 @@ it was detected._
 | **D021** | 🔴 **Crit** | **Egress "allowlist" is a hostname string match — DNS rebinding reaches cloud metadata and localhost; redirects unchecked; no scheme restriction** | A17 | OPEN |
 | **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | OPEN |
 | **D023** | 🔴 High | **The 4 verticals are archived on GitHub; 2,249 source lines replaced by 138. The supersession moved the name, not the code. Family is 26 live repos, not 30.** | E26 | OPEN |
+| **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | OPEN |
 
 ---
 

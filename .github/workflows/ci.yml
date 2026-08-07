@@ -1,346 +1,100 @@
-# CI — the server-side enforcement layer. docs/ai/TRD.md § 8, Layer 3.
+# CI — unierp-workspace. docs/ai/TRD.md § 8, Layer 3.
 #
 # CONTRACT: no code with a failing check reaches main, and nothing merges red.
 # There is deliberately NO `continue-on-error` anywhere in this file. A gate that cannot
 # fail is worse than no gate — it manufactures false confidence.
+#
+# ── Phase A30 / defects D024, D025 ──────────────────────────────────────────────────
+# This file used to be the MONOREPO's CI, inherited whole at extraction. Five of its eight
+# jobs — static, supply-chain, test, build, e2e — ran 27 `pnpm` steps in a repository that
+# has NO package.json and NO application source. Not one of them could ever have passed,
+# and because they all declared `needs: guard`, they sat permanently "skipped" behind a
+# guard job that was itself failing. main has been red since extraction (2026-08-05).
+#
+# Removing them is not weakening a gate: those gates never ran here. But they must run
+# SOMEWHERE, and today they largely do not — every repo's own ci.yml is a hand copy
+# (D019) and unierp-api's runs only `npm install`. That gap is recorded as D025 and
+# phase A31, not silently absorbed.
+#
+# What remains is what this repository can actually verify: the orchestration gates over
+# its own contents, and CodeQL over its own scripts. Gates that read application source
+# now travel to the code via .github/workflows/policy-gate.yml (reusable), which the
+# owning repositories call and scripts/ci/check-policy-coverage.mjs proves they call.
+# ────────────────────────────────────────────────────────────────────────────────────
 name: CI
-
-on:
+true:
   push:
-    branches: [main]
+    branches:
+    - main
   pull_request:
-    branches: [main]
-  merge_group:
-
+    branches:
+    - main
+  merge_group: null
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
   security-events: write
-
 env:
   NODE_ENV: test
   NEXT_PUBLIC_APP_URL: http://localhost:3000
   NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
   TURBO_TELEMETRY_DISABLED: 1
   DO_NOT_TRACK: 1
-
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────
-  # Tier 1 — cheap gates. Seconds. Fail fast, before anything expensive runs.
-  # ─────────────────────────────────────────────────────────────────────────
   guard:
     name: Guard (secrets · suppressions · policy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Secret scan (working tree)
-        run: node scripts/ci/check-secrets.mjs --all
-
-      - name: Suppression ratchet
-        run: node scripts/ci/check-suppressions.mjs
-
-      - name: Policy gate
-        run: node scripts/ci/check-policy.mjs
-
-      - name: Decimal arithmetic ratchet
-        run: node scripts/ci/check-decimal-arithmetic.mjs
-
-      - name: docs/ai integrity
-        run: |
-          count=$(ls -1 docs/ai | wc -l)
-          if [ "$count" -ne 10 ]; then
-            echo "::error::docs/ai must contain exactly 10 files, found $count."
-            echo "See docs/ai/README.md rule 1 — no sidecar documents."
-            ls -1 docs/ai
-            exit 1
-          fi
-          echo "✅ docs/ai holds exactly 10 master files"
-
-      # BLOCKING, and deliberately NOT guarded by `if: hashFiles(...)`. That guard is
-      # exactly how the layer gate came to be declared in 21 repositories and present
-      # in none (docs/programme/90-DEFECT-LOG.md D013) — a step that passes by being
-      # absent. If this script is missing, this job must fail.
-      #
-      # Enforces docs/programme/README.md § 0: a phase ID is permanent, a plan document
-      # is never regenerated or truncated, no phase loses its exit criterion, and no
-      # undeclared file enters the folder.
-      - name: Development programme integrity
-        run: node scripts/check-plan-integrity.mjs
-
-      # BLOCKING. Phase A14, closing R5. Fifteen scratch files were tracked at
-      # unierp-mobile's root, three of which had already been deleted once in the monorepo
-      # and returned through the polyrepo extraction — a fix that does not survive
-      # extraction needs a mechanism, not a second cleanup. Allowlist, not denylist: a
-      # denylist catches fix_router_5.py and misses fix_router_6.py.
-      - name: Repository hygiene
-        run: node scripts/ci/check-repo-hygiene.mjs
-
-      # BLOCKING. Phase A30 / D024. check-policy.mjs delegates a rule to the repository
-      # that owns its files — this asserts each of those repositories actually runs the
-      # gate and carries a committed ratchet baseline. Without it, delegation becomes a
-      # way of enforcing nothing everywhere, which is how a clean 0 came to sit over 309
-      # hardcoded hex values, 2,315 hardcoded pixels and 22 Float money columns.
-      - name: Policy-gate coverage
-        run: node scripts/ci/check-policy-coverage.mjs
-
-      - name: CHANGELOG updated
-        if: github.event_name == 'pull_request'
-        run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^docs/ai/CHANGELOG.md$'; then
-            echo "✅ CHANGELOG entry present"
-          else
-            echo "::error::Every change needs one line in docs/ai/CHANGELOG.md. No exceptions for small changes."
-            exit 1
-          fi
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Tier 2 — static analysis.
-  # ─────────────────────────────────────────────────────────────────────────
-  static:
-    name: Static (${{ matrix.check }})
-    runs-on: ubuntu-latest
-    needs: guard
-    strategy:
-      fail-fast: false
-      matrix:
-        check: [lint, typecheck, architecture, contracts, format]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-
-      - name: Lint
-        if: matrix.check == 'lint'
-        run: pnpm lint
-
-      - name: Typecheck
-        if: matrix.check == 'typecheck'
-        run: pnpm typecheck
-
-      - name: Architecture boundaries
-        if: matrix.check == 'architecture'
-        run: pnpm architecture:check
-
-      # M2 — PLATFORM_ARCHITECTURE.md § 4.5. Replays every consumer's published
-      # expectation against its provider's current exported surface. Redundant
-      # with the compiler today, and the only thing standing in for it once
-      # Phase 3 puts a published package boundary between them.
-      - name: Consumer contracts (M2)
-        if: matrix.check == 'contracts'
-        run: pnpm check:cdc
-
-      - name: Format
-        if: matrix.check == 'format'
-        run: pnpm format:check
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Tier 3 — supply chain. Blocking, not advisory.
-  # ─────────────────────────────────────────────────────────────────────────
-  supply-chain:
-    name: Supply chain
-    runs-on: ubuntu-latest
-    needs: guard
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-
-      # BLOCKING. This previously carried `continue-on-error: true`, which made it decorative.
-      - name: Audit (high + critical block the build)
-        run: pnpm audit --audit-level=high
-
-      - name: Licence compliance (TRD § 1 — the open-source mandate)
-        run: node scripts/ci/check-licenses.mjs
-
-      - name: Generate SBOM
-        run: npx --yes @cyclonedx/cyclonedx-npm --output-file sbom.json || echo '{}' > sbom.json
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: sbom.json
-          retention-days: 90
-
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Secret scan (working tree)
+      run: node scripts/ci/check-secrets.mjs --all
+    - name: Suppression ratchet
+      run: node scripts/ci/check-suppressions.mjs
+    - name: Policy gate
+      run: node scripts/ci/check-policy.mjs
+    - name: Decimal arithmetic ratchet
+      run: node scripts/ci/check-decimal-arithmetic.mjs
+    - name: docs/ai integrity
+      run: "count=$(ls -1 docs/ai | wc -l)\nif [ \"$count\" -ne 10 ]; then\n  echo \"::error::docs/ai\
+        \ must contain exactly 10 files, found $count.\"\n  echo \"See docs/ai/README.md rule 1 — no sidecar\
+        \ documents.\"\n  ls -1 docs/ai\n  exit 1\nfi\necho \"✅ docs/ai holds exactly 10 master files\"\
+        \n"
+    - name: Development programme integrity
+      run: node scripts/check-plan-integrity.mjs
+    - name: Repository hygiene
+      run: node scripts/ci/check-repo-hygiene.mjs
+    - name: Policy-gate coverage
+      run: node scripts/ci/check-policy-coverage.mjs
+    - name: CHANGELOG updated
+      if: github.event_name == 'pull_request'
+      run: "if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^docs/ai/CHANGELOG.md$';\
+        \ then\n  echo \"✅ CHANGELOG entry present\"\nelse\n  echo \"::error::Every change needs one line\
+        \ in docs/ai/CHANGELOG.md. No exceptions for small changes.\"\n  exit 1\nfi\n"
   codeql:
     name: CodeQL SAST
     runs-on: ubuntu-latest
     needs: guard
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-          queries: security-extended
-      - uses: github/codeql-action/analyze@v3
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Tier 4 — behaviour. Needs a real database.
-  # ─────────────────────────────────────────────────────────────────────────
-  test:
-    name: Tests + coverage + tenant isolation
-    runs-on: ubuntu-latest
-    needs: [static]
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: unierp
-          POSTGRES_PASSWORD: unierp
-          POSTGRES_DB: unierp_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready --health-interval 10s
-          --health-timeout 5s --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping" --health-interval 10s
-          --health-timeout 5s --health-retries 5
-    env:
-      DATABASE_URL: postgresql://unierp:unierp@localhost:5432/unierp_test
-      DATABASE_OWNER_URL: postgresql://unierp:unierp@localhost:5432/unierp_test
-      REDIS_URL: redis://localhost:6379
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-
-      - name: Apply migrations (db:deploy — never db:push)
-        run: pnpm db:deploy
-
-      - name: Migration discipline
-        run: pnpm migration:discipline
-
-      - name: Schema lint
-        run: pnpm schema:lint
-
-      # BLOCKING. Like check-rls-verify.mjs before it (ARCHITECTURE_REVIEW § F5),
-      # this control existed but was wired into nothing. Its first real run found
-      # 21 undeclared PII models, including HealthcarePatient and EducationStudent.
-      - name: PII registry
-        run: node scripts/check-pii-registry.mjs
-
-      # BLOCKING. This script existed but was never wired into CI — ARCHITECTURE_REVIEW § F5.
-      # A table carrying tenant_id without an RLS policy now fails the build.
-      - name: RLS / tenant-isolation verification
-        run: node scripts/check-rls-verify.mjs
-
-      - name: Unit + integration tests with coverage
-        run: pnpm test:coverage
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage
-          path: '**/coverage/'
-          retention-days: 14
-
-  build:
-    name: Build (api + web)
-    runs-on: ubuntu-latest
-    needs: [static]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      # Previously only the e2e job built these, so a build-breaking change could pass CI.
-      - run: pnpm --filter @unerp/api build
-      - run: pnpm --filter @unerp/web build
-
-  e2e:
-    name: E2E
-    runs-on: ubuntu-latest
-    needs: [test, build]
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: unierp
-          POSTGRES_PASSWORD: unierp
-          POSTGRES_DB: unierp_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready --health-interval 10s
-          --health-timeout 5s --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping" --health-interval 10s
-          --health-timeout 5s --health-retries 5
-    env:
-      DATABASE_URL: postgresql://unierp:unierp@localhost:5432/unierp_test
-      DATABASE_OWNER_URL: postgresql://unierp:unierp@localhost:5432/unierp_test
-      REDIS_URL: redis://localhost:6379
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-      E2E_EMAIL: admin@unerp.dev
-      E2E_PASSWORD: admin123
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      - run: pnpm db:deploy
-      - run: pnpm db:seed
-      - run: pnpm --filter @unerp/api build
-      - run: pnpm --filter @unerp/web build
-      - run: pnpm --filter @unerp/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @unerp/web test:e2e:all
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: apps/web/playwright-report/
-          retention-days: 7
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # The single required status check. Branch protection points at THIS job, so
-  # a job added above becomes blocking automatically, with no reconfiguration.
-  # ─────────────────────────────────────────────────────────────────────────
+    - uses: actions/checkout@v4
+    - uses: github/codeql-action/init@v3
+      with:
+        languages: javascript-typescript
+        queries: security-extended
+    - uses: github/codeql-action/analyze@v3
   ci-passed:
     name: CI passed
     runs-on: ubuntu-latest
     if: always()
-    needs: [guard, static, supply-chain, codeql, test, build, e2e]
+    needs:
+    - guard
+    - codeql
     steps:
-      - name: Verify every gate succeeded
-        run: |
-          results="${{ join(needs.*.result, ' ') }}"
-          echo "Gate results: $results"
-          for r in $results; do
-            if [ "$r" != "success" ]; then
-              echo "::error::A required gate did not succeed ($r). Red builds are never merged."
-              exit 1
-            fi
-          done
-          echo "✅ All gates green — eligible to merge."
+    - name: Verify every gate succeeded
+      run: "results=\"${{ needs.guard.result }} ${{ needs.codeql.result }}\"\nfor r in $results; do\n\
+        \  if [ \"$r\" != \"success\" ]; then\n    echo \"::error::A required gate did not succeed ($r).\
+        \ Red builds are never merged.\"\n    exit 1\n  fi\ndone\necho \"All required gates succeeded.\"\
+        \n"

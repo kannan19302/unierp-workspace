@@ -66,7 +66,7 @@ lines of unread process there will produce it here unless this folder has a law 
 
 ## 1. What this programme is
 
-A **309-phase** execution plan to take UniERP from *"broad, architecturally sound, and now
+A **310-phase** execution plan to take UniERP from *"broad, architecturally sound, and now
 mostly verifiable"* to *"a complete commercial multi-tenant application platform"* — public
 marketing site, provider control plane, tenant SaaS portal, 45 deep business modules, a
 Salesforce-class developer platform, tenant website templates, and the test discipline that
@@ -94,7 +94,7 @@ has one maintainer (`GOVERNANCE.md`); a dated plan from a single maintainer is a
 | In what *layer order* is any one feature built? | `docs/ai/IMPLEMENTATION_PLAN.md` |
 | What is *honestly wrong* with the foundation? | `docs/ai/ARCHITECTURE_REVIEW.md` |
 | What is the *standing review checklist*? | `docs/ai/CODE_STANDARDS.md` |
-| **In what order do the 309 remaining pieces of work happen, and how do I know one is done?** | **this folder** |
+| **In what order do the 310 remaining pieces of work happen, and how do I know one is done?** | **this folder** |
 
 `IMPLEMENTATION_PLAN.md § 10` defines five coarse phases (0–4). This programme is the
 decomposition of those five into work a session can actually pick up. The mapping is in
@@ -111,7 +111,7 @@ decomposition of those five into work a session can actually pick up. The mappin
 | 2 | [`01-PRIORITY-AND-SEQUENCING.md`](01-PRIORITY-AND-SEQUENCING.md) | Why the tracks are ordered as they are; the wave plan; what blocks what. |
 | 3 | [`02-EXECUTION-GUIDELINES.md`](02-EXECUTION-GUIDELINES.md) | Anatomy of a phase, definition of done, agent operating rules, conflict protocol. |
 | 4 | [`03-GAP-ANALYSIS.md`](03-GAP-ANALYSIS.md) | The 24 things the ten-point brief did not name, and which of them are load-bearing. |
-| 5 | [`10-TRACK-A-FOUNDATION.md`](10-TRACK-A-FOUNDATION.md) | **A01–A30** · Proof, packaging, release, CI/CD, tenancy correctness. The gate on everything. |
+| 5 | [`10-TRACK-A-FOUNDATION.md`](10-TRACK-A-FOUNDATION.md) | **A01–A31** · Proof, packaging, release, CI/CD, tenancy correctness. The gate on everything. |
 | 6 | [`11-TRACK-B-DESIGN-SYSTEM.md`](11-TRACK-B-DESIGN-SYSTEM.md) | **B01–B24** · Enterprise design system across web, mobile, desktop. |
 | 7 | [`12-TRACK-C-PLATFORM-CONSOLE.md`](12-TRACK-C-PLATFORM-CONSOLE.md) | **C01–C29** · Provider/internal control plane (plane 1). |
 | 8 | [`13-TRACK-D-TENANT-ADMIN.md`](13-TRACK-D-TENANT-ADMIN.md) | **D01–D22** · Tenant SaaS portal and per-app settings (plane 2). |

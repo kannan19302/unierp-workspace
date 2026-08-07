@@ -148,6 +148,50 @@ L11–L12.** This dependency was missing from the plan as first written and is n
 
 ---
 
+### D025 · 🔴 CRITICAL · Five of workspace CI's eight jobs could never run, and their gates run nowhere
+
+**Found:** 2026-08-07, while getting `main` green (A30). **Fixed by:** **A31**.
+
+`unierp-workspace/.github/workflows/ci.yml` was the **monorepo's** CI, inherited whole at
+extraction. Five of its eight jobs — `static`, `supply-chain`, `test`, `build`, `e2e` — ran
+**27 `pnpm` steps** in a repository that has **no `package.json` and no application source**.
+
+**Reproduction:**
+
+```bash
+ls unierp-workspace/package.json          # No such file or directory
+python3 -c "import yaml;d=yaml.safe_load(open('unierp-workspace/.github/workflows/ci.yml'));
+[print(j, sum('pnpm' in str(s.get('run','')) for s in v.get('steps',[]))) for j,v in d['jobs'].items()]"
+#  guard 0 · static 7 · supply-chain 2 · codeql 0 · test 6 · build 4 · e2e 8 · ci-passed 0
+```
+
+Not one could ever have passed. And because all five declared `needs: guard`, they sat
+permanently **"skipped"** behind a guard job that was itself failing — so the CI summary read
+`failure skipped skipped skipped skipped skipped skipped` and nobody could tell the difference
+between "not reached" and "cannot exist".
+
+**This is the same shape as D013 at the level of whole jobs.** D013 was one step that passed by
+being absent; this is five jobs that never ran and therefore never failed.
+
+**What was lost.** Removing them from this repo is not weakening a gate — they never ran here.
+But `lint`, `typecheck`, `test`, `coverage`, `build`, `pnpm audit`, licence compliance, SBOM,
+migration discipline, schema lint, the PII registry, RLS verification and E2E **must run
+somewhere**, and today they largely do not:
+
+```bash
+grep -oE 'run: (pnpm|npm) [a-z:]+' unierp-api/.github/workflows/ci.yml | sort -u
+#  run: npm install          ← that is the whole of it
+```
+
+Every repo's `ci.yml` is a hand copy (**D019**) and `unierp-api`'s runs only `npm install`. So the
+application-level gates for a 45-module financial system are currently enforced by nothing.
+
+**Filed rather than absorbed.** A30 made this repo's CI honest about what it can verify. **A31
+gives the application gates a home**, using the same reusable-workflow mechanism, and until it
+lands this is an open hole — not a solved problem.
+
+---
+
 ### D024 · 🔴 CRITICAL · `main`'s own CI has been red since extraction, so nothing has been gated
 
 **Found:** 2026-08-07, checking CI before merging the programme PR.
@@ -683,6 +727,7 @@ it was detected._
 | **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | OPEN |
 | **D023** | 🔴 High | **The 4 verticals are archived on GitHub; 2,249 source lines replaced by 138. The supersession moved the name, not the code. Family is 26 live repos, not 30.** | E26 | OPEN |
 | **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | OPEN |
+| **D025** | 🔴 **Crit** | **5 of workspace CI's 8 jobs ran 27 pnpm steps in a repo with no package.json — never ran, never failed, sat "skipped". The application gates (lint, typecheck, test, coverage, audit, RLS, PII) run NOWHERE.** | A31 | OPEN |
 
 ---
 

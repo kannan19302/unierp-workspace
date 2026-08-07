@@ -52,6 +52,16 @@ jobs:
           repository: kannan19302/unierp-workspace
           path: gate
 
+      # The decimal-arithmetic ratchet needs the Prisma schema to learn which fields are
+      # Decimal. A repo holding only source would otherwise learn none, find 0 sites, and
+      # report a clean pass over 658 real ones. The schema lives in unierp-data, so it is
+      # checked out beside the target rather than guessed at.
+      - name: Check out the schema
+        uses: actions/checkout@v4
+        with:
+          repository: kannan19302/unierp-data
+          path: schema
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
@@ -64,6 +74,16 @@ jobs:
         env:
           POLICY_ROOT: ${{ github.workspace }}/target
           POLICY_REPO: ${{ inputs.repo }}
+
+      # Money is Decimal(19,4) so it does not drift; summing it through Number() puts it
+      # straight back into float. This ratchet counts those sites. It reported 0 for months
+      # after extraction because it could not find the schema — the real count is 658.
+      - name: Decimal arithmetic ratchet
+        run: node gate/scripts/ci/check-decimal-arithmetic.mjs
+        env:
+          POLICY_ROOT: ${{ github.workspace }}/target
+          POLICY_REPO: ${{ inputs.repo }}
+          DECIMAL_SCHEMA_DIR: ${{ github.workspace }}/schema/prisma/schema
 
       # A ratchet is only a ratchet if the baseline is committed and compared. A repo that
       # runs the gate without one silently accepts whatever it finds today as acceptable.

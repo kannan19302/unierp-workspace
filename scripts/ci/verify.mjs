@@ -15,9 +15,31 @@
  */
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+
+/**
+ * Does this repository actually contain application source and a package.json?
+ *
+ * Phase A30 / defect D025. This file is the monorepo's local gate, inherited whole. Nine of
+ * its gates need `pnpm`, a Prisma schema, or a built `dist/` — and `unierp-workspace` has no
+ * package.json and no application source, so they could never pass here. Running them anyway
+ * meant `verify.mjs` was permanently red in this repo, which pushed every agent towards
+ * `--despite-red-gate` on `scripts/start.mjs --finish`. A gate everyone routinely overrides
+ * has stopped being a gate.
+ *
+ * They are not skipped silently. Each is named as delegated, with the phase that gives it a
+ * home (A31), for the same reason check-policy.mjs names its delegations: a control that
+ * quietly covers less than it claims is worse than no control.
+ */
+const HAS_APP_SOURCE =
+  existsSync(join(ROOT, "package.json")) &&
+  (existsSync(join(ROOT, "src")) ||
+    existsSync(join(ROOT, "app")) ||
+    existsSync(join(ROOT, "apps")) ||
+    existsSync(join(ROOT, "prisma")));
 const args = process.argv.slice(2);
 const FAST = args.includes("--fast");
 const FIX = args.includes("--fix");
@@ -100,11 +122,13 @@ const GATES = [
     // the first time it was executed, including HealthcarePatient and
     // EducationStudent.
     cmd: ["node", ["scripts/check-pii-registry.mjs"]],
+    needsAppSource: true,
   },
   {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],
+    needsAppSource: true,
   },
   {
     name: "Consumer contracts (M2)",
@@ -119,11 +143,13 @@ const GATES = [
     // export reached through the .js re-export chain, and a stale published
     // expectation).
     cmd: ["node", ["scripts/ci/cdc-harness.mjs"]],
+    needsAppSource: true,
   },
   {
     name: "Migration discipline",
     why: "No hand-edited migrations, no db:push, no schema drift.",
     cmd: ["pnpm", ["migration:discipline"]],
+    needsAppSource: true,
   },
   {
     name: "RLS verification",
@@ -135,23 +161,27 @@ const GATES = [
     name: "Lint",
     why: "Style and correctness rules.",
     cmd: FIX ? ["pnpm", ["lint", "--fix"]] : ["pnpm", ["lint"]],
+    needsAppSource: true,
   },
   {
     name: "Typecheck",
     why: "The compiler is the cheapest test you will ever run.",
     cmd: ["pnpm", ["typecheck"]],
+    needsAppSource: true,
   },
   {
     name: "Unit tests",
     why: "Business logic must be proven, not assumed.",
     cmd: ["pnpm", ["test"]],
     skipInFast: true,
+    needsAppSource: true,
   },
   {
     name: "Build",
     why: "A change that does not build cannot deploy.",
     cmd: ["pnpm", ["build"]],
     skipInFast: true,
+    needsAppSource: true,
   },
   {
     name: "Node resolution",
@@ -164,6 +194,7 @@ const GATES = [
     // pipeline modelled Node's resolver until this. Proven able to fail.
     cmd: ["node", ["scripts/ci/check-node-resolution.mjs"]],
     skipInFast: true,
+    needsAppSource: true,
   },
 ];
 
@@ -186,7 +217,17 @@ console.log("");
 const started = Date.now();
 const results = [];
 
+const delegatedGates = [];
+
 for (const gate of GATES) {
+  if (gate.needsAppSource && !HAS_APP_SOURCE) {
+    delegatedGates.push(gate.name);
+    results.push({ name: gate.name, status: "delegated" });
+    console.log(
+      `${C.dim}  → ${gate.name} — delegated; this repo has no application source${C.reset}`,
+    );
+    continue;
+  }
   if (FAST && gate.skipInFast) {
     results.push({ name: gate.name, status: "skipped" });
     console.log(`${C.dim}  ○ ${gate.name} (skipped)${C.reset}`);
@@ -254,9 +295,26 @@ ${C.red}────────────────────────
 const total = ((Date.now() - started) / 1000).toFixed(1);
 const passed = results.filter((r) => r.status === "pass").length;
 const skipped = results.filter((r) => r.status === "skipped").length;
+const delegatedCount = results.filter((r) => r.status === "delegated").length;
 
+// The count of DELEGATED gates is stated in the summary, not just per-line. "All gates
+// green — 9 passed" over nine gates that never ran is the same false reading the policy
+// gate produced for months (D024): technically true, and read as "everything was checked".
 console.log(`
-${C.green}${C.bold}  ✓ All gates green${C.reset} ${C.dim}— ${passed} passed, ${skipped} skipped, ${total}s${C.reset}
-${C.dim}  Remember: one line in docs/ai/CHANGELOG.md before you commit.${C.reset}
-`);
+${C.green}${C.bold}  ✓ All gates green${C.reset} ${C.dim}— ${passed} passed, ${skipped} skipped${
+  delegatedCount
+    ? `, ${C.reset}${C.yellow}${delegatedCount} DELEGATED${C.reset}${C.dim} (not run here)`
+    : ""
+}, ${total}s${C.reset}`);
+if (delegatedCount) {
+  console.log(
+    `${C.yellow}  ${delegatedCount} gate(s) were NOT run: this repository has no application ` +
+      `source.${C.reset}\n` +
+      `${C.dim}  They must run in the repositories that do — phase A31, defect D025. Do not ` +
+      `read${C.reset}\n${C.dim}  "all gates green" as "everything was checked".${C.reset}`,
+  );
+}
+console.log(
+  `${C.dim}  Remember: one line in docs/ai/CHANGELOG.md before you commit.${C.reset}\n`,
+);
 process.exit(0);

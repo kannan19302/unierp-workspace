@@ -123,3 +123,48 @@ package name is permanent, so this is worth getting right rather than fast.
 Nothing changed in the tree for A01 yet.
 ```
 
+### A01 · PROGRESS · 2026-08-07T14:50:46Z · kannan19302@MSI/unierp-workspace
+
+```
+CONFIGURATION COMPLETE. Blocked on one account action only.
+
+Decision: the public npm registry, scope @unerp. GitHub Packages was ruled out on a
+verified platform constraint, not preference — it requires the npm scope to equal the
+repository owner, and these repos are owned by the user kannan19302.
+
+DONE, and the first half of the exit criterion PASSES:
+  grep -l 'localhost:4873' */.npmrc | wc -l     18 -> 0
+
+  18 repos      .npmrc repointed to the public registry, committed + PR'd
+  13 libraries  publish.yml caller added (declares WHICH gate, no logic inlined)
+   1 workspace  publish-library.yml — reusable, `on: workflow_call`. FIRST genuinely
+                shared workflow in the family; D019's metric moves 0 -> 1
+   1 workspace  release.yml rewritten. It was the monorepo's changesets workflow,
+                running pnpm install / version-packages / changeset tag in a repo with
+                NO package.json — every step would have failed on first invocation, so
+                it had never run. Same shape as D013. Now validates that every version
+                platform-manifest.json pins is installable.
+   1 platform   ROADMAP.md's wrong recommendation corrected in place
+   -            publish authority documented, AGENTS.md § 8
+
+Publishing is npm trusted publishing (OIDC): no long-lived token exists anywhere. That
+is deliberate here — fourteen registry tokens were committed once, in fourteen public
+repos simultaneously.
+
+The workflow refuses to republish an existing version, refuses any package declaring
+workspace:*, packs and inspects the tarball first, and attaches provenance.
+
+REMAINING — cannot be done by an agent:
+  1. Create the npm organisation `unerp` (the scope is free; verified 404 today).
+  2. On npmjs.com, enable trusted publishing for each of the 13 packages, pointing at
+     kannan19302/<repo> and workflow publish.yml. No token to paste.
+  3. Merge the PRs, then tag v<version> in a library repo to trigger the first publish.
+     Suggest starting with @unerp/contracts (L0, depends on nothing) as the smoke test,
+     with workflow_dispatch dry-run first.
+
+Then `npm view @unerp/contracts version` returns a version and the second half of the
+exit criterion can be run. NOT marking DONE until it does — configuration that looks
+complete is not a clean install resolving, and that distinction is the whole point of
+this programme.
+```
+

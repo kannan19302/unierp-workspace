@@ -56,6 +56,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-policy.mjs"]],
   },
   {
+    name: "Repo hygiene",
+    why: "No scratch files or self-nested config at a repository root. R5 / phase A14.",
+    cmd: ["node", ["scripts/ci/check-repo-hygiene.mjs"]],
+  },
+  {
     name: "Programme integrity",
     why: "Phase IDs are permanent; plan documents are amended, never regenerated. docs/programme/README.md § 0.",
     // Listed here as well as in ci.yml deliberately. ROADMAP.md's "close the

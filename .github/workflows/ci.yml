@@ -73,6 +73,14 @@ jobs:
       - name: Development programme integrity
         run: node scripts/check-plan-integrity.mjs
 
+      # BLOCKING. Phase A14, closing R5. Fifteen scratch files were tracked at
+      # unierp-mobile's root, three of which had already been deleted once in the monorepo
+      # and returned through the polyrepo extraction — a fix that does not survive
+      # extraction needs a mechanism, not a second cleanup. Allowlist, not denylist: a
+      # denylist catches fix_router_5.py and misses fix_router_6.py.
+      - name: Repository hygiene
+        run: node scripts/ci/check-repo-hygiene.mjs
+
       - name: CHANGELOG updated
         if: github.event_name == 'pull_request'
         run: |

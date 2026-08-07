@@ -1,7 +1,7 @@
 # 01 · PRIORITY AND SEQUENCING
 
 > Part of [the UniERP Development Programme](README.md). Read `README.md § 0` before editing.
-> This document decides **what order the 307 phases happen in, and why**. The brief listed ten
+> This document decides **what order the 308 phases happen in, and why**. The brief listed ten
 > objectives; it did not rank them. This is the ranking, with the reasoning, so that a future
 > agent can disagree with it deliberately instead of reordering it by accident.
 
@@ -26,7 +26,7 @@ run. Building 307 phases of feature work on top of that means every one of them 
 and the cost of discovering that later scales with how much was built in the meantime. A platform
 that holds payroll and patient records does not get to defer this.
 
-**The corollary, which matters just as much:** Track A is finite. It is 28 phases, not a
+**The corollary, which matters just as much:** Track A is finite. It is 29 phases, not a
 programme. It is not permission to spend a year on infrastructure. Its exit condition is
 precisely "every claim the platform makes is checked by something that can fail", and then it
 stops.
@@ -62,7 +62,7 @@ Solid arrows are hard blocks. A phase may not start until every upstream track's
 
 ```
                           ┌──────────────────────────────────────────┐
-                          │  A · FOUNDATION  (A01–A28)               │
+                          │  A · FOUNDATION  (A01–A29)               │
                           │  registry · gates · release · sandbox    │
                           └───┬──────────┬──────────┬────────────┬───┘
                               │          │          │            │

@@ -217,6 +217,39 @@ tool that would have caught D013, D004 and D005 is itself pointed at a path that
 
 ---
 
+### D019 · 🔴 High · Every repository's CI is a byte copy — `workflow_call` is used nowhere
+
+**Found:** 2026-08-07, by the propagation audit A14's exit criterion requires.
+**Fixed by:** a new phase — see § 2a below.
+
+**Reproduction:**
+
+```bash
+grep -l 'workflow_call' */.github/workflows/*.yml | wc -l    # → 0
+```
+
+`unierp-workspace/README.md` states the invariant this repository owns:
+
+> *"Every gate lives here as a reusable workflow — a repository declares **which** gates
+> apply, never **how** a gate works."*
+
+**No repository declares a reusable workflow, and none consumes one.** Every repo's `ci.yml`
+is an independent copy. `docs/ai/CHANGELOG.md` already recorded this once — *"0 of 9 workflows
+declare `workflow_call` — every repo CI is a copy, the exact § 1.1 failure § 4.6 claims to
+prevent"* — and it is unchanged.
+
+**Why this is High, and why it was found now.** It makes A07 and A08 far more expensive and
+inherently temporary: the `check-layer.mjs` gate must be fixed in 21 repositories by hand, the
+44 `if: hashFiles` guards in 23 repositories by hand, and nothing stops the next divergence.
+D013 exists *because* 21 copies of one step could drift from reality together and silently. A
+family of 30 hand-copied CI files will reproduce that class indefinitely.
+
+It is also the same shape as D006, which this audit was looking for: **a fix that does not
+survive being copied.** The mobile debris was deleted once in the monorepo and returned through
+extraction. Copied CI cannot be fixed once either.
+
+---
+
 ### D015 · 🟠 Medium · Every agent entrypoint in the family points at the retired monorepo
 
 **Found:** 2026-08-07, while building the vendor-agnostic agent workflow.
@@ -441,6 +474,7 @@ it was detected._
 | **D016** | 🔴 **Crit** | **70 % of test-suite volume cannot fail (`catch(e){expect(e).toBeDefined()}`), and CI excludes it. Blocks A06.** | L11–L14 | OPEN |
 | D017 | 🟠 Med | 86 non-test files exceed the 1,000-line hard ceiling `CODE_STANDARDS § 4` calls unjustifiable; nothing enforces it | L01, L07–L09 | OPEN |
 | D018 | 🟠 Med | `CODE_STANDARDS § 10`'s R13 lint rules (size, complexity, naming, silent catch, TODO discipline) were never implemented and had no phase | L01–L06 | OPEN |
+| **D019** | 🔴 High | **`workflow_call` used in 0 repos — every CI file is a hand copy, contradicting workspace's stated invariant. Makes A07/A08 30× and temporary.** | A29 | OPEN |
 
 ---
 

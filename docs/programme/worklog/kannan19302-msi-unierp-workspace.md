@@ -74,3 +74,12 @@ monorepo paths that do not exist in the polyrepo, so Storybook cannot build. Tha
 phase B13's deliverable, not A14's. Filed rather than scope-crept.
 ```
 
+### A01 · CLAIMED · 2026-08-07T14:41:03Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    feat/development-programme
+selected  explicitly requested
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

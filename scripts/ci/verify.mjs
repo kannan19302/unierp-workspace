@@ -153,7 +153,7 @@ const GATES = [
   },
   {
     name: "RLS verification",
-    why: "Every tenant table must carry a policy. BACKEND_SCHEMA § 4.4.",
+    why: "Every tenant table must carry a policy. BACKEND_SCHEMA § 4.4. A05 — the authoritative check lives in unierp-data (schema-derived, per-table, zero exemptions); this file's copy delegates to it rather than duplicating the logic (D019).",
     cmd: ["node", ["scripts/check-rls-verify.mjs"]],
     optional: true, // needs a live database; CI runs it as a hard gate
   },

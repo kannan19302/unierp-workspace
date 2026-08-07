@@ -1,74 +1,48 @@
 #!/usr/bin/env node
-// Quick verification for Track C — checks RLS state post-migration
-import { PrismaClient } from '@prisma/client';
+// RLS verification — DELEGATED to unierp-data (D019: gates are shared, never copied).
+//
+// The authoritative check lives in the repository that owns the schema, the
+// migrations and the live database proof: unierp-data/scripts/check-rls-verify.mjs.
+// It is schema-derived (re-derives every tenant table from the Prisma schemas on
+// every run), per-table (not a count — a count is how 16 camelCase tenantId tables
+// shipped with zero RLS while the old gate reported green), and exits 1 if a policy
+// is dropped from any single table.
+//
+// A previous copy of this file lived here with a count-based implementation that
+// matched only `tenant_id` columns. Phase A05 (RLS coverage sweep) replaced it:
+// copying a gate into the workspace is exactly the defect D019 names, because the
+// two copies drift — the workspace copy can never run anyway (it has no
+// @prisma/client), so it could only lie, not check.
+//
+// This delegation refuses to pass silently. If the sibling repo is not on disk,
+// it fails: a gate that reports green while checking nothing is the exact defect
+// this platform has been burned by three times.
 
-const prisma = new PrismaClient();
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-async function check() {
-  const [role] = await prisma.$queryRawUnsafe(
-    `SELECT rolname, rolbypassrls::int as bypass FROM pg_roles WHERE rolname = 'unerp_api'`
+const HERE = dirname(fileURLToPath(import.meta.url));
+const WORKSPACE = join(HERE, "..");
+const DATA_REPO = join(WORKSPACE, "..", "unierp-data");
+const DATA_GATE = join(DATA_REPO, "scripts", "check-rls-verify.mjs");
+
+if (!existsSync(DATA_GATE)) {
+  console.error(
+    `[check-rls-verify] The authoritative RLS gate is not on disk.\n` +
+      `  expected: ${DATA_GATE}\n` +
+      `  RLS verification is delegated to unierp-data (D019 — gates are shared, never copied).\n` +
+      `  Check out the sibling repository, or run the gate there directly:\n` +
+      `    cd unierp-data && node scripts/check-rls-verify.mjs`,
   );
-  console.log('Role unerp_api:', role ? `${role.rolname} (bypass=${role.bypass})` : 'NOT FOUND');
-
-  const [rlsCount] = await prisma.$queryRawUnsafe(
-    `SELECT count(*)::int as c FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity = true AND c.relname != '_prisma_migrations'`
-  );
-  console.log(`Tables with RLS enabled: ${rlsCount.c}`);
-
-  const [tenantCols] = await prisma.$queryRawUnsafe(
-    `SELECT count(*)::int as c FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'tenant_id'`
-  );
-  console.log(`Tables with tenant_id column: ${tenantCols.c}`);
-
-  const [rlsPolicies] = await prisma.$queryRawUnsafe(
-    `SELECT count(*)::int as c FROM pg_policies WHERE schemaname = 'public' AND policyname LIKE 'tenant_isolation_%'`
-  );
-  console.log(`RLS tenant_isolation policies: ${rlsPolicies.c}`);
-
-  const noRls = await prisma.$queryRawUnsafe(
-    `SELECT c.relname::text FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname != '_prisma_migrations' AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = c.relname AND column_name = 'tenant_id') AND c.relrowsecurity = false`
-  );
-  if (noRls.length > 0) {
-    console.log(`Tables WITH tenant_id but WITHOUT RLS: ${noRls.map(r => r.relname).join(', ')}`);
-  } else {
-    console.log('All tenant-scoped tables have RLS enabled — PASS');
-  }
-
-  // ── FORCE, not just ENABLE ────────────────────────────────────────────────
-  // BACKEND_SCHEMA § 4.4 and PLATFORM_ARCHITECTURE § 5.1 require ENABLE *and*
-  // FORCE. Without FORCE, the table owner — which is the role that runs
-  // migrations and seeds — is exempt from every policy, so a table can report
-  // "RLS enabled" and still return every tenant's rows to the owner. Checking
-  // only relrowsecurity proves the weaker half of the guarantee.
-  const notForced = await prisma.$queryRawUnsafe(
-    `SELECT c.relname::text FROM pg_class c
-       JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE n.nspname = 'public' AND c.relkind = 'r'
-        AND c.relname != '_prisma_migrations'
-        AND c.relrowsecurity = true
-        AND c.relforcerowsecurity = false`
-  );
-  if (notForced.length > 0) {
-    console.log(
-      `Tables with RLS ENABLED but not FORCED: ${notForced.map(r => r.relname).join(', ')}`
-    );
-  } else {
-    console.log('All RLS tables are FORCED — owner is not exempt — PASS');
-  }
-
-  // ── the app role must not be able to bypass ───────────────────────────────
-  // This was reported and then ignored: a role with rolbypassrls defeats every
-  // policy above it, so it is a failure, not a line of output.
-  const roleBypasses = !role || role.bypass !== 0;
-  if (!role) {
-    console.log('Role unerp_api does not exist — the application connects as something else');
-  } else if (role.bypass !== 0) {
-    console.log('Role unerp_api has BYPASSRLS — every policy above is decorative');
-  }
-
-  await prisma.$disconnect();
-  const exitCode = noRls.length > 0 || notForced.length > 0 || roleBypasses ? 1 : 0;
-  process.exit(exitCode);
+  process.exit(1);
 }
 
-check().catch(e => { console.error(e); prisma.$disconnect(); process.exit(1); });
+const r = spawnSync(process.execPath, [DATA_GATE], {
+  encoding: "utf8",
+  stdio: "inherit",
+  env: process.env,
+});
+
+process.exit(r.status === null ? 1 : r.status);

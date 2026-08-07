@@ -37,3 +37,11 @@ met and this must be released, not left DONE.
   $ node scripts/start.mjs --finish --evidence-file ev.txt
 ```
 
+### A05 · RELEASED · 2026-08-07T17:52:21Z · kannan19302@MSI/w
+
+```
+status → OPEN
+
+RETRACTION. A05 was claimed and finished only to verify that the ADP completion path works from a fresh clone of main — a path that had never been tested and turned out to be broken (check-repo-hygiene errored in a solo checkout, so verify.mjs was red and --finish refused). The exit criterion of A05 — check-rls-verify.mjs exiting 0 with zero exemptions across all 1,029+ tenant tables — was NOT met and no RLS work was done. Returning it to OPEN. The FINISH block above this one is a test artefact, not evidence.
+```
+

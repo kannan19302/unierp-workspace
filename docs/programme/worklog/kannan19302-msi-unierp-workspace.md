@@ -284,3 +284,93 @@ Re-running the § 3 verification greps after A17 lands must change their counts 
 0. That is the observable failure condition for A17, defined here.
 ```
 
+### A30 · FINISH · 2026-08-07T17:19:18Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs's Branch policy gate fails on any non-main branch check in this environment and its DB-backed gates need Postgres (psql MISSING). The four gates A30 actually touches were each run directly and are recorded above, including the deliberate break of the coverage check.
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE A30 — get main green; move each gate to the repo that owns its files
+
+--- 1. THE GAP, PROVEN BEFORE ANY CHANGE ---
+$ gh run list --branch main --workflow CI --limit 5
+  failure 2026-08-07T04:37 71555ffa   <- current HEAD
+  failure 2026-08-07T03:43 5d6c6715
+  failure 2026-08-07T03:43 6ff67933
+  failure 2026-08-06T01:35 4a32a981
+  failure 2026-08-05T20:13 5fa7abbb
+
+ci.yml's own contract: "no code with a failing check reaches main, and nothing
+merges red." Not held since extraction.
+
+--- 2. THE GAP WAS BIGGER THAN THE RED BUILD ---
+The rules name monorepo paths and files() returned [] for a missing directory, so
+EVERY rule silently reported 0. Gate vs grep on the same files:
+
+  gate: Hardcoded hex 0        grep: 309
+  gate: Hardcoded pixel 0      grep: 2315   <- the pre-extraction baseline exactly
+  gate: Float money 0          grep: 22     (unierp-data)
+  gate: Unsafe raw SQL 0       grep: 1 real call (3 comments correctly excluded)
+
+Sixteen rules printing clean over real debt. Only the HARD rule that had been made
+honest ("missing targets are now reported rather than skipped") failed — which is
+the entire reason anyone noticed.
+
+--- 3. THE FIX, AND WHY NOT PATH EDITS ---
+A gate in the orchestration repo cannot read a sibling's files: CI checks out one
+repository. Translated paths would pass locally, where siblings are on disk, and
+fail in CI forever.
+
+So each monorepo prefix declares its OWNING repo. A rule runs where its files are
+and is explicitly DELEGATED elsewhere — named in output, never counted, never
+baselined at 0. The script travels via .github/workflows/policy-gate.yml
+(on: workflow_call), called from unierp-api, unierp-web, unierp-idp, unierp-data.
+
+--- 4. IT NOW MEASURES REALITY ---
+$ POLICY_ROOT=D:/UniERP/unierp-web POLICY_REPO=unierp-web node scripts/ci/check-policy.mjs
+   ❌ Hardcoded hex colour in application code: 0 → 309 (+309)
+   ❌ Hardcoded pixel value in application code: 0 → 2315 (+2315)
+$ POLICY_ROOT=D:/UniERP/unierp-data POLICY_REPO=unierp-data ...
+   ·  Float used for a monetary field in the Prisma schema: 22
+Baselines re-seeded at those true counts and committed in each repo. Ratchets may
+only fall.
+
+$ node scripts/ci/check-policy.mjs          (in unierp-workspace)
+  ✅ Policy gate clean.   — with every off-repo rule listed as "delegated to <repo>"
+
+--- 5. DELEGATION CANNOT BECOME "ENFORCED NOWHERE" ---
+$ node scripts/ci/check-policy-coverage.mjs
+OK    4 owner repo(s) — each invokes the policy gate and carries a committed
+      ratchet baseline (verified on disk).
+
+BROKEN ON PURPOSE (removed unierp-web's caller):
+FAIL  unierp-web owns delegated policy rules but no workflow invokes
+      unierp-workspace/.github/workflows/policy-gate.yml. Those rules are enforced
+      NOWHERE — which is the state D024 described, moved rather than fixed.
+RESTORED: OK.
+
+--- 6. THREE BUGS I INTRODUCED, CAUGHT BY CHECKING THE GATE AGAINST A GREP ---
+a) read() re-translated the absolute paths files() returns -> join(ROOT,"D:/...")
+   -> every read returned "" -> every rule reported a clean 0. The exact failure
+   being fixed, reintroduced by the fix. Found by comparing gate output to grep.
+b) seedCandidates were pre-joined with ROOT, losing ownership, so the seed
+   reported MISSING in every repo instead of delegating to unierp-data.
+c) Delegation was per-RULE, so control-plane-seeded-to-tenant — spanning a seed in
+   unierp-data and an auth service in unierp-idp — was skipped whole on the first
+   delegation, leaving its idp half unchecked everywhere. Now per-target:
+   unierp-idp reports "✅ ... (also enforced in unierp-data)" and checks its half.
+
+--- 7. WIRED BOTH SIDES ---
+ci.yml guard job: "Policy-gate coverage"; verify.mjs gate: "Policy-gate coverage".
+Both, because ROADMAP's verify/CI divergence item exists for that reason.
+
+--- 8. WHAT IS NOT PROVEN ---
+The first exit clause — `gh run list --branch main` showing success — CANNOT be
+verified until this is merged, because it is a statement about main. Everything
+that can be checked before the merge has been, and is recorded above. If main is
+still red after merging, this phase is not done and must be reopened.
+```
+

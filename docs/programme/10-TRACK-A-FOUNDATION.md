@@ -32,9 +32,18 @@ silently.
 Nothing in this programme is reproducible until `@unerp/*` resolves from a registry a CI runner
 can reach. `ROADMAP.md` calls this *"the one thing that blocks the rest"* and it is still true.
 
+> **Amendment 2026-08-07 — the registry decision, and the mistake in it.** A01 chose the
+> public npm registry over GitHub Packages, *after* discovering that GitHub Packages cannot
+> host `@unerp/*` at all. The original recommendation cited `ROADMAP.md`'s "the obvious
+> candidate, since the OIDC-federated publish tokens already exist there" without checking
+> the scope constraint — GitHub Packages requires the npm scope to equal the account or
+> organisation owning the repository, and these repos are owned by the user `kannan19302`.
+> Recorded here rather than quietly corrected, because a plan that hides its own wrong turns
+> teaches nothing: **verify a platform constraint before recommending the platform.**
+
 | ID | Phase | Repos | Depends | Deliverable | Exit | Status |
 | :- | :---- | :---- | :------ | :---------- | :--- | :----- |
-| **A01** | Choose and stand up the `@unerp` registry | workspace, infra, all 18 with `.npmrc` | — | A registry CI can reach (GitHub Packages is the standing candidate — OIDC publish tokens already exist), with `.npmrc` updated in every repo and publish authority documented | `grep -l 'localhost:4873' */.npmrc` returns **0** files (currently 18), and a clean `pnpm install` on a runner resolves every `@unerp/*` package | WIP |
+| **A01** | Choose and stand up the `@unerp` registry | workspace, platform, all 18 with `.npmrc` + 13 libraries | — | **Decided 2026-08-07: the public npm registry.** GitHub Packages — named as the standing candidate here and in `ROADMAP.md` on the strength of its existing OIDC tokens — **cannot host this scope at all**: it requires the npm scope to equal the repository owner, and these repos are owned by the user `kannan19302` while the packages are `@unerp/*`. Deliverable: every `.npmrc` repointed, a reusable `publish-library.yml` called by each of the 13 publishable libraries, npm trusted publishing so no long-lived token exists, and publish authority documented | `grep -l 'localhost:4873' */.npmrc` returns **0** files (was 18) ✅, and a clean `pnpm install` on a runner resolves every `@unerp/*` package. The second half requires the `unerp` npm organisation to exist and a first publish to have run — until then this phase is WIP, not DONE, however complete the configuration looks | WIP |
 | **A02** | Standalone clean install for all 30 repos | all | A01 | Every repo installs and builds from a bare clone with no path escaping its root | For each repo: fresh clone → `pnpm install --frozen-lockfile` → `pnpm build` exits 0. Zero `workspace:*` outside a declared workspace (currently 1: `unierp-storybook`, D008). Zero `../../scripts/*` references | OPEN |
 | **A03** | Split `core.prisma` — close R2 for real | data | A01 | `core.prisma` decomposed by bounded context per `BACKEND_SCHEMA § 3`; the `Tenant` back-relation block (109 lines, permanent merge hotspot) resolved | **No `.prisma` file exceeds 3,000 lines** — R2's own stated criterion. Currently 31,092 (**D001**). `pnpm db:generate` produces an identical client; `prisma migrate diff` against the pre-split schema is empty | OPEN |
 | **A04** | Schema-size and duplicate-entity gate | workspace, data | A03 | A CI gate that fails on any schema file over 3,000 lines and on a model name that duplicates an existing entity by similarity | Adding a 3,001-line schema file fails CI. Adding a `Customer` model when `CrmCustomer` exists produces a warning naming both | OPEN |
@@ -115,3 +124,4 @@ mechanism.
 | Date | Change | By |
 | :--- | :----- | :- |
 | 2026-08-07 | Track established. 26 phases in three stages. A07–A09 and A12 added specifically in response to D013 — the layer gate that 21 repos declare and none contain. | Claude Code |
+| 2026-08-07 | A14 DONE. A01 amended: the public npm registry chosen after GitHub Packages was found unable to host the `@unerp` scope — the original recommendation repeated `ROADMAP.md`'s claim without checking the constraint. A27–A28 added (ADP's claim-branch contradiction and cross-repo registry); A29 added after A14's propagation audit found `workflow_call` used in zero repositories (D019). | Claude Code |

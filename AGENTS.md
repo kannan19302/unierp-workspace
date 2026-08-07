@@ -224,7 +224,35 @@ independent scaling or release profile. None currently does. Do not propose micr
 
 ---
 
-## 8. Licence
+## 8. Publishing `@unerp/*` — who may, and how
+
+Phase A01. **The public npm registry**, scope `@unerp`, 13 publishable libraries.
+
+| | |
+| :-- | :-- |
+| Registry | `https://registry.npmjs.org/` — declared in every repo's committed `.npmrc` |
+| Credentials | **None stored.** npm trusted publishing (OIDC) mints a short-lived token from the workflow's own identity |
+| Mechanism | `unierp-workspace/.github/workflows/publish-library.yml`, called by each library's 13-line `publish.yml` |
+| Trigger | pushing a `v*.*.*` tag in a library repo; `workflow_dispatch` for a dry run |
+| Authority | whoever can push a tag to a library repo. There is no separate publish credential to hold or lose |
+
+**Not GitHub Packages, and not for preference — it cannot host this scope.** GitHub Packages
+requires the npm scope to equal the account or organisation owning the repository. These
+repositories are owned by the user `kannan19302`; the packages are `@unerp/*`; no `unerp`
+organisation exists and the `unierp` one that does would still not match. `ROADMAP.md` had
+recommended it for its existing OIDC tokens, which was wrong.
+
+**Rules:**
+
+- **Never commit a registry token.** Fourteen were committed once, in fourteen public
+  repositories at the same time. Trusted publishing exists so there is nothing to commit.
+- **Never republish a version.** npm forbids it and the workflow checks first. Bump instead.
+- **Never publish a package declaring `workspace:*`.** It cannot resolve outside a workspace;
+  the workflow refuses. This is what made the extracted repos uninstallable.
+- **Do not inline publish steps into a library's `publish.yml`.** It declares *which* gate
+  applies; the logic lives once in the reusable workflow. Copying it is D019 all over again.
+
+## 9. Licence
 
 AGPL-3.0, every repository, no open-core carve-out. Tenant isolation, the sandbox and the audit
 trail are the parts most worth paying for, and withholding them would make the self-hosting claim

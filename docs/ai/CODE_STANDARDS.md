@@ -392,6 +392,32 @@ _can_ be a machine check _must_ be one. This table is the map — and the roadma
 > ~660k lines. Estimated 3 days. Until R13 lands, § 4 and the naming rules are enforced by
 > review alone — which means they will drift. Prioritise it.
 
+> **Amendment, 2026-08-07 — R13 now has phases, and this section's warning came true.** R13 was
+> never implemented, so § 4 and § 3 have been enforced by review alone since this document was
+> written. They drifted, exactly as predicted, and the measurement is worse than "drift":
+>
+> | § | Standard | Measured |
+> | :- | :------- | :------- |
+> | § 4 | Controller ≤ 300 lines (400 hard) | `advanced-finance.controller.ts` is **8,282** |
+> | § 4 | Service ≤ 500 (800 hard) | `inventory.service.ts` is **3,989** |
+> | § 4 | React component ≤ 200 (300 hard) | `connect/page.tsx` is **6,651** |
+> | § 4 | *"Nothing in this codebase justifies 1,000+ lines"* | **86 non-test files** exceed it |
+> | § 8 | No coverage-padding tests | **1,083 of 1,176** `it()` blocks in `*.coverage.spec.ts` are `catch (e) { expect(e).toBeDefined() }` — and CI excludes all 69 files |
+>
+> The § 8 row is the sharpest: *"A 23,000-line test file that raises a percentage without asserting
+> behaviour is worse than no test"* was written about
+> `unierp-api/src/modules/crm/tests/crm.service.coverage.spec.ts`, which is **23,285 lines** and
+> still in the tree.
+>
+> R13 is now **L01–L06** in [`docs/programme/21-TRACK-L-CODE-QUALITY.md`](../programme/21-TRACK-L-CODE-QUALITY.md);
+> the structural work is **L07–L10** and the test-quality work is **L11–L15**. Filed as D016–D018
+> in [`docs/programme/90-DEFECT-LOG.md`](../programme/90-DEFECT-LOG.md).
+>
+> **Note the sequencing consequence recorded there:** the coverage-threshold work (R6 / programme
+> A06) is now blocked on L11–L13, because switching on an 80 % threshold while the padding exists
+> would satisfy it with assertions that cannot fail — producing a believed number backed by
+> nothing, which is worse than the absent gate this document already criticises.
+
 ---
 
 ## 11. Refactoring rules
@@ -440,3 +466,4 @@ _can_ be a machine check _must_ be one. This table is the map — and the roadma
 | Date       | Change                                                                                                                                                   | By          |
 | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
 | 2026-07-31 | Document established as the 10th master file; the review checklist (§ 9) is now the standing review procedure; R13 filed for the unenforced rows in § 10 | Claude Code |
+| 2026-08-07 | § 10 amended: R13 was never implemented and its own warning ("they will drift") came true — 86 files over the 1,000-line ceiling, an 8,282-line controller, and 1,083 of 1,176 `it()` blocks in `*.coverage.spec.ts` unable to fail. R13 now has phases L01–L06, with L07–L15 for the structural and test-quality debt, and A06 (coverage thresholds) is now blocked on L11–L13. No standard changed; only its enforcement status is recorded. | Claude Code |

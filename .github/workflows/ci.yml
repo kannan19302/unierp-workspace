@@ -62,6 +62,17 @@ jobs:
           fi
           echo "✅ docs/ai holds exactly 10 master files"
 
+      # BLOCKING, and deliberately NOT guarded by `if: hashFiles(...)`. That guard is
+      # exactly how the layer gate came to be declared in 21 repositories and present
+      # in none (docs/programme/90-DEFECT-LOG.md D013) — a step that passes by being
+      # absent. If this script is missing, this job must fail.
+      #
+      # Enforces docs/programme/README.md § 0: a phase ID is permanent, a plan document
+      # is never regenerated or truncated, no phase loses its exit criterion, and no
+      # undeclared file enters the folder.
+      - name: Development programme integrity
+        run: node scripts/check-plan-integrity.mjs
+
       - name: CHANGELOG updated
         if: github.event_name == 'pull_request'
         run: |

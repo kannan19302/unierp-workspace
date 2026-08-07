@@ -71,7 +71,13 @@ install and every container build depends on a registry decision that has not be
 
 ---
 
-## 3. Repository inventory — 30 repos, by verified code volume
+## 3. Repository inventory — **26 live** repos, by verified code volume
+
+> **Corrected 2026-08-07 (D023).** This section said 30 and listed the four `unierp-app-*`
+> verticals with real file counts as though they were live. They are **archived on GitHub** and
+> read-only, superseded by `unierp-extensions/<vertical>` — where 2,249 source lines have been
+> replaced by 138. The count was wrong and the four rows below are retained with their archived
+> status rather than deleted, because the code in them is the input to E26's port.
 
 `find <repo> -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.dart' \) -not -path '*/node_modules/*'`
 
@@ -88,13 +94,13 @@ install and every container build depends on a registry decision that has not be
 | `unierp-data` | L2 | 37 | Prisma; **18 schema files**, **179 migrations**, separate IdP client. |
 | `unierp-framework` | L2 | 33 | The schema-driven runtime that renders 45 modules of CRUD. |
 | `unierp-blockchain` | — | 22 | |
-| `unierp-app-healthcare` | — | 21 | Vertical microservice. |
-| `unierp-app-realestate` / `-fieldservice` / `-education` | — | 12 each | Vertical microservices. |
+| `unierp-app-healthcare` | — | 21 | **ARCHIVED, read-only.** 881 lines superseded by a 37-line stub — D023. |
+| `unierp-app-realestate` / `-fieldservice` / `-education` | — | 12 each | **ARCHIVED, read-only.** 410/426/532 lines superseded by 26/39/36-line stubs — D023. |
 | `unierp-console` | L4 | 11 | **See § 4. Effectively unbuilt.** |
 | `unierp-extension-api` | L2 | 8 | 4 files, ~380 lines: `bundle`, `capabilities`, `schema`, `index`. |
 | `unierp-contracts` | L0 | 8 | `entities`, `events`, `http`. Depends on nothing. |
 | `unierp-storybook` | — | 4 | Config only. Still `workspace:*`. Has a `.storybook/.storybook/` nesting defect. |
-| `unierp-extensions` | L6 | 4 | Four verticals, **one `src/index.ts` each**. |
+| `unierp-extensions` | L6 | 4 | Four verticals, **one `src/index.ts` each (26–39 lines)** — the live replacements for the archived `unierp-app-*` repos, and the reason D023 is High. |
 | `unierp-auth` | L1 | 4 | |
 | `unierp-service-kit` | L1 | 3 | |
 | `unierp-sandbox` | L2 | 3 | **393 lines.** The V8-isolate guarantee the whole extension model rests on. |
@@ -106,7 +112,7 @@ install and every container build depends on a registry decision that has not be
 | `unierp-platform` | — | 0 | Umbrella: README, ARCHITECTURE, ROADMAP, GOVERNANCE, profile. |
 | `unierp-corporate-site-template` | — | 0 | **`package.json` and licence only. Unbuilt.** |
 
-**All 30 are independent git repositories.** None is a submodule; there is no local monorepo.
+**All 30 directories are independent git repositories — but only 26 are live.** None is a submodule; there is no local monorepo. The four archived ones return 403 on push, so tooling skips them (`check-repo-hygiene.mjs`, `sync-agent-entrypoints.mjs`).
 
 ---
 

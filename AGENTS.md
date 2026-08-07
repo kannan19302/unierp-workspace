@@ -18,7 +18,7 @@ node scripts/start.mjs
 That is the whole entry point. It resolves where the project is, picks the next phase, **claims it
 with a pushed commit so no other agent takes it**, and prints a complete work order.
 
-The development programme is **307 phases across 20 documents**. Reading it is not how you use it,
+The development programme is **308 phases across 20 documents**. Reading it is not how you use it,
 and an agent that reads it *partially* is worse than one that has not read it at all — it produces
 work that contradicts a phase it never opened.
 
@@ -172,7 +172,7 @@ so you know what exists and do not recreate it.
 | `docs/programme/01-PRIORITY-AND-SEQUENCING.md` | Why the order is the order. The wave plan. |
 | `docs/programme/02-EXECUTION-GUIDELINES.md` | Phase anatomy, definition of done, the module rubric. |
 | `docs/programme/03-GAP-ANALYSIS.md` | What the original brief missed and why it matters. |
-| `docs/programme/10-…-21-TRACK-*.md` | The 307 phases, in 12 tracks. |
+| `docs/programme/10-…-21-TRACK-*.md` | The 308 phases, in 12 tracks. |
 | `docs/programme/90-DEFECT-LOG.md` | **Append-only.** Where your findings go. |
 | `docs/programme/WORKLOG.md` | **Written by `start.mjs`, never by hand.** Who holds what, how far they got, and the evidence a phase was finished on. |
 | `docs/ai/README.md` | The law of the governance set. Exactly ten files, forever. |

@@ -36,6 +36,16 @@ const only = (() => {
   return i === -1 ? null : process.argv[i + 1];
 })();
 
+/** Archived on GitHub — cannot be pushed to, so writing an entrypoint into one is a file
+ *  nobody can commit. Superseded by unierp-extensions/<vertical>; see D023, because that
+ *  supersession moved the name and not the code. */
+const ARCHIVED = new Set([
+  "unierp-app-education",
+  "unierp-app-fieldservice",
+  "unierp-app-healthcare",
+  "unierp-app-realestate",
+]);
+
 const SELF = basename(WORKSPACE);
 const CANON = "https://github.com/kannan19302/unierp-workspace/blob/main/AGENTS.md";
 
@@ -92,7 +102,7 @@ one governing set for the whole platform and it lives in the **\`unierp-workspac
 
 - **[\`AGENTS.md\`](${CANON})** — the operating contract for every coding agent, whichever vendor
 - \`docs/ai/\` — the ten governance documents (product, technical, flow, design, schema, standards)
-- \`docs/programme/\` — the 307-phase development plan
+- \`docs/programme/\` — the 308-phase development plan
 ${
   track
     ? `\nThis repository's work is mostly **Track ${track[0]}**: \`docs/programme/${track[1]}\`.\n`
@@ -107,7 +117,7 @@ node scripts/start.mjs        # picks the next phase, CLAIMS it, prints the work
 node scripts/start.mjs --who  # what other agents are holding right now
 \`\`\`
 
-The plan is 307 phases across 20 documents. An agent that reads it partially produces work that
+The plan is 308 phases across 20 documents. An agent that reads it partially produces work that
 contradicts a phase it never opened, which is worse than not reading it. \`start.mjs\` extracts
 exactly one phase — and claims it with a pushed commit, so two agents never take the same work.
 
@@ -118,6 +128,25 @@ node scripts/start.mjs --progress "what is done, what is next"
 node scripts/start.mjs --finish --evidence-file ev.txt
 node scripts/start.mjs --release "why blocked"
 \`\`\`
+
+## First time here? Two commands
+
+\`\`\`bash
+git clone https://github.com/kannan19302/unierp-workspace.git
+cd unierp-workspace && node scripts/start.mjs
+\`\`\`
+
+## Running alongside other agents
+
+ADP's lock is a **pushed commit**, so it only works between agents that share one branch.
+Two agents on two different feature branches cannot see each other's claims and will take
+the same phase. That is a known limitation with a phase of its own (A27); until it lands:
+
+- **One agent per working tree.** \`node scripts/worktree.mjs new <slug>\` gives you your own.
+  Two agents in one tree overwrite each other's files no matter what ADP does.
+- **All agents on the same branch**, so claims are mutually visible.
+- \`node scripts/start.mjs --who\` before you begin. If someone holds the phase you wanted,
+  pick another — do not work it anyway.
 
 ## The rule that matters more than any other
 
@@ -189,7 +218,8 @@ const repos = readdirSync(FAMILY)
       return false;
     }
   })
-  .filter((d) => (only ? d === only : true));
+  .filter((d) => (only ? d === only : true))
+  .filter((d) => !ARCHIVED.has(d));
 
 if (!repos.length) {
   console.error(`sync-agent-entrypoints: no sibling repos found under ${FAMILY}`);

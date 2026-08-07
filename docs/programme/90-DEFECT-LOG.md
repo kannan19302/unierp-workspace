@@ -148,6 +148,53 @@ L11–L12.** This dependency was missing from the plan as first written and is n
 
 ---
 
+### D023 · 🔴 High · The four verticals were archived before their code moved
+
+**Found:** 2026-08-07, when pushing agent entrypoints returned 403 on four repositories.
+**Fixed by:** [E26](14-TRACK-E-BUSINESS-APPS.md), whose scope this changes materially.
+
+`unierp-app-education`, `-fieldservice`, `-healthcare` and `-realestate` are **archived on
+GitHub**. Their description reads: *"Superseded by unierp-extensions/education — archived. The
+four first-party verticals now live in github.com/kannan19302/unierp-extensions."*
+
+**The supersession moved the name and not the code.**
+
+| Archived repo | Source lines | Replacement | Lines |
+| :------------ | -----------: | :---------- | ----: |
+| `unierp-app-education` | 532 | `unierp-extensions/education` | **36** |
+| `unierp-app-healthcare` | 881 | `unierp-extensions/healthcare` | **37** |
+| `unierp-app-fieldservice` | 426 | `unierp-extensions/field-service` | **39** |
+| `unierp-app-realestate` | 410 | `unierp-extensions/real-estate` | **26** |
+
+**Reproduction:**
+
+```bash
+gh api repos/kannan19302/unierp-app-healthcare --jq .archived        # → true
+find unierp-app-healthcare -name '*.ts' -not -path '*/node_modules/*' | xargs wc -l | tail -1
+wc -l unierp-extensions/healthcare/src/index.ts                      # → 37
+```
+
+`unierp-app-healthcare` contains `clinical.controller.ts`, `clinical.service.ts`,
+`core-client.ts`, `app.module.ts`, bundle-build scripts and a Prisma config. Its replacement is
+one 37-line `index.ts`. **2,249 source lines across the four are archived behind a read-only
+flag, and 138 lines stand in their place.**
+
+**Two consequences:**
+
+1. **The code is not lost but it is not reachable either** — archived repos are read-only, so the
+   only way forward is to port from the archive into `unierp-extensions`. Nobody can push a fix
+   to the archive, which is correct, but it means the vertical functionality currently ships
+   nowhere.
+2. **`00-BASELINE § 3` is wrong about the family size.** It describes 30 repositories and lists
+   these four with real file counts as though they were live. **26 are live.** Corrected there.
+
+**E26's scope changes:** its text said the extracted vertical services should become *"genuinely
+functional rather than 12-file shells."* The 12-file versions are archived; the live versions are
+one-file shells. E26 is now a **port**, from the archive into `unierp-extensions`, against the
+extension API — not a deepening of code that is already in place.
+
+---
+
 ### D020 · 🔴 CRITICAL · The extension kill switch is per-process, so it does not work in production
 
 **Found:** 2026-08-07 by phase A16's threat model. **Fixed by:** [A17](10-TRACK-A-FOUNDATION.md).
@@ -575,6 +622,7 @@ it was detected._
 | **D020** | 🔴 **Crit** | **Extension kill switch is per-process and unpersisted — an operator using it in an incident would see it succeed while the extension kept running** | A17 | OPEN |
 | **D021** | 🔴 **Crit** | **Egress "allowlist" is a hostname string match — DNS rebinding reaches cloud metadata and localhost; redirects unchecked; no scheme restriction** | A17 | OPEN |
 | **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | OPEN |
+| **D023** | 🔴 High | **The 4 verticals are archived on GitHub; 2,249 source lines replaced by 138. The supersession moved the name, not the code. Family is 26 live repos, not 30.** | E26 | OPEN |
 
 ---
 

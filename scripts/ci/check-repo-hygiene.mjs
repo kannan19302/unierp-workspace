@@ -64,6 +64,22 @@ const EXEMPT = {
   "unierp-mobile": { "exemptions.md": "Tier-4 client-parity exemptions, referenced by the parity gate" },
 };
 
+/**
+ * Repositories archived on GitHub. They cannot be pushed to (403), so a finding in one is
+ * unactionable — and scanning them inflates the repo count this gate reports, which is how
+ * 00-BASELINE came to describe a 30-repo family when 26 are live.
+ *
+ * These four were superseded by unierp-extensions/<vertical>. That supersession is incomplete
+ * and is filed as D023: the archived repos hold 410-881 source lines each; their replacements
+ * hold 26-39. Do not work in them — the code has to move forward, not be edited in place.
+ */
+const ARCHIVED = new Set([
+  "unierp-app-education",
+  "unierp-app-fieldservice",
+  "unierp-app-healthcare",
+  "unierp-app-realestate",
+]);
+
 const argv = process.argv.slice(2);
 const only = (() => {
   const i = argv.indexOf("--repo");
@@ -86,7 +102,8 @@ const repos = readdirSync(FAMILY)
       return false;
     }
   })
-  .filter((d) => (only ? d === only : true));
+  .filter((d) => (only ? d === only : true))
+  .filter((d) => only === d || !ARCHIVED.has(d));
 
 if (!repos.length) {
   console.error(`check-repo-hygiene: no git repositories found under ${FAMILY}`);
@@ -143,5 +160,6 @@ if (findings.length) {
 }
 
 console.log(
-  `OK    ${repos.length} repositories; no scratch files or self-nested config at any root.`,
+  `OK    ${repos.length} live repositories; no scratch files or self-nested config at any root.` +
+    ` (${ARCHIVED.size} archived, skipped — see D023.)`,
 );

@@ -176,3 +176,12 @@ status → BLOCKED
 Configuration complete and pushed across 21 PRs; the first half of the exit criterion passes (18 -> 0 localhost .npmrc). Blocked on three account actions no agent can perform: create the npm org 'unerp', enable trusted publishing for the 13 packages, and tag a first release. Resume with: node scripts/start.mjs --phase A01
 ```
 
+### A01 · CLAIMED · 2026-08-07T14:58:49Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    feat/development-programme
+selected  lowest READY phase in Wave 0
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

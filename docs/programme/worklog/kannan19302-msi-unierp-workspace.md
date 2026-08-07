@@ -383,3 +383,94 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### A05 · FINISH · 2026-08-07T19:03:48Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   A05
+STATUS  DONE
+REPOS   unierp-data, unierp-workspace
+
+PROVEN — the exit criterion, three ways.
+
+(1) Before: the count-based gate could not fail while the real gap stood.
+    Commands and observed output (run before any fix):
+      - old workspace scripts/check-rls-verify.mjs over the live DB:
+        "All tenant-scoped tables have RLS enabled — PASS" ... "All RLS tables are
+        FORCED — PASS" ... exited 0, even though 16 tables had rls=false,
+        forced=false, policies=NONE.
+      - the schema-derived check in its broken/real state reported the actual gap:
+        33 blocking issues (16 camelCase tables + auth_api_tokens missing table
+        + 16 DB-side duplicates).
+
+(2) After: schema-derived, per-table, zero-exemptions check exits 0.
+    Command:
+      $env:DATABASE_URL="postgresql://unerp:unerp_password@localhost:5432/unerp_dev"
+      node scripts/check-rls-verify.mjs   (in unierp-data)
+    Output (last run):
+      RLS verification — schema-derived, per-table
+        expected tenant tables (from schema): 1796
+        F5 tables confirmed individually:     364/364
+        failures:                             0
+      ✅ Zero exemptions — every tenant table carries RLS + FORCE + a
+         tenant_isolation policy.
+      EXIT=0
+
+(3) Broken on purpose: drop one policy, the check must exit 1 and name it.
+    Command:
+      node probe-drop.mjs  # DROP POLICY IF EXISTS tenant_isolation_vmi_orders ON "vmi_orders"
+      node scripts/check-rls-verify.mjs
+    Output:
+      failures: 2
+      ❌ vmi_orders: rls=true forced=true policy=tenant_isolation_vmi_orders (MISSING)
+      ❌ DB table "vmi_orders" has tenant column "tenantId" but ... policy=MISSING
+      EXIT=1
+    Then restored the policy and re-ran: EXIT=0, failures 0.
+
+(4) Functional isolation proven over the non-bypass role on a formerly
+    unprotected camelCase table (tenant_lifecycle_events):
+      tenant A sees rows: 1 (expect 1)
+      tenant B sees rows: 1 (expect 1)
+      no tenant sees rows: 0 (expect 0)
+    Plus the integration suite now covers tenantId columns and includes a
+    camelCase two-tenant isolation suite:
+      npx vitest run src/tenant-rls-integration.test.ts → 21 passed
+
+(5) Delegation (workspace, D019): the copied count-based gate is replaced by a
+    delegation that runs unierp-data/scripts/check-rls-verify.mjs.
+      node scripts/check-rls-verify.mjs  (in unierp-workspace) → EXIT=0
+      and with the sibling repo missing it fails loudly: "The authoritative RLS
+      gate is not on disk." → EXIT=1
+    verify.mjs local gate: "All gates green — 10 passed, 0 skipped, 9 DELEGATED".
+
+BUILT
+  unierp-data
+    - scripts/check-rls-verify.mjs        (new: schema-derived, per-table, zero exemptions)
+    - scripts/f5-rls-tables.mjs           (new: embedded 364-table F5 constant)
+    - prisma/migrations/20260808010000_rls_camelcase_tenant_tables/migration.sql
+    - prisma/migrations/20260808020000_create_auth_api_tokens/migration.sql
+    - src/tenant-rls-integration.test.ts  (coverage now matches tenant_id AND tenantId;
+                                           new camelCase isolation suite)
+    - .github/workflows/ci.yml            (hard, non-skippable `rls` job with postgres service)
+  unierp-workspace
+    - scripts/check-rls-verify.mjs        (replaced copied gate with delegation — D019)
+    - scripts/ci/verify.mjs               (RLS gate now names the delegation)
+    - docs/ai/CHANGELOG.md                (one line)
+
+DoD
+  - exit criterion passes and observed failing on a deliberate break: YES (shown above)
+  - check-rls-verify.mjs + check-pii-registry.mjs pass: check exits 0; pii gate untouched
+  - two-tenant test proving tenant B gets ZERO rows: existing suite + new camelCase suite
+  - migration discipline: both new migrations matched to schema; check-plan-integrity passes
+  - CI hard gate, no hashFiles guard: YES
+  - workspace gate not copied (D019): replaced with delegation
+  - one CHANGELOG line appended: YES
+
+FOUND
+  - (logged in changelog) The auth_api_tokens table was declared in
+    idp-schema.prisma but no migration ever created it — a tenant table that
+    "exists" in the schema and client with no table in the DB. The schema-derived
+    check now surfaces this class automatically.
+```
+

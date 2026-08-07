@@ -93,27 +93,62 @@ const trackedRoot = (dir) => {
   return r.stdout.split("\n").map((l) => l.trim()).filter((l) => l && !l.includes("/"));
 };
 
-const repos = readdirSync(FAMILY)
-  .filter((d) => d.startsWith("unierp-"))
-  .filter((d) => {
-    try {
-      return statSync(join(FAMILY, d)).isDirectory() && existsSync(join(FAMILY, d, ".git"));
-    } catch {
-      return false;
-    }
-  })
-  .filter((d) => (only ? d === only : true))
-  .filter((d) => only === d || !ARCHIVED.has(d));
+/**
+ * Siblings when they are on disk; otherwise just this repository.
+ *
+ * The first version required the checkout directory to be named `unierp-*` and errored
+ * with "no git repositories found" otherwise. That is true in CI, where the checkout is
+ * named after the repo, and false for anyone who clones into a differently named folder —
+ * which a vendor agent doing `git clone <url> w` does by default. verify.mjs then went red,
+ * `start.mjs --finish` refused to mark anything DONE, and every agent would have been
+ * pushed into `--despite-red-gate` on every phase. Found by running the flow from a fresh
+ * clone rather than assuming it worked.
+ *
+ * A single-repo checkout is the NORMAL case, not an error. What it cannot do is check
+ * siblings, and that is stated rather than implied.
+ */
+const SELF_DIR = (() => {
+  const r = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+    cwd: join(HERE, "..", ".."),
+    encoding: "utf8",
+  });
+  return r.status === 0 ? r.stdout.trim() : join(HERE, "..", "..");
+})();
+
+const siblings = (() => {
+  try {
+    return readdirSync(FAMILY)
+      .filter((d) => d.startsWith("unierp-"))
+      .filter((d) => {
+        try {
+          return statSync(join(FAMILY, d)).isDirectory() && existsSync(join(FAMILY, d, ".git"));
+        } catch {
+          return false;
+        }
+      });
+  } catch {
+    return [];
+  }
+})();
+
+const SOLO = siblings.length === 0;
+
+const repos = (SOLO ? [SELF_DIR] : siblings.map((d) => join(FAMILY, d)))
+  .filter((d) => (only ? basename(d) === only : true))
+  .filter((d) => only === basename(d) || !ARCHIVED.has(basename(d)));
 
 if (!repos.length) {
-  console.error(`check-repo-hygiene: no git repositories found under ${FAMILY}`);
+  console.error(
+    `check-repo-hygiene: nothing to check.${only ? ` No repository named "${only}".` : ""}`,
+  );
   process.exit(1);
 }
 
 const findings = [];
 
-for (const repo of repos) {
-  const files = trackedRoot(join(FAMILY, repo));
+for (const repoPath of repos) {
+  const repo = basename(repoPath);
+  const files = trackedRoot(repoPath);
   if (files === null) continue;
   if (LIST) {
     console.log(`\n${repo}`);
@@ -135,8 +170,9 @@ if (LIST) process.exit(0);
 // A nested config directory named after its parent is always a mistake, and `ls` without
 // -a does not reveal it — which is how unierp-storybook/.storybook/.storybook/ survived
 // with two divergent copies of main.ts and preview.ts (D007).
-for (const repo of repos) {
-  const dir = join(FAMILY, repo);
+for (const repoPath of repos) {
+  const repo = basename(repoPath);
+  const dir = repoPath;
   for (const d of [".storybook", ".github", ".vscode", ".husky"]) {
     if (existsSync(join(dir, d, d))) {
       findings.push({ repo, file: `${d}/${d}/`, why: "config directory nested inside itself" });
@@ -159,7 +195,17 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log(
-  `OK    ${repos.length} live repositories; no scratch files or self-nested config at any root.` +
-    ` (${ARCHIVED.size} archived, skipped — see D023.)`,
-);
+if (SOLO) {
+  console.log(
+    `OK    ${basename(SELF_DIR)} only — no scratch files, no self-nested config.
+` +
+      `      Siblings are not on disk, so THIS RUN CHECKED ONE REPOSITORY. Each repo's own
+` +
+      `      CI runs the same gate over itself; the family-wide sweep needs a full checkout.`,
+  );
+} else {
+  console.log(
+    `OK    ${repos.length} live repositories; no scratch files or self-nested config at any root.` +
+      ` (${ARCHIVED.size} archived, skipped — see D023.)`,
+  );
+}

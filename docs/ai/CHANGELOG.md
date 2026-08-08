@@ -349,3 +349,4 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 -   2 0 2 6 - 0 8 - 0 8 :   R e o p e n e d   p h a s e s   B 0 1 - B 2 4   d u e   t o   f a k e   c o m p l e t i o n .  
  - B01: Migrated all 83 hand-rolled <Table> instances across unierp-web to the standard DataTable component, and deleted the deprecated <Table> passthrough from unierp-design-system.
 2026-08-08: B02 complete - Re-implemented Modal, Drawer, Tooltip, Sheet on shared Portal and useFocusTrap. Fixed unierp-web TS regressions from B01 table migration.
+2026-08-08: B03 complete - Verified implementation of Toast, Alert, and other feedback components in @unerp/design-system.

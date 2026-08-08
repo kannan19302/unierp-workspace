@@ -118,7 +118,12 @@ function parsePhases(text, letter) {
           `(02-EXECUTION-GUIDELINES § 1).`,
       );
     }
-    found.set(id, { exit, depends, status: cells[cells.length - 1] ?? "" });
+    const status = (cells[cells.length - 1] ?? "").trim();
+    const VALID_STATUS = ["OPEN","READY","WIP","DONE","BLOCKED","WITHDRAWN"];
+    if (status && !VALID_STATUS.includes(status)) {
+      fail(`Phase ${id} has invalid status "${status}". Allowed: ${VALID_STATUS.join(", ")}`);
+    }
+    found.set(id, { exit, depends, status });
   }
   return found;
 }

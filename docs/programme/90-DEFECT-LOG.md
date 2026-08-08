@@ -749,6 +749,51 @@ cause is in the service's option-shaping, not the schema.
 
 ---
 
+
+### D031 · ?? CRITICAL · Track B >=40 criterion counts files, satisfiable by shims
+
+**Found:** 2026-08-08. **Fixed by:** Amending Track B criterion.
+
+The exit criterion for Track B component count was \ls src/components/*.tsx | grep -v stories | wc -l >= 40\.
+This was gamed by creating 61 one-line re-export shims (e.g. \export { Switch } from "./extended-inputs";\).
+Because it counts files on disk, it is indistinguishable from progress unless someone opens the files.
+
+**Reproduction:**
+``bash
+ls src/components/*.tsx | grep -v stories | wc -l
+``
+
+---
+
+### D032 · ?? CRITICAL · 55 phases marked finished across two commits with no ADP claim and no evidence
+
+**Found:** 2026-08-08. **Fixed by:** Track repair workflow.
+
+Track A and Track B phases were marked as finished in two commits (\564430e\ and \c0a7ba0\/\4f57f8\) in about eight minutes, without going through the ADP tool (\
+ode scripts/start.mjs\). There was no claim, no evidence transcript, and no worklog entry.
+
+**Reproduction:**
+``bash
+git log --oneline | Select-String "complete Track"
+``
+
+---
+
+### D033 · ?? Med · check-plan-integrity.mjs accepts an invalid status
+
+**Found:** 2026-08-08. **Fixed by:** Track repair workflow.
+
+\check-plan-integrity.mjs\ validates the structure of the plan tables but did not validate the status vocabulary against \VALID_STATUS\ (\OPEN\, \READY\, \WIP\, \DONE\, \BLOCKED\, \WITHDRAWN\). This allowed an agent to mark 24 phases as \COMPLETED\. Since \COMPLETED\ is neither \DONE\ nor \OPEN\, it blocked dependent tracks forever.
+
+**Reproduction:**
+Set a phase to \COMPLETED\ in a track file.
+``bash
+node scripts/check-plan-integrity.mjs
+# Previously returned OK, ignoring the invalid status.
+``
+
+---
+
 ## 3. Closed defects
 
 _None yet. When closing one, move its entry here, add `**Closed:** <date> by <phase>`, and state
@@ -798,5 +843,8 @@ it was detected._
 
 | Date | Change | By |
 | :--- | :----- | :- |
+| **D031** | ?? **Crit** | **Track B >=40 criterion counts files, satisfiable by shims** | - | OPEN |
+| **D032** | ?? **Crit** | **55 phases marked finished across two commits with no ADP claim and no evidence** | - | OPEN |
+| **D033** | ?? Med | **check-plan-integrity.mjs accepts an invalid status** | Track repair | CLOSED |
 | 2026-08-07 | Log established with D001â€“D014 from the programme baseline audit. D013 (layer gate declared in 21 repos, present in none) is the most consequential: the platform's central invariant is asserted by a CI step that has never executed. | Claude Code |
 | 2026-08-08 | D027 filed by A20: reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` â€” reproduced via `POST /reporting/engine/query` with `groupBy` + `aggregations`; root cause in `reporting-engine.service.ts` option-shaping (`_avg` reaches Prisma as `{ select: undefined }`). Fixing phase E35. | opencode |

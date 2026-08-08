@@ -366,3 +366,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (C03):** Control-plane audit log — added immutable, tamper-evident ControlPlaneAuditLog to schema; created ControlPlaneAuditService in API with hash-chaining verification; wired into SuperAdminService for tenant provisioning and updates; verified by test that mutation fails to log if transaction aborts, and chain breakage is detected. Phase DONE.
 
 - **2026-08-08 (C04):** Two-person control — added TwoPersonControlGuard and @TwoPersonControl decorator; applied to tenant purge, export, platform backups, and key rotation. Requires valid x-approval-token or raises an audited ControlPlaneReviewTask on break-glass. Phase DONE.
+
+- **2026-08-08 (C05):** Operations dashboard — added getDashboardSummary in OperationsService to return Grafana links, queue depth, outbox lag, and degraded tenants. Endpoint exposed as GET /platform/v1/operations/dashboard. Phase DONE.

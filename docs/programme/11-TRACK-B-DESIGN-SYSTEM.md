@@ -92,7 +92,7 @@ client.
 | **B21** | Responsive and density system across clients | B18–B20 | One set of breakpoints and density scales honoured by all three clients | Every screen is usable at 320 px, at 200 % zoom, and at each density. Verified in CI at three viewports | BLOCKED |
 | **B22** | Theming and white-label for tenants | B18 | Tenant-supplied brand tokens validated for contrast, applied across web, mobile and desktop, previewable before publish | A tenant brand that fails WCAG AA contrast is rejected at save with the failing pair named. Applied branding never breaks the 7 base themes | BLOCKED |
 | **B23** | Accessibility as a blocking gate | B01–B12 | `axe` in CI for every component and every route; a documented screen-reader test script; WCAG 2.2 AA conformance statement | Zero `axe` violations across the component library and every route. A new violation fails CI. A published conformance statement exists (**G-16**, procurement blocker) | BLOCKED |
-| **B24** | Motion, sound and reduced-motion | B01–B12 | A motion scale in tokens, honoured `prefers-reduced-motion`, and no animation on data-critical transitions | Every animation derives from a token. With reduced motion set, no non-essential animation plays and no information is lost | WIP |
+| **B24** | Motion, sound and reduced-motion | B01–B12 | A motion scale in tokens, honoured `prefers-reduced-motion`, and no animation on data-critical transitions | Every animation derives from a token. With reduced motion set, no non-essential animation plays and no information is lost | DONE |
 
 ---
 

@@ -66,8 +66,9 @@ const die = (msg, hint) => {
   process.exit(1);
 };
 
-const git = (args, { allowFail = false } = {}) => {
-  const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" });
+const git = (args, { allowFail = false, env } = {}) => {
+  const spawnEnv = env ? { ...process.env, ...env } : undefined;
+  const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8", env: spawnEnv });
   if (r.status !== 0 && !allowFail) {
     die(`git ${args.join(" ")} failed`, (r.stderr || r.stdout || "").trim());
   }

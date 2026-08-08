@@ -105,6 +105,9 @@ jobs:
       - name: Architecture audit
         run: node scripts/ci/audit-architecture.mjs
 
+      - name: Schema size and duplicate entity gate
+        run: node scripts/check-schema-size.mjs
+
       # BLOCKING. Phase A30 / D024. check-policy.mjs delegates a rule to the repository
       # that owns its files — this asserts each of those repositories actually runs the
       # gate and carries a committed ratchet baseline. Without it, delegation becomes a

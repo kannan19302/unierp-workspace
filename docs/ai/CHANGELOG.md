@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[data] feat(db): phases A03 & A04 DONE — decomposed core.prisma into bounded-context schema files (all under 2,200 lines, resolving R2/D001) and added scripts/check-schema-size.mjs CI gate for schema size (<3,000 lines) and entity duplication detection.` · Claude Code
+
 - `[infra] ops(alerting): phase A13 DONE — verified alert routing and on-call rehearsal via rehearse-alert-routing.mjs and webhook-receiver.mjs, recording time-to-detect in INCIDENT-RESPONSE.md.` · Claude Code
 
 - `[workspace] ci(architecture): phases A11 & A12 DONE — retargeted audit-architecture.mjs to polyrepo paths (resolving D014) and built scripts/check-doc-truth.mjs to fail CI when documented script paths/gates do not exist.` · Claude Code

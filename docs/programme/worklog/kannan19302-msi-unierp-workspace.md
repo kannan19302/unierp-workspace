@@ -1420,3 +1420,33 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B15 · FINISH · 2026-08-08T06:26:41Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy gate fails in local sandbox
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE: B15
+EXIT CRITERION: CI fails on any literal hex, rgb(), or px in a consuming repo's styles.
+  Adding color: #fff to any page in unierp-web fails CI. Baseline of existing violations recorded and ratcheted down, never up.
+
+FAIL (before):
+  No token enforcement gate script ran in CI pipeline.
+
+PASS (after):
+  scripts/ci/check-token-violations.mjs scans unierp-web/app and unierp-web/src.
+  Current baseline recorded in scripts/ci/token-violations-baseline.json with maxAllowedViolations: 857.
+  Running `node scripts/ci/check-token-violations.mjs` outputs:
+  "[Token Enforcement Gate] Total literal color/px violations found: 857 (Allowed baseline ceiling: 857)
+  ? Token enforcement gate passed."
+
+DELIBERATE BREAK:
+  Lower baseline ceiling in token-violations-baseline.json to 800:
+  - Total violations 857 > 800 allowed ceiling
+  - Script logs "? Token enforcement failed: Found 857 literal color/px styles, exceeding allowed baseline of 800."
+  - Exit code 1 (fails CI)
+```
+

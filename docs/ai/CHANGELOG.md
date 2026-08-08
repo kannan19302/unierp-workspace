@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[infra] ops(alerting): phase A13 DONE — verified alert routing and on-call rehearsal via rehearse-alert-routing.mjs and webhook-receiver.mjs, recording time-to-detect in INCIDENT-RESPONSE.md.` · Claude Code
+
 - `[workspace] ci(architecture): phases A11 & A12 DONE — retargeted audit-architecture.mjs to polyrepo paths (resolving D014) and built scripts/check-doc-truth.mjs to fail CI when documented script paths/gates do not exist.` · Claude Code
 
 - `[all] ci(architecture): phase A07 DONE — implemented scripts/check-layer.mjs across all 21 layer-guarded repositories, enforcing layer-ordering invariants mechanically without skip guards.` · Claude Code

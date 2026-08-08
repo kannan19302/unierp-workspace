@@ -13,3 +13,40 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### A22 · FINISH · 2026-08-08T00:34:15Z · kannan19302@MSI/ERPSys-a22-backup
+
+```
+verify.mjs: PASS
+
+A22 exit criterion: "A full restore rehearsal is logged with measured RTO and RPO.
+`verify-backup.mjs` runs on a schedule and fails loudly (G-11)."
+
+PASS (criterion command — full rehearsal, real live backup, clean disposable DB, timed/logged):
+  > node scripts/rehearse-restore.mjs
+  Taking backup: node scripts/backup-database.mjs --label a22-rehearsal
+  backup written: var/backups/unerp_dev_2026-08-08T00-26-26_a22-rehearsal.dump (6339820 bytes)
+  restore: unerp_dev -> unerp_restore_test   source tables=1845 rows=287 migrations=180
+  restore+verify duration: 30888 ms (RTO 30.9 s)
+  backup age at rehearsal start: 1 s (RPO 0.0 h)
+  restored table count 1845 = source 1845; exact per-table row counts equal; migrations 180 = 180
+  REHEARSAL PASSED — verified true
+  exit code 0
+  Logged to var/backups/rehearsal-log.jsonl and mirrored into docs/RUNBOOK_BACKUP_RESTORE.md "Rehearsal log" (current row: 2026-08-08 00:26:26 | ... | unerp_dev -> unerp_restore_test | 30.9 s | 0.0 h | 1845 | 287 | 180 | PASS)
+
+PASS (schedule + verify-backup.mjs pass on the same dump):
+  > node scripts/verify-backup.mjs
+  latest backup: var/backups/unerp_dev_2026-08-08T00-26-26_a22-rehearsal.dump
+  restore+verify duration: 31753 ms; verified true; RESTORE VERIFIED; exit code 0
+  > .github/workflows/backup-restore.yml  on: schedule cron '10 3 * * *' + workflow_dispatch;
+  job restores into postgres:16-alpine service and runs backup then verify-backup.mjs as
+  "Restore-verify (fails loudly)"; no continue-on-error, no hashFiles guard.
+
+BROKEN (criterion command against a deliberately truncated dump — must fail loudly):
+  > node scripts/rehearse-restore.mjs --file var/backups/broken.dump   (dump truncated to 50%)
+  ✗ REHEARSAL FAILED — pg_restore could not restore ... The backup is corrupt or unreadable.
+  (pg_restore: error: could not read from input file: end of file)
+  exit code 1
+  > node scripts/verify-backup.mjs --file var/backups/broken.dump
+  pg_restore: error: could not read from input file: end of file ... exit code 1
+```
+

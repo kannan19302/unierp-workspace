@@ -195,7 +195,7 @@ revocable from Profile → Sessions.
 ## 6. Journey C — The universal record lifecycle
 
 **Every business entity in every module follows this identical pattern.** Learn it once, and
-all 45 modules are predictable. It is rendered by `@unerp/framework` from a schema declaration,
+all 45 modules are predictable. It is rendered by `@kannan19302/framework` from a schema declaration,
 not hand-built per module.
 
 ### C1 — List page `/{module}/{entity}`
@@ -257,7 +257,7 @@ component at the bottom.
 
 ### C3 — Create / Edit `/{module}/{entity}/new` · `/{id}/edit`
 
-- Rendered by `@unerp/form-engine` from the same Zod schema the API validates with — client and
+- Rendered by `@kannan19302/form-engine` from the same Zod schema the API validates with — client and
   server validation **cannot** diverge.
 - Validation on blur; submit disabled until valid; first invalid field receives focus on
   failed submit.

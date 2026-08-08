@@ -415,7 +415,7 @@ breaks no build.
 
 ---
 
-### D003 · 🔴 High · `@unerp` scope points at `localhost:4873` in 18 repos
+### D003 · 🔴 High · `@kannan19302` scope points at `localhost:4873` in 18 repos
 
 **Found:** 2026-08-07 (previously identified in `ROADMAP.md § Now`).
 **Fixed by:** [A01](10-TRACK-A-FOUNDATION.md).
@@ -427,7 +427,7 @@ grep -l 'localhost:4873' */.npmrc | wc -l   # → 18
 ```
 
 `ROADMAP.md` calls this *"the one thing that blocks the rest"* and explains that the first cutover
-was reverted because every `pnpm install --frozen-lockfile` on a runner resolved `@unerp` against
+was reverted because every `pnpm install --frozen-lockfile` on a runner resolved `@kannan19302` against
 the runner's own localhost. Still true. This is one decision, not one commit, and almost the whole
 programme depends on it.
 
@@ -678,7 +678,7 @@ shipped template.
 **Found:** 2026-08-07. **Fixed by:** [A12](10-TRACK-A-FOUNDATION.md) once the truth gate exists;
 until then by a direct amendment.
 
-`ROADMAP.md § Where the project actually is` states the extracted repos *"still declare `@unerp/*`
+`ROADMAP.md § Where the project actually is` states the extracted repos *"still declare `@kannan19302/*`
 as `workspace:*`, so `npm install` in a clean clone fails"* and that the Dockerfiles *"were removed
 rather than repaired."*
 
@@ -750,7 +750,7 @@ cause is in the service's option-shaping, not the schema.
 ---
 
 
-### D031 � ?? CRITICAL � Track B >=40 criterion counts files, satisfiable by shims
+### D031 � ?? CRITICAL � Track B >=40 criterion counts files, satisfiable by shims
 
 **Found:** 2026-08-08. **Fixed by:** Amending Track B criterion.
 
@@ -765,7 +765,7 @@ ls src/components/*.tsx | grep -v stories | wc -l
 
 ---
 
-### D032 � ?? CRITICAL � 55 phases marked finished across two commits with no ADP claim and no evidence
+### D032 � ?? CRITICAL � 55 phases marked finished across two commits with no ADP claim and no evidence
 
 **Found:** 2026-08-08. **Fixed by:** Track repair workflow.
 
@@ -779,7 +779,7 @@ git log --oneline | Select-String "complete Track"
 
 ---
 
-### D033 � ?? Med � check-plan-integrity.mjs accepts an invalid status
+### D033 � ?? Med � check-plan-integrity.mjs accepts an invalid status
 
 **Found:** 2026-08-08. **Fixed by:** Track repair workflow.
 
@@ -808,7 +808,7 @@ it was detected._
 | :- | :-- | :------ | :------- | :----- |
 | D001 | 🔴 High | `core.prisma` is 31,092 lines; R2 criterion (≤ 3,000) unmet | A03 | CLOSED |
 | D002 | 🔴 High | Coverage gate cannot fail: `all: false`, no thresholds | A06, J02 | OPEN |
-| D003 | 🔴 High | `@unerp` scope resolves to `localhost:4873` in 18 repos | A01 | CLOSED |
+| D003 | 🔴 High | `@kannan19302` scope resolves to `localhost:4873` in 18 repos | A01 | CLOSED |
 | D004 | 🟠 Med | `ARCHITECTURE.md` places the outbox in `unierp-kernel` | A12 | OPEN |
 | D005 | 🟠 Med | Documented run instructions point at the retired monorepo | A15, A12 | CLOSED |
 | D006 | 🟠 Med | 11 repair scripts + 3 error dumps tracked in `unierp-mobile` | A14, I01, I02 | CLOSED |

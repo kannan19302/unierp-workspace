@@ -22,10 +22,10 @@ let fixedDuplicates = 0;
 
 files.forEach((f) => {
   let content = fs.readFileSync(f, "utf8");
-  const matches = content.match(/import\s+.*Table.*from\s+["']@unerp\/ui["']/g);
+  const matches = content.match(/import\s+.*Table.*from\s+["']@kannan19302\/ui["']/g);
   if (matches && matches.length > 1) {
     // Remove the standalone import line at top
-    content = content.replace(/^import\s+\{\s*Table\s*\}\s+from\s+["']@unerp\/ui["'];?\r?\n/, "");
+    content = content.replace(/^import\s+\{\s*Table\s*\}\s+from\s+["']@kannan19302\/ui["'];?\r?\n/, "");
     fs.writeFileSync(f, content, "utf8");
     fixedDuplicates++;
   }

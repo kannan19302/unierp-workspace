@@ -12,7 +12,7 @@ for (const sf of sourceFiles) {
   let changed = false;
   const imports = sf.getImportDeclarations();
   for (const imp of imports) {
-    if (imp.getModuleSpecifierValue() === "@unerp/ui") {
+    if (imp.getModuleSpecifierValue() === "@kannan19302/ui") {
       const namedImports = imp.getNamedImports();
       for (const ni of namedImports) {
         if (ni.getName() === "Table") {

@@ -10,8 +10,8 @@ const ciWorkflow = readFileSync(resolve(repositoryRoot, '.github/workflows/ci.ym
 
 const failures = [];
 
-if (rootPackage.scripts?.['db:deploy'] !== 'pnpm --filter @unerp/database db:deploy') {
-  failures.push('root package must expose `db:deploy` through @unerp/database');
+if (rootPackage.scripts?.['db:deploy'] !== 'pnpm --filter @kannan19302/database db:deploy') {
+  failures.push('root package must expose `db:deploy` through @kannan19302/database');
 }
 
 // Check the invariant, not a literal. The platform split gave the database

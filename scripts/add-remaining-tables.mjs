@@ -11,10 +11,10 @@ files.forEach((f) => {
   if (fs.existsSync(f)) {
     let content = fs.readFileSync(f, "utf8");
     if (!/import.*Table.*from/.test(content)) {
-      if (/import\s+\{([^}]+)\}\s+from\s+["']@unerp\/ui["']/.test(content)) {
-        content = content.replace(/import\s+\{([^}]+)\}\s+from\s+["']@unerp\/ui["']/, (m, g) => `import { ${g.trim()}, Table } from "@unerp/ui"`);
+      if (/import\s+\{([^}]+)\}\s+from\s+["']@kannan19302\/ui["']/.test(content)) {
+        content = content.replace(/import\s+\{([^}]+)\}\s+from\s+["']@kannan19302\/ui["']/, (m, g) => `import { ${g.trim()}, Table } from "@kannan19302/ui"`);
       } else {
-        content = 'import { Table } from "@unerp/ui";\n' + content;
+        content = 'import { Table } from "@kannan19302/ui";\n' + content;
       }
       fs.writeFileSync(f, content, "utf8");
     }

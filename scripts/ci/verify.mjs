@@ -137,10 +137,10 @@ const GATES = [
     // The compiler currently sees across every package boundary here, so this
     // gate looks redundant — and stops being redundant the moment Phase 3
     // extracts the first repository, because `unierp-web` will then compile
-    // against a published `@unerp/ui` and a deleted export becomes a staging
+    // against a published `@kannan19302/ui` and a deleted export becomes a staging
     // runtime error instead of a build failure. § 14 forbids extracting
     // anything until this has caught a deliberately injected break; it has
-    // caught three (a removed `@unerp/ui` export, a removed `@unerp/shared`
+    // caught three (a removed `@kannan19302/ui` export, a removed `@kannan19302/shared`
     // export reached through the .js re-export chain, and a stale published
     // expectation).
     cmd: ["node", ["scripts/ci/cdc-harness.mjs"]],

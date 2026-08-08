@@ -29,7 +29,7 @@ files.forEach(file => {
   // Fix duplicate DataTable imports on the same line
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes('import {') && lines[i].includes('DataTable') && lines[i].includes('@unerp/ui')) {
+    if (lines[i].includes('import {') && lines[i].includes('DataTable') && lines[i].includes('@kannan19302/ui')) {
       // split by DataTable
       const parts = lines[i].split('DataTable');
       if (parts.length > 2) {

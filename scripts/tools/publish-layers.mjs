@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build and publish every `@unerp/*` package from its own repository, in
+ * Build and publish every `@kannan19302/*` package from its own repository, in
  * dependency order, and update each dependent's pinned range as it goes.
  *
  * This is the mechanical half of § 14 Phase 3 step 4. § 4.5's M3 choreography
@@ -106,7 +106,7 @@ for (const repo of order) {
   }
 
   try {
-    // Pin this repo's own @unerp deps to what was just published, so a package
+    // Pin this repo's own @kannan19302 deps to what was just published, so a package
     // never ships a range that resolves to a version older than the artifact it
     // was actually built against.
     const m = readManifest(repo);

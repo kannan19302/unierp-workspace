@@ -29,10 +29,10 @@ files.forEach(file => {
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].includes('import {') && lines[i].includes('DataTable')) {
-      if (!lines[i].includes('@unerp/ui')) {
+      if (!lines[i].includes('@kannan19302/ui')) {
         lines[i] = lines[i].replace(/DataTable,\s*/, '');
       } else {
-        // If it's @unerp/ui but has multiple DataTables
+        // If it's @kannan19302/ui but has multiple DataTables
         const parts = lines[i].split('DataTable');
         if (parts.length > 2) {
            lines[i] = lines[i].replace(/DataTable,\s*/, '');

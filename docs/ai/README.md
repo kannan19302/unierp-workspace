@@ -175,7 +175,7 @@ A change is done when **all** of the following are true. Not most. All.
 - [ ] Every new table carries `tenant_id` and an RLS policy
 - [ ] API endpoint implemented with Zod validation, RBAC permission, and tenant scoping
 - [ ] Authorization proven by a test that asserts tenant A cannot read tenant B's row
-- [ ] UI built from `@unerp/ui-*` design tokens — no hardcoded hex, no hardcoded pixels
+- [ ] UI built from `@kannan19302/ui-*` design tokens — no hardcoded hex, no hardcoded pixels
 - [ ] Unit tests for business logic; E2E test for any user-facing flow
 - [ ] Zero new `@ts-nocheck` / `@ts-ignore` / `eslint-disable` (CI ratchet enforces this)
 - [ ] `pnpm verify` passes locally before push

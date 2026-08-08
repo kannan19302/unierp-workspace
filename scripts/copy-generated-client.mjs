@@ -30,7 +30,7 @@ const to = join(pkg, "dist", "idp-client");
 if (!existsSync(from)) {
   console.error(
     `Generated IdP client not found at ${from}.\n` +
-      `Run \`pnpm db:generate\` before building @unerp/database.`,
+      `Run \`pnpm db:generate\` before building @kannan19302/database.`,
   );
   process.exit(1);
 }

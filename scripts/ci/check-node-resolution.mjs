@@ -25,10 +25,10 @@
  *
  * ── What it deliberately does not check ─────────────────────────────────────
  *
- * Packages consumed only by a bundler (`@unerp/ui`, `@unerp/framework` — Next.js
+ * Packages consumed only by a bundler (`@kannan19302/ui`, `@kannan19302/framework` — Next.js
  * compiles both) are exempt: extensionless specifiers are correct there, and
  * failing them would be enforcing a rule their runtime does not have. The set
- * checked is derived, not listed: every `@unerp/*` package reachable through
+ * checked is derived, not listed: every `@kannan19302/*` package reachable through
  * `dependencies` from a Nest application, transitively.
  *
  * Deriving it matters. A hand-maintained list would go stale the first time a
@@ -52,7 +52,7 @@ for (const entry of readdirSync(PACKAGES)) {
   if (existsSync(manifest)) packageDirByName.set(readJson(manifest).name, join(PACKAGES, entry));
 }
 
-/** Every @unerp/* package a Node application loads, transitively. */
+/** Every @kannan19302/* package a Node application loads, transitively. */
 const nodeLoaded = new Set();
 const visit = (manifestPath) => {
   if (!existsSync(manifestPath)) return;

@@ -119,11 +119,11 @@ apps/api/src/modules/<module>/
 ## 6. Layer ⑤ — UI
 
 ```
-1  Declare the entity schema for @unerp/framework
+1  Declare the entity schema for @kannan19302/framework
        fields · list columns · form layout · validation (the SAME Zod schema as the API)
 2  The framework renders list, detail, and form. Do not hand-build these.
 3  Custom UI only where the schema genuinely cannot express it — and justify it in the PR.
-4  Compose from @unerp/ui-* only. If a component does not exist, add it TO THE PACKAGE
+4  Compose from @kannan19302/ui-* only. If a component does not exist, add it TO THE PACKAGE
    (with a Storybook entry), not locally to the page.
 5  Design tokens only. A literal hex or px value fails the build.
 6  Handle all six states: loading · empty · filtered-empty · error · forbidden · partial

@@ -6,7 +6,7 @@
  *
  * Commands:
  *   unierp ws clone          — clones every repo in the manifest, correct branches
- *   unierp ws link <repo>    — local-first mode: pnpm overrides point @unerp/* at local checkouts
+ *   unierp ws link <repo>    — local-first mode: pnpm overrides point @kannan19302/* at local checkouts
  *   unierp ws up             — datastores in Docker; api/web/console native, hot-reloading
  *   unierp ws verify         — runs the same federated gates CI runs, across linked repos
  *   unierp ws unlink         — back to published versions
@@ -96,16 +96,16 @@ function cmdLink(repo) {
   }
   // Map repo name to package name and local path
   const repoMap = {
-    'contracts':    { pkg: '@unerp/contracts',    path: join(WORKSPACE_ROOT, 'packages', 'contracts') },
-    'kernel':       { pkg: '@unerp/kernel',        path: join(WORKSPACE_ROOT, 'packages', 'kernel') },
-    'sdk':          { pkg: '@unerp/sdk',           path: join(WORKSPACE_ROOT, 'packages', 'sdk') },
-    'database':     { pkg: '@unerp/database',      path: join(WORKSPACE_ROOT, 'packages', 'database') },
-    'extension-api':{ pkg: '@unerp/extension-api', path: join(WORKSPACE_ROOT, 'packages', 'extension-api') },
-    'sandbox':      { pkg: '@unerp/sandbox',       path: join(WORKSPACE_ROOT, 'packages', 'sandbox') },
-    'framework':    { pkg: '@unerp/framework',     path: join(WORKSPACE_ROOT, 'packages', 'framework') },
-    'ui':           { pkg: '@unerp/ui',            path: join(WORKSPACE_ROOT, 'packages', 'ui') },
-    'shared':       { pkg: '@unerp/shared',        path: join(WORKSPACE_ROOT, 'packages', 'shared') },
-    'auth':         { pkg: '@unerp/auth',          path: join(WORKSPACE_ROOT, 'packages', 'auth') },
+    'contracts':    { pkg: '@kannan19302/contracts',    path: join(WORKSPACE_ROOT, 'packages', 'contracts') },
+    'kernel':       { pkg: '@kannan19302/kernel',        path: join(WORKSPACE_ROOT, 'packages', 'kernel') },
+    'sdk':          { pkg: '@kannan19302/sdk',           path: join(WORKSPACE_ROOT, 'packages', 'sdk') },
+    'database':     { pkg: '@kannan19302/database',      path: join(WORKSPACE_ROOT, 'packages', 'database') },
+    'extension-api':{ pkg: '@kannan19302/extension-api', path: join(WORKSPACE_ROOT, 'packages', 'extension-api') },
+    'sandbox':      { pkg: '@kannan19302/sandbox',       path: join(WORKSPACE_ROOT, 'packages', 'sandbox') },
+    'framework':    { pkg: '@kannan19302/framework',     path: join(WORKSPACE_ROOT, 'packages', 'framework') },
+    'ui':           { pkg: '@kannan19302/ui',            path: join(WORKSPACE_ROOT, 'packages', 'ui') },
+    'shared':       { pkg: '@kannan19302/shared',        path: join(WORKSPACE_ROOT, 'packages', 'shared') },
+    'auth':         { pkg: '@kannan19302/auth',          path: join(WORKSPACE_ROOT, 'packages', 'auth') },
   };
   const entry = repoMap[repo];
   if (!entry) {
@@ -167,7 +167,7 @@ function cmdUp() {
   console.log('Press Ctrl+C to stop all processes.');
   // Start native processes using pnpm turbo
   const proc = runAsync('pnpm', ['exec', 'turbo', 'dev', '--parallel',
-    '--filter=@unerp/api', '--filter=@unerp/web', '--filter=@unerp/console']);
+    '--filter=@kannan19302/api', '--filter=@kannan19302/web', '--filter=@kannan19302/console']);
   process.on('SIGINT', () => {
     proc.kill();
     process.exit(0);
@@ -179,12 +179,12 @@ function cmdVerify() {
   console.log('Running the same federated gates that CI runs...');
   console.log('');
   const gates = [
-    { name: 'Type safety',       cmd: 'pnpm run --filter @unerp/api typecheck' },
+    { name: 'Type safety',       cmd: 'pnpm run --filter @kannan19302/api typecheck' },
     { name: 'Policy check',      cmd: 'node scripts/ci/check-policy.mjs' },
     { name: 'Suppressions',      cmd: 'node scripts/ci/check-suppressions.mjs' },
     { name: 'Secrets scan',      cmd: 'node scripts/ci/check-secrets.mjs' },
     { name: 'Licence check',     cmd: 'node scripts/ci/check-licenses.mjs' },
-    { name: 'Unit tests',        cmd: 'pnpm run --filter @unerp/api test' },
+    { name: 'Unit tests',        cmd: 'pnpm run --filter @kannan19302/api test' },
   ];
   let passed = 0;
   let failed = 0;
@@ -248,7 +248,7 @@ switch (command) {
     console.log('Commands:');
     console.log('  status           Show manifest version and current link state');
     console.log('  clone            Verify all components at manifest versions');
-    console.log('  link <repo>      Local-first mode: link @unerp/* to local checkout');
+    console.log('  link <repo>      Local-first mode: link @kannan19302/* to local checkout');
     console.log('  unlink           Back to published versions');
     console.log('  up               Start datastores (Docker) + api/web/console (native)');
     console.log('  verify           Run all CI gates locally');

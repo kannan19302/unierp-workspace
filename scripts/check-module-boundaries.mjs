@@ -38,7 +38,7 @@ function resolveImport(sourceFile, specifier) {
 
 // Track E complete — blockchain is no longer quarantined. It is now an
 // event-driven module consuming outbox events (see blockchain-outbox.handler.ts).
-// The @unerp/blockchain package and modules/blockchain may be imported by any
+// The @kannan19302/blockchain package and modules/blockchain may be imported by any
 // module that uses the outbox to trigger blockchain anchoring.
 
 const violations = [];

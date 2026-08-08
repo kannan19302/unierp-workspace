@@ -63,9 +63,9 @@ than with new work.**
 
 ### What remains structurally open
 
-**`@unerp:registry=http://localhost:4873/`.** `unierp-api/.npmrc` still points the scope at a
+**`@kannan19302:registry=http://localhost:4873/`.** `unierp-api/.npmrc` still points the scope at a
 localhost Verdaccio. `ROADMAP.md` calls this *"the one thing that blocks the rest"* and it is
-still true: no CI runner can resolve `@unerp/*` from localhost, so every downstream repo's clean
+still true: no CI runner can resolve `@kannan19302/*` from localhost, so every downstream repo's clean
 install and every container build depends on a registry decision that has not been made. This is
 **A01**, and it is the first phase of the programme for that reason.
 
@@ -316,7 +316,7 @@ Filed in full, with reproduction, in [`90-DEFECT-LOG.md`](90-DEFECT-LOG.md). Sum
 | D014 | 🟠 Med | `scripts/ci/audit-architecture.mjs` resolves its target as `<root>/ERPSys` — the retired monorepo. It now audits a path that does not exist, so the architecture-vs-documentation audit cannot report a true finding. |
 | D001 | 🔴 High | `core.prisma` is 31,092 lines — R2's exit criterion (≤ 3,000) is not met, but R2 reads as done. |
 | D002 | 🔴 High | Coverage gate still cannot fail: `all: false`, no `thresholds`. R6 reads as scheduled; it is unstarted. |
-| D003 | 🔴 High | `@unerp:registry` points at `localhost:4873` in 18 `.npmrc` files. No CI runner can resolve it. |
+| D003 | 🔴 High | `@kannan19302:registry` points at `localhost:4873` in 18 `.npmrc` files. No CI runner can resolve it. |
 | D004 | 🟠 Med | `unierp-platform/ARCHITECTURE.md` says the outbox is in `unierp-kernel`. It is in `unierp-api/src/modules/outbox`; the kernel holds only the `OutboxEvent` interface. |
 | D005 | 🟠 Med | `unierp-platform/ARCHITECTURE.md § Running it` instructs `git clone .../ERPSys` and `pnpm dev` in the monorepo — which is retired. The documented way to run the project does not work. |
 | D006 | 🟠 Med | `unierp-mobile` root tracks 11 one-off repair scripts and 3 error dumps (R5). |

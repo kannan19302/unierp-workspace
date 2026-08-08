@@ -32,7 +32,7 @@ files.forEach(file => {
   content = content.replace(/rowKey=\{\((.*?): any\) => i\}/g, 'rowKey={($1: any, i: number) => String(i)}');
   
   // Fix Cannot find name 'DataTable' in files that have <DataTable but no import
-  if (content.includes('<DataTable') && !content.includes('DataTable } from "@unerp/ui"')) {
+  if (content.includes('<DataTable') && !content.includes('DataTable } from "@kannan19302/ui"')) {
     content = content.replace('import {', 'import { DataTable,');
   }
 

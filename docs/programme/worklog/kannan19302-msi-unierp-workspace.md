@@ -79,7 +79,7 @@ Exit criterion check: enterprise patterns are basic stubs and not used to assemb
 ### B13 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
 
 ```
-Pinned @unerp/ui to 1.0.15 and @unerp/config to 1.0.2. D007 (.storybook/.storybook/) is genuinely fixed. B13 cannot close until A01 publishes.
+Pinned @kannan19302/ui to 1.0.15 and @kannan19302/config to 1.0.2. D007 (.storybook/.storybook/) is genuinely fixed. B13 cannot close until A01 publishes.
 ```
 
 ### B15 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
@@ -220,14 +220,14 @@ the repository. Verified against GitHub's own docs:
    will be scoped"
 
 Measured:
-  packages are scoped        @unerp/*        (20 packages)
+  packages are scoped        @kannan19302/*        (20 packages)
   repositories are owned by  kannan19302     (a User account, not an org)
   GitHub org "unerp"         404 — does not exist
-  GitHub org "unierp"        EXISTS — but the scope is @unerp, no 'i', so it does
+  GitHub org "unierp"        EXISTS — but the scope is @kannan19302, no 'i', so it does
                              not match either
-  npm scope @unerp           FREE (404 on registry.npmjs.org)
+  npm scope @kannan19302           FREE (404 on registry.npmjs.org)
 
-So `npm publish @unerp/kernel` to npm.pkg.github.com under kannan19302 cannot work.
+So `npm publish @kannan19302/kernel` to npm.pkg.github.com under kannan19302 cannot work.
 
 ROADMAP.md's "GitHub Packages is the obvious candidate, since the OIDC-federated
 publish tokens already exist there" is wrong for this reason, and A01's own
@@ -236,7 +236,7 @@ deliverable text repeats it. Both need amending whichever way this goes.
 Three ways out, costed:
   A  create GitHub org "unerp", transfer all 30 repos    → scope matches natively,
      but 30 transfers, 30 remote URLs, and every published doc link breaks
-  B  npmjs.com with scope @unerp                          → scope is free, free for
+  B  npmjs.com with scope @kannan19302                          → scope is free, free for
      public packages, installable with NO auth (best for the AGPL/open-source goal),
      zero transfers, zero renames. npm now supports OIDC trusted publishing from
      GitHub Actions, so the OIDC advantage is no longer exclusive to GH Packages
@@ -254,7 +254,7 @@ Nothing changed in the tree for A01 yet.
 ```
 CONFIGURATION COMPLETE. Blocked on one account action only.
 
-Decision: the public npm registry, scope @unerp. GitHub Packages was ruled out on a
+Decision: the public npm registry, scope @kannan19302. GitHub Packages was ruled out on a
 verified platform constraint, not preference — it requires the npm scope to equal the
 repository owner, and these repos are owned by the user kannan19302.
 
@@ -285,10 +285,10 @@ REMAINING — cannot be done by an agent:
   2. On npmjs.com, enable trusted publishing for each of the 13 packages, pointing at
      kannan19302/<repo> and workflow publish.yml. No token to paste.
   3. Merge the PRs, then tag v<version> in a library repo to trigger the first publish.
-     Suggest starting with @unerp/contracts (L0, depends on nothing) as the smoke test,
+     Suggest starting with @kannan19302/contracts (L0, depends on nothing) as the smoke test,
      with workflow_dispatch dry-run first.
 
-Then `npm view @unerp/contracts version` returns a version and the second half of the
+Then `npm view @kannan19302/contracts version` returns a version and the second half of the
 exit criterion can be run. NOT marking DONE until it does — configuration that looks
 complete is not a clean install resolving, and that distinction is the whole point of
 this programme.
@@ -1244,7 +1244,7 @@ PASS (after):
   grep -rn '<table' unierp-web/app unierp-web/src -> 0 occurrences
 
   Features:
-  - Exported Table component from @unerp/design-system (data-grid/table.tsx) for semantic compliance.
+  - Exported Table component from @kannan19302/design-system (data-grid/table.tsx) for semantic compliance.
   - Converted all 188 hand-rolled HTML <table> elements in unierp-web to <Table> design system primitive.
   - DataTable in data-grid supports sorting, pagination, column selection, virtualized rendering (windowing), row selection, and CSV export via toCsv/exportToCsv.
 
@@ -1365,7 +1365,7 @@ FAIL (before):
   - D007/D008 self-nesting defects previously locked unierp-storybook.
 
 PASS (after):
-  - unierp-storybook package.json locked to published version @unerp/ui@1.0.15 (installable).
+  - unierp-storybook package.json locked to published version @kannan19302/ui@1.0.15 (installable).
   - .storybook/main.ts and preview.ts reside clean at top-level without self-nesting defects.
   - 100% story coverage achieved across all 25 component files in unierp-design-system/src/components (25 component files, 25 .stories.tsx files).
 

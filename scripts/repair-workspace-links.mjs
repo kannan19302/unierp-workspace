@@ -3,11 +3,11 @@
 //
 // On this repo's OneDrive-synced checkout, `pnpm install` repeatedly aborts with
 // EACCES and leaves dangling/corrupt junctions under
-// {apps,packages}/*/node_modules/@unerp/. Node's resolver then fails on the
-// production build (`next build` → "Can't resolve '@unerp/ui-components'")
+// {apps,packages}/*/node_modules/@kannan19302/. Node's resolver then fails on the
+// production build (`next build` → "Can't resolve '@kannan19302/ui-components'")
 // while dev mode masks it via the `development` exports condition.
 //
-// This script never runs pnpm. It re-points every @unerp workspace link at the
+// This script never runs pnpm. It re-points every @kannan19302 workspace link at the
 // real package directory as a junction, and creates links that are declared in
 // package.json but missing entirely. Junctions are disposable state: a future
 // successful `pnpm install` may replace them.
@@ -58,12 +58,12 @@ let repaired = 0;
 for (const dir of workspaceDirs) {
   const manifest = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'));
   const declared = Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })
-    .filter(([name, spec]) => name.startsWith('@unerp/') && String(spec).startsWith('workspace:'))
+    .filter(([name, spec]) => name.startsWith('@kannan19302/') && String(spec).startsWith('workspace:'))
     .map(([name]) => name);
 
-  const scopeDir = path.join(dir, 'node_modules', '@unerp');
+  const scopeDir = path.join(dir, 'node_modules', '@kannan19302');
   const existing = existsSync(scopeDir)
-    ? readdirSync(scopeDir).map((entry) => `@unerp/${entry}`)
+    ? readdirSync(scopeDir).map((entry) => `@kannan19302/${entry}`)
     : [];
 
   for (const name of new Set([...declared, ...existing])) {
@@ -117,7 +117,7 @@ function safeLstat(p) {
   }
 }
 
-console.log(`Workspace @unerp links — broken: ${broken}, missing: ${missing}${check ? '' : `, repaired: ${repaired}`}`);
+console.log(`Workspace @kannan19302 links — broken: ${broken}, missing: ${missing}${check ? '' : `, repaired: ${repaired}`}`);
 if (check && broken + missing > 0) {
   console.error('Run `node scripts/repair-workspace-links.mjs` to repair.');
   process.exit(1);

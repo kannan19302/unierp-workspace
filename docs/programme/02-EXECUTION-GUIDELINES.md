@@ -122,7 +122,7 @@ A phase is `DONE` when **all** of the following hold. Not most.
 - [ ] Breadcrumb registered; navigation descriptor updated.
 
 ### Quality
-- [ ] Composed from `@unerp/design-system` only. A missing component is **added to the package
+- [ ] Composed from `@kannan19302/design-system` only. A missing component is **added to the package
       with a story**, never built locally in a page.
 - [ ] Design tokens only — a literal hex or `px` fails the build.
 - [ ] Keyboard-complete; `axe` reports zero violations; usable at 320 px and at 200 % zoom.

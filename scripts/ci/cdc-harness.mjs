@@ -12,7 +12,7 @@
  * ───────────────
  * Today the TypeScript compiler sees across every package boundary in this
  * monorepo, so a removed export fails the consumer's build. After the Phase 3
- * split it does not: `unierp-web` compiles against a *published* `@unerp/ui`,
+ * split it does not: `unierp-web` compiles against a *published* `@kannan19302/ui`,
  * and a symbol deleted in the design system is discovered at runtime in
  * staging. M2 is what replaces the compiler, and § 14 forbids extracting any
  * repository before it demonstrably works.
@@ -20,7 +20,7 @@
  * What it does
  * ────────────
  *   record   For each consumer, walk its source, collect every named import it
- *            takes from an `@unerp/*` provider, and write the result to
+ *            takes from an `@kannan19302/*` provider, and write the result to
  *            <consumer>/cdc/expectations.json — the artifact the consumer
  *            "publishes" and the provider replays.
  *   verify   Recompute those expectations, fail if the committed file has
@@ -58,7 +58,7 @@ const AS_JSON = process.argv.includes("--json");
 /**
  * Providers: a published package whose exported surface other layers depend on.
  * `entry` is the source entrypoint; `subpaths` maps a subpath export to its own
- * entrypoint, because a consumer may import `@unerp/ui/charts` directly.
+ * entrypoint, because a consumer may import `@kannan19302/ui/charts` directly.
  */
 // Prefer the built artifact, fall back to source.
 //
@@ -70,7 +70,7 @@ const AS_JSON = process.argv.includes("--json");
 // while proving nothing. Source is a faithful proxy in that state: it is the
 // same tree the consumer compiles against through the workspace link.
 const DIST = (name) => {
-  const short = name.replace("@unerp/", "");
+  const short = name.replace("@kannan19302/", "");
   const candidates = [
     { dir: `node_modules/${name}`, entry: "dist/index.d.ts" },
     { dir: `packages/${short}`, entry: "dist/index.d.ts" },
@@ -83,45 +83,45 @@ const DIST = (name) => {
 };
 
 const PROVIDERS = {
-  "@unerp/contracts": DIST("@unerp/contracts"),
-  "@unerp/kernel": DIST("@unerp/kernel"),
-  "@unerp/sdk": DIST("@unerp/sdk"),
-  "@unerp/extension-api": DIST("@unerp/extension-api"),
-  "@unerp/sandbox": DIST("@unerp/sandbox"),
-  "@unerp/framework": DIST("@unerp/framework"),
-  "@unerp/database": DIST("@unerp/database"),
-  "@unerp/shared": DIST("@unerp/shared"),
-  "@unerp/auth": DIST("@unerp/auth"),
-  "@unerp/ui": { ...DIST("@unerp/ui"), subpathRoot: "dist" },
+  "@kannan19302/contracts": DIST("@kannan19302/contracts"),
+  "@kannan19302/kernel": DIST("@kannan19302/kernel"),
+  "@kannan19302/sdk": DIST("@kannan19302/sdk"),
+  "@kannan19302/extension-api": DIST("@kannan19302/extension-api"),
+  "@kannan19302/sandbox": DIST("@kannan19302/sandbox"),
+  "@kannan19302/framework": DIST("@kannan19302/framework"),
+  "@kannan19302/database": DIST("@kannan19302/database"),
+  "@kannan19302/shared": DIST("@kannan19302/shared"),
+  "@kannan19302/auth": DIST("@kannan19302/auth"),
+  "@kannan19302/ui": { ...DIST("@kannan19302/ui"), subpathRoot: "dist" },
 };
 
 /** Consumers: anything that compiles against a provider's published artifact. */
 const CONSUMERS = [
-  { name: "@unerp/web", dir: "apps/web", roots: ["app", "src"] },
-  { name: "@unerp/console", dir: "apps/console", roots: ["app", "src"] },
-  { name: "@unerp/developer", dir: "apps/developer", roots: ["src"] },
-  { name: "@unerp/api", dir: "apps/api", roots: ["src"] },
-  { name: "@unerp/idp", dir: "apps/idp", roots: ["src"] },
-  { name: "@unerp/framework", dir: "packages/framework", roots: ["src"] },
-  { name: "@unerp/sdk", dir: "packages/sdk", roots: ["src"] },
-  { name: "@unerp/kernel", dir: "packages/kernel", roots: ["src"] },
+  { name: "@kannan19302/web", dir: "apps/web", roots: ["app", "src"] },
+  { name: "@kannan19302/console", dir: "apps/console", roots: ["app", "src"] },
+  { name: "@kannan19302/developer", dir: "apps/developer", roots: ["src"] },
+  { name: "@kannan19302/api", dir: "apps/api", roots: ["src"] },
+  { name: "@kannan19302/idp", dir: "apps/idp", roots: ["src"] },
+  { name: "@kannan19302/framework", dir: "packages/framework", roots: ["src"] },
+  { name: "@kannan19302/sdk", dir: "packages/sdk", roots: ["src"] },
+  { name: "@kannan19302/kernel", dir: "packages/kernel", roots: ["src"] },
   {
-    name: "@unerp/ext-real-estate",
+    name: "@kannan19302/ext-real-estate",
     dir: "apps/extensions/real-estate",
     roots: ["src"],
   },
   {
-    name: "@unerp/ext-education",
+    name: "@kannan19302/ext-education",
     dir: "apps/extensions/education",
     roots: ["src"],
   },
   {
-    name: "@unerp/ext-healthcare",
+    name: "@kannan19302/ext-healthcare",
     dir: "apps/extensions/healthcare",
     roots: ["src"],
   },
   {
-    name: "@unerp/ext-field-service",
+    name: "@kannan19302/ext-field-service",
     dir: "apps/extensions/field-service",
     roots: ["src"],
   },
@@ -291,7 +291,7 @@ function providerEntryFor(spec) {
     // Try dist, then src — the same fallback DIST() already applies to a
     // package's main entry, and for the same reason.
     //
-    // Without it, whether `@unerp/ui/charts` counts as a provider depended on
+    // Without it, whether `@kannan19302/ui/charts` counts as a provider depended on
     // whether `packages/ui/dist` happened to be built. It is built on a
     // developer machine and is not in the `Static (contracts)` CI job, which
     // runs `pnpm install` and `pnpm db:generate` and no build — so four
@@ -341,7 +341,7 @@ function computeExpectations(consumer) {
         )
           continue;
         const spec = stmt.moduleSpecifier.text;
-        if (!spec.startsWith("@unerp/")) continue;
+        if (!spec.startsWith("@kannan19302/")) continue;
         if (!providerEntryFor(spec)) continue;
 
         const rec = (byProvider[spec] ??= {

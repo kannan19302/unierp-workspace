@@ -46,7 +46,7 @@ literal font size in application code is a **build failure**, enforced by a CI g
 ✅  color: var(--color-primary);  padding: var(--space-4);  font-size: var(--text-sm);
 ```
 
-Tokens live in `@unerp/ui-tokens` and ship as CSS custom properties. Themes swap the values;
+Tokens live in `@kannan19302/ui-tokens` and ship as CSS custom properties. Themes swap the values;
 component code never changes.
 
 **Themes:** `light` (default) · `dark` · `enterprise` · `modern` · `minimal` · `classic` ·
@@ -232,7 +232,7 @@ date"`) — not what went wrong. Validate on blur, re-validate on change once er
 
 ### Tables
 
-The shared `DataTable` from `@unerp/ui` is mandatory — hand-rolled `<table>` markup in a page
+The shared `DataTable` from `@kannan19302/ui` is mandatory — hand-rolled `<table>` markup in a page
 is a review rejection. Sticky header. Zebra striping off by default (borders are enough at our
 row height). Numeric columns right-aligned with tabular figures. Sort via the shared
 `.dt-sort-th` / `.dt-sort-arrow` convention only. Server-side pagination always.
@@ -297,7 +297,7 @@ inside its own `overflow-x: auto` container.
 - ❌ Decorative icons. Every icon earns its place by aiding recognition.
 - ❌ Hardcoded colours or pixel values in application code.
 - ❌ Inline styles for layout or form structure.
-- ❌ Ad-hoc components. If it does not exist in `@unerp/ui-*`, add it _there_ — with a
+- ❌ Ad-hoc components. If it does not exist in `@kannan19302/ui-*`, add it _there_ — with a
   Storybook entry — rather than locally in a page.
 - ❌ Custom scrollbars, custom selects, custom date pickers built from scratch. Use the
   accessible Radix primitive and style it with tokens.
@@ -310,4 +310,4 @@ inside its own `overflow-x: auto` container.
 
 | Date       | Change                                                                                       | By          |
 | :--------- | :------------------------------------------------------------------------------------------- | :---------- |
-| 2026-07-30 | Document established; codifies the existing `@unerp/ui-tokens` system as the canonical brief | Claude Code |
+| 2026-07-30 | Document established; codifies the existing `@kannan19302/ui-tokens` system as the canonical brief | Claude Code |

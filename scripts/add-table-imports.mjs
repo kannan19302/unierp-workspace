@@ -23,15 +23,15 @@ let updated = 0;
 files.forEach((f) => {
   let content = fs.readFileSync(f, "utf8");
   if (/<Table[\s>]/.test(content) && !/import.*Table.*from/.test(content)) {
-    if (/import\s+\{([^}]+)\}\s+from\s+["']@unerp\/ui["']/.test(content)) {
-      content = content.replace(/import\s+\{([^}]+)\}\s+from\s+["']@unerp\/ui["']/, (match, group) => {
+    if (/import\s+\{([^}]+)\}\s+from\s+["']@kannan19302\/ui["']/.test(content)) {
+      content = content.replace(/import\s+\{([^}]+)\}\s+from\s+["']@kannan19302\/ui["']/, (match, group) => {
         if (!group.includes("Table")) {
-          return `import { ${group.trim()}, Table } from "@unerp/ui"`;
+          return `import { ${group.trim()}, Table } from "@kannan19302/ui"`;
         }
         return match;
       });
     } else {
-      content = `import { Table } from "@unerp/ui";\n` + content;
+      content = `import { Table } from "@kannan19302/ui";\n` + content;
     }
     fs.writeFileSync(f, content, "utf8");
     updated++;

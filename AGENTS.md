@@ -224,9 +224,9 @@ independent scaling or release profile. None currently does. Do not propose micr
 
 ---
 
-## 8. Publishing `@unerp/*` — who may, and how
+## 8. Publishing `@kannan19302/*` — who may, and how
 
-Phase A01. **The public npm registry**, scope `@unerp`, 13 publishable libraries.
+Phase A01. **The public npm registry**, scope `@kannan19302`, 13 publishable libraries.
 
 | | |
 | :-- | :-- |
@@ -238,7 +238,7 @@ Phase A01. **The public npm registry**, scope `@unerp`, 13 publishable libraries
 
 **Not GitHub Packages, and not for preference — it cannot host this scope.** GitHub Packages
 requires the npm scope to equal the account or organisation owning the repository. These
-repositories are owned by the user `kannan19302`; the packages are `@unerp/*`; no `unerp`
+repositories are owned by the user `kannan19302`; the packages are `@kannan19302/*`; no `unerp`
 organisation exists and the `unierp` one that does would still not match. `ROADMAP.md` had
 recommended it for its existing OIDC tokens, which was wrong.
 

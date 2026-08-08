@@ -50,7 +50,7 @@ estimates.
 | Repositories                             | 6 (1 monorepo + 4 vertical services + 1 marketing site) |
 | API modules in `apps/api/src/modules`    | 45                                                      |
 | Application code in those modules        | **655,100 lines**                                       |
-| Workspace packages                       | 23 (`@unerp/*`), of which **14 are UI**                 |
+| Workspace packages                       | 23 (`@kannan19302/*`), of which **14 are UI**                 |
 | Prisma models / enums                    | 1,836 / 65, in a **single 40,577-line file**            |
 | `@ts-nocheck` files                      | 3,241 of 3,241 (**100%**)                               |
 | Tenant tables without an RLS policy      | 364 of 1,029 (**35%**)                                  |
@@ -381,20 +381,20 @@ L0  CONTRACT        unierp-contracts
 
 | L   | Repository                 | Publishes                                           | Depends on                      | Why it is its own repository                                                                                                                                                                   |
 | --- | :------------------------- | :-------------------------------------------------- | :------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | **`unierp-contracts`**     | `@unerp/contracts`, `@unerp/events`                 | _nothing_                       | The single source of API, event, and entity truth. Zero dependencies is what makes it the root: it can never be made to depend on an implementation.                                           |
-| 1   | **`unierp-kernel`**        | `@unerp/kernel`                                     | L0                              | Tenancy context, `PolicyEngine`, audit, outbox, idempotency, rate limiting, versioning, observability. The primitives every plane shares.                                                      |
-| 1   | **`unierp-design-system`** | `@unerp/ui` (subpath exports)                       | —                               | Tokens → theme → components → charts → grid → forms → workflow, plus Storybook. Consumed by three frontends and by partner extensions.                                                         |
+| 0   | **`unierp-contracts`**     | `@kannan19302/contracts`, `@kannan19302/events`                 | _nothing_                       | The single source of API, event, and entity truth. Zero dependencies is what makes it the root: it can never be made to depend on an implementation.                                           |
+| 1   | **`unierp-kernel`**        | `@kannan19302/kernel`                                     | L0                              | Tenancy context, `PolicyEngine`, audit, outbox, idempotency, rate limiting, versioning, observability. The primitives every plane shares.                                                      |
+| 1   | **`unierp-design-system`** | `@kannan19302/ui` (subpath exports)                       | —                               | Tokens → theme → components → charts → grid → forms → workflow, plus Storybook. Consumed by three frontends and by partner extensions.                                                         |
 | 1   | **`unierp-sdk`**           | `@unierp/sdk` (TS), Python, Java, Go, `@unierp/cli` | L0                              | **Different consumers** (third parties), **different cadence**, must be installable without the platform. Generated, never hand-written.                                                       |
-| 2   | **`unierp-data`**          | `@unerp/database`                                   | L0                              | Prisma multi-file schema, migrations, RLS policies, seeds, and the tenant-isolation test generator. The data model versions independently of the code that uses it.                            |
-| 2   | **`unierp-framework`**     | `@unerp/framework`                                  | L0, L1                          | The schema-driven page runtime. First-party and customer modules render through the _same_ runtime — so it must be a published artifact, not an internal folder.                               |
-| 2   | **`unierp-extension-api`** | `@unerp/extension-api`                              | L0, L1                          | The public contract customer code compiles against, plus the sandbox host interface. **3-year support, 12-month deprecation.** Its own repo because its promise outlives any platform release. |
+| 2   | **`unierp-data`**          | `@kannan19302/database`                                   | L0                              | Prisma multi-file schema, migrations, RLS policies, seeds, and the tenant-isolation test generator. The data model versions independently of the code that uses it.                            |
+| 2   | **`unierp-framework`**     | `@kannan19302/framework`                                  | L0, L1                          | The schema-driven page runtime. First-party and customer modules render through the _same_ runtime — so it must be a published artifact, not an internal folder.                               |
+| 2   | **`unierp-extension-api`** | `@kannan19302/extension-api`                              | L0, L1                          | The public contract customer code compiles against, plus the sandbox host interface. **3-year support, 12-month deprecation.** Its own repo because its promise outlives any platform release. |
 | 3   | **`unierp-api`**           | container image                                     | L0, L1, L2                      | The modular monolith. `platform/` + `tenant/` + `modules/` + `developer/`. One deployable, two routers.                                                                                        |
 | 4   | **`unierp-web`**           | container image                                     | L0, L1, L2, L3 _(SDK only)_     | Tenant Admin Portal + Application Layer.                                                                                                                                                       |
 | 4   | **`unierp-console`**       | container image                                     | L0, L1, L2, L3 _(SDK only)_     | Platform Admin Console. **Separate repo reinforces the trust boundary**: console code cannot accidentally import a tenant component.                                                           |
 | 4   | **`unierp-www`**           | container image                                     | L1 (design system)              | Marketing, docs, status, pricing. Ships daily; must never be able to break a payroll release. Already correctly separate today.                                                                |
 | 5   | **`unierp-mobile`**        | IPA / APK                                           | SDK (Dart client)               | **Different language** (Dart), **different toolchain** (Gradle/Xcode/macOS runners), **different cadence** (app-store review).                                                                 |
 | 5   | **`unierp-desktop`**       | MSI / DMG / AppImage                                | L4 `unierp-web` build output    | Tauri shell. Split from web at the artifact level, not the source level — it consumes web's build.                                                                                             |
-| 6   | **`unierp-extensions`**    | signed extension bundles                            | `@unerp/extension-api` **only** | First-party apps including the four verticals, plus templates. **Depends on nothing but the public API** — that constraint is the proof the API is real.                                       |
+| 6   | **`unierp-extensions`**    | signed extension bundles                            | `@kannan19302/extension-api` **only** | First-party apps including the four verticals, plus templates. **Depends on nothing but the public API** — that constraint is the proof the API is real.                                       |
 | 7   | **`unierp-infra`**         | Kustomize, Terraform, Grafana, alerts, runbooks     | manifest only                   | Environment topology and operational assets.                                                                                                                                                   |
 | 7   | **`unierp-workspace`**     | `platform-manifest.json`, `@unierp/cli-dev`         | all (build-time only)           | **The meta-repository.** Release train manifest, local dev orchestrator, golden-path integration CI, federated ratchet. § 4.5.                                                                 |
 
@@ -403,9 +403,9 @@ L0  CONTRACT        unierp-contracts
 | Property                                  | How the layering delivers it                                                                                                                                              |
 | :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **No architectural drift, ever**          | `unierp-design-system` has no dependency on `unierp-api`, so a UI component _cannot_ import a service. Structurally, not by rule.                                         |
-| **The extension API is honest**           | `unierp-extensions` depends on `@unerp/extension-api` and nothing else. If a first-party vertical needs a private hook, the build fails and the hook must be made public. |
-| **Contract-first is not optional**        | `unierp-api` cannot define an endpoint that is not in `@unerp/contracts`, because the DTO type comes from the package.                                                    |
-| **The data model versions independently** | `@unerp/database` can ship a migration ahead of the API that uses it — which is exactly what expand→migrate→contract requires.                                            |
+| **The extension API is honest**           | `unierp-extensions` depends on `@kannan19302/extension-api` and nothing else. If a first-party vertical needs a private hook, the build fails and the hook must be made public. |
+| **Contract-first is not optional**        | `unierp-api` cannot define an endpoint that is not in `@kannan19302/contracts`, because the DTO type comes from the package.                                                    |
+| **The data model versions independently** | `@kannan19302/database` can ship a migration ahead of the API that uses it — which is exactly what expand→migrate→contract requires.                                            |
 | **Team ownership scales**                 | A layer is an ownership unit. Adding a team means adding a repo in the right layer, not renegotiating a monorepo CODEOWNERS file.                                         |
 | **Blast radius is bounded**               | A break in L4 cannot reach L0. Failure propagates upward only.                                                                                                            |
 
@@ -466,7 +466,7 @@ Every consumer publishes a machine-readable expectation of what it uses from its
 provider's CI replays the full corpus of its consumers' expectations on every PR.
 
 - `unierp-web` publishes the API operations, response shapes, and SDK symbols it consumes.
-- `unierp-api` publishes the `@unerp/database` models and `@unerp/kernel` symbols it consumes.
+- `unierp-api` publishes the `@kannan19302/database` models and `@kannan19302/kernel` symbols it consumes.
 - `unierp-extensions` publishes the extension-API surface it consumes.
 
 A change in `unierp-contracts` that breaks `unierp-web` fails **in the contracts PR**, with the
@@ -499,7 +499,7 @@ non-optional.**
 
 `unierp-workspace` runs, on every manifest change and nightly:
 
-composes the full manifest → applies migrations from `@unerp/database` → boots api + web +
+composes the full manifest → applies migrations from `@kannan19302/database` → boots api + web +
 console → runs the E2E suite for every journey in `ai/APP_FLOW.md` → runs the generated
 two-tenant isolation suite → runs the k6 smoke test → replays the reference extension corpus
 against the built platform.
@@ -520,7 +520,7 @@ aggregate is checked on every manifest update.
 | Convention        | Rule                                                                                                                                                                                                                     |
 | :---------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Repository name   | `unierp-<layer-role>`, lowercase, no product-marketing names                                                                                                                                                             |
-| npm scope         | `@unerp/*` internal artifacts · `@unierp/*` public artifacts (SDK, CLI, extension-api)                                                                                                                                   |
+| npm scope         | `@kannan19302/*` internal artifacts · `@unierp/*` public artifacts (SDK, CLI, extension-api)                                                                                                                                   |
 | Default branch    | `main` everywhere (`unierp-www` renames from `master` during extraction)                                                                                                                                                 |
 | Branch protection | PR review, all checks green, linear history, signed commits, **administrators not exempt** — identical in all 15                                                                                                         |
 | Versioning        | SemVer per repo; L3–L5 additionally carry the dated train version                                                                                                                                                        |
@@ -540,18 +540,18 @@ four layers become _provable_:
 | :---- | :---------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
 | 1     | Network / origin: control plane on a separate, restricted ingress | **New.** Closes the plane-1 exposure in § 1.2.                                                              |
 | 2     | Identity: tenant claim bound to the session, never to a parameter | Tenant id may never be read from a request body or query. Lint rule + runtime assertion.                    |
-| 3     | Application: Prisma client scoped by `TenantContext`              | Repository base class in `@unerp/kernel`; a raw `prisma.` reference in a module fails `architecture:check`. |
+| 3     | Application: Prisma client scoped by `TenantContext`              | Repository base class in `@kannan19302/kernel`; a raw `prisma.` reference in a module fails `architecture:check`. |
 | 4     | **Database: RLS, `ENABLE` + `FORCE`, app role `NOBYPASSRLS`**     | The only layer that is proof. 364 gaps closed by catalogue sweep; drift blocked in CI.                      |
 
 **The generated-test rule:** for every table carrying `tenant_id`, a two-tenant isolation test is
 _generated from the schema_ by `unierp-data`, not written by hand. 1,029 hand-written tests will
 never exist; 1,029 generated ones cost one script. The generator ships as part of
-`@unerp/database`, so `unierp-api` and every extension inherit it. A table with no generated test
+`@kannan19302/database`, so `unierp-api` and every extension inherit it. A table with no generated test
 is a build failure.
 
 ### 5.2 Authentication flows
 
-Three distinct flows, three distinct realms, one shared library (`@unerp/kernel` + `@unerp/auth`):
+Three distinct flows, three distinct realms, one shared library (`@kannan19302/kernel` + `@kannan19302/auth`):
 
 **Control plane** — provider staff only.
 `OIDC (Authorization Code + PKCE) → provider IdP realm → mandatory hardware or TOTP MFA →
@@ -586,7 +586,7 @@ finance.invoice.approve                    → RBAC (today)
 finance.invoice.approve?amount<=10000      → ABAC (later; same string, same store)
 ```
 
-The decision point is a single `PolicyEngine` in `@unerp/kernel`. Because every guard already
+The decision point is a single `PolicyEngine` in `@kannan19302/kernel`. Because every guard already
 calls through it, introducing attribute predicates in 2027 is a change inside one package, not
 across 14,225 routes. **Designing the seam now costs nothing; retrofitting it later costs the
 whole codebase.** The 1,889 undecorated routes are closed via ratchet before the engine ships —
@@ -663,12 +663,12 @@ is the single property that keeps the whole graph acyclic for twenty years.
 
 ### 7.2 Collapse 14 UI packages into `unierp-design-system`
 
-`@unerp/ui-{tokens,theme,components,layout,charts,data-grid,dashboard,notifications,hooks,utils,
-icons,form-engine,workflow}` plus `@unerp/ui` are 14 packages always installed together, always
+`@kannan19302/ui-{tokens,theme,components,layout,charts,data-grid,dashboard,notifications,hooks,utils,
+icons,form-engine,workflow}` plus `@kannan19302/ui` are 14 packages always installed together, always
 versioned together, always released together. They are one package wearing fourteen
 `package.json` files.
 
-Target: **one `@unerp/ui` with subpath exports** — `@unerp/ui/charts`, `@unerp/ui/data-grid` —
+Target: **one `@kannan19302/ui` with subpath exports** — `@kannan19302/ui/charts`, `@kannan19302/ui/data-grid` —
 preserving every import path's shape while removing 13 build graphs and 13 version numbers.
 Tree-shaking preserved via `exports` + `sideEffects: false`.
 
@@ -710,10 +710,10 @@ Every successful platform offers a ladder, not a single door:
 
 Tiers 1 and 2 already exist in embryo: `modules/builder` (30.5 KLoc), `(dashboard)/builder/
 {app-hub,erp,web,manage}`, `(dashboard)/custom/[moduleSlug]`, `(dashboard)/app/[module]`, and
-`@unerp/framework`'s schema-driven page runtime. **The schema-driven frontend is the single most
+`@kannan19302/framework`'s schema-driven page runtime. **The schema-driven frontend is the single most
 valuable asset for this requirement** — a custom module built in App Studio renders through
 exactly the same runtime as a first-party module. Salesforce has that property; most ERP vendors
-do not; this codebase already does. Promoting `@unerp/framework` to its own L2 repository is what
+do not; this codebase already does. Promoting `@kannan19302/framework` to its own L2 repository is what
 turns it from an internal convenience into a public guarantee.
 
 ### 8.2 The extension contract
@@ -726,7 +726,7 @@ my-extension/
 │                      data model additions, entitlement/pricing metadata
 ├── schema/            declarative model extensions → generated tables in the tenant's
 │                      extension namespace, always with tenant_id + RLS, never core tables
-├── ui/                pages, widgets, field renderers → rendered by @unerp/framework
+├── ui/                pages, widgets, field renderers → rendered by @kannan19302/framework
 ├── logic/             sandboxed handlers bound to extension points
 ├── workflows/         declarative automation graphs
 └── tests/             run by `unierp app test` in CI before publish
@@ -741,7 +741,7 @@ my-extension/
 | Validation rules         | Pure predicates over an entity; may reject, may not mutate                        |
 | Scheduled jobs           | Registered with the Job Scheduler; per-tenant quota                               |
 | API endpoints            | Mounted under `/api/v1/ext/<extension-id>/*`; never at a core path                |
-| UI extension slots       | Named slots in `@unerp/framework` layouts                                         |
+| UI extension slots       | Named slots in `@kannan19302/framework` layouts                                         |
 | Navigation & permissions | Declared in the manifest; merged into the tenant's nav and role model             |
 
 **The compatibility promise is the whole product.** An extension built against extension-API `v1`
@@ -749,7 +749,7 @@ runs unmodified on every platform release for the life of `v1` — minimum 3 yea
 months' deprecation notice. A CI job replays a reference extension corpus against every platform
 build; a break is a release blocker.
 
-**This is why `unierp-extensions` (L6) may depend on `@unerp/extension-api` and nothing else.**
+**This is why `unierp-extensions` (L6) may depend on `@kannan19302/extension-api` and nothing else.**
 The four first-party verticals migrating onto it (§ 14 Phase 4) is the proof that the promise is
 keepable — before any partner depends on it.
 
@@ -808,11 +808,11 @@ caller, and an entry in `API_VERSIONING_POLICY.md`. Two majors supported concurr
 
 | Boundary                          | Compatibility window                                                                                                  |
 | :-------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
-| `@unerp/extension-api` (public)   | 3 years support, 12 months deprecation notice                                                                         |
+| `@kannan19302/extension-api` (public)   | 3 years support, 12 months deprecation notice                                                                         |
 | `@unierp/sdk` ↔ API major         | 2 majors concurrent                                                                                                   |
-| `@unerp/contracts` ↔ `unierp-api` | Same train ± 1                                                                                                        |
-| `@unerp/database` ↔ `unierp-api`  | **Migration must be backward-compatible for one full train** — this is what makes rollback work without a DB rollback |
-| `@unerp/ui` ↔ frontends           | Major bumps coordinated in one train                                                                                  |
+| `@kannan19302/contracts` ↔ `unierp-api` | Same train ± 1                                                                                                        |
+| `@kannan19302/database` ↔ `unierp-api`  | **Migration must be backward-compatible for one full train** — this is what makes rollback work without a DB rollback |
+| `@kannan19302/ui` ↔ frontends           | Major bumps coordinated in one train                                                                                  |
 | Internal L0/L1 packages           | Same train; may break freely between trains, subject to M2                                                            |
 
 ---
@@ -845,7 +845,7 @@ be priced in:
   into a downstream build.
 - **Publish tokens are per-repo, short-lived, and OIDC-federated from CI.** No long-lived npm
   token exists anywhere.
-- **Dependency confusion is closed** by scope reservation (`@unerp`, `@unierp`) and a registry
+- **Dependency confusion is closed** by scope reservation (`@kannan19302`, `@unierp`) and a registry
   allowlist in every `.npmrc`.
 - **The manifest is signed.** An unsigned `platform-manifest.json` is not deployable.
 
@@ -901,7 +901,7 @@ A fifteen-repo checkout must feel like one workspace or developers will work aro
 
 ```powershell
 unierp ws clone          # clones every repo in the manifest, correct branches
-unierp ws link finance   # local-first mode: pnpm overrides point @unerp/* at local checkouts
+unierp ws link finance   # local-first mode: pnpm overrides point @kannan19302/* at local checkouts
 unierp ws up             # datastores in Docker; api/web/console native, hot-reloading
 unierp ws verify         # runs the same federated gates CI runs, across linked repos
 unierp ws unlink         # back to published versions
@@ -1066,7 +1066,7 @@ was a defect, by a gate that was proven able to fail. Counts are the output of
 > them and **Node does not**. Neither package declares `"type": "module"`, so what
 > actually loads them is Node's ESM syntax detection — the emitted `import`
 > keyword is enough for Node to choose the ESM loader, and the ESM loader requires
-> a full path. `@unerp/shared` and `@unerp/auth` are the two packages that declare
+> a full path. `@kannan19302/shared` and `@kannan19302/auth` are the two packages that declare
 > `"type": "module"` and write `./index.js` specifiers, and they are the two that
 > have never broken this way.
 >
@@ -1098,9 +1098,9 @@ was a defect, by a gate that was proven able to fail. Counts are the output of
 > `dist/` — the artifact that actually loads — and checks every relative
 > specifier against _Node's_ resolver rather than the compiler's: verbatim under
 > ESM, extension-and-index search under CommonJS. The package set is derived, not
-> listed — every `@unerp/*` reachable through `dependencies` from `apps/api` or
+> listed — every `@kannan19302/*` reachable through `dependencies` from `apps/api` or
 > `apps/idp`, transitively — so a package that gains a dependency is covered the
-> day it does. `@unerp/ui` and `@unerp/framework` are exempt because Next.js
+> day it does. `@kannan19302/ui` and `@kannan19302/framework` are exempt because Next.js
 > bundles them and extensionless specifiers are correct there; enforcing a rule
 > their runtime does not have would be false precision.
 >
@@ -1108,7 +1108,7 @@ was a defect, by a gate that was proven able to fail. Counts are the output of
 > exit 0), which is the standard § 14 applies to every other gate here.
 >
 > **It immediately found six more of the same defect, already latent.**
-> `@unerp/shared`'s `field-service/index.js` and `real-estate/index.js` each
+> `@kannan19302/shared`'s `field-service/index.js` and `real-estate/index.js` each
 > re-export three schemas without extensions. Nothing imports those subpaths
 > today, so nothing had broken yet; the first consumer would have hit exactly the
 > failure above. Fixed in the same pass.
@@ -1214,7 +1214,7 @@ and every px inside TSX.
 | Rename the 60 `saas-deepening-*` files                    | **0 remain**                                                                                                 | ✅     |
 | Split `schema.prisma` (R2)                                | 1,836 models across **14 context files**                                                                     | ✅     |
 | Tier A/B manifest (`docs/module-tier-manifest.json`)      | declared                                                                                                     | ✅     |
-| **§ 7.2 — collapse 14 UI packages into `@unerp/ui`**      | **done — 13 packages merged, 1 published artifact**                                                          | ✅     |
+| **§ 7.2 — collapse 14 UI packages into `@kannan19302/ui`**      | **done — 13 packages merged, 1 published artifact**                                                          | ✅     |
 
 #### Phases 4–5 — platform surface
 
@@ -1241,7 +1241,7 @@ The question "is Docker ready for the split architecture" has a precise answer, 
 | :-------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
 | `ERPSys/docker-compose.dev.yml`                     | ✅ Works. Datastores, registry, `api`, `web`, and `console`/`developer`/`idp` behind profiles. `pnpm dev` drives it. |
 | `unierp-infra/docker-compose.dev.yml`               | 🔴 **Was dead — rewritten 2026-08-06.** See below.                                                                   |
-| `unierp-infra/registry/docker-compose.registry.yml` | ✅ Verdaccio, running, 13 `@unerp/*` packages published                                                              |
+| `unierp-infra/registry/docker-compose.registry.yml` | ✅ Verdaccio, running, 13 `@kannan19302/*` packages published                                                              |
 | `unierp-api` · `unierp-web` · `unierp-idp` images   | 🔴 **Unbuildable — Dockerfiles removed 2026-08-06**                                                                  |
 | `unierp-console` · `unierp-developer` images        | 🔴 Never had a Dockerfile                                                                                            |
 | `unierp-corporate-website` image                    | ✅ Genuinely standalone — its own lockfile, schema and Dockerfile                                                    |
@@ -1265,7 +1265,7 @@ would unblock a per-repo one.
 
 **Why they cannot simply be fixed.** The extracted L3/L4 repositories are faithful copies, not
 standalone projects. `unierp-web/package.json` and `unierp-console/package.json` still declare
-`@unerp/*` as `workspace:*`, which resolves to nothing outside the monorepo — `npm install` in a
+`@kannan19302/*` as `workspace:*`, which resolves to nothing outside the monorepo — `npm install` in a
 clean copy of `unierp-console` fails with `EUNSUPPORTEDPROTOCOL: Unsupported URL Type
 "workspace:"`. `unierp-web`'s `dev` script runs `node ../../scripts/ensure-web-deps.mjs`, and
 `unierp-api`'s `architecture:check` runs `../../scripts/check-module-boundaries.mjs`; neither
@@ -1276,8 +1276,8 @@ exists and a tag is written.
 **What unblocks it is one decision, not one commit.** Phase 3 step 4 for the application layer
 needs a package registry that CI can reach. The self-hosted Verdaccio answers on `localhost`
 only, which is exactly why the first cutover was reverted (`a96069e6`): every
-`pnpm install --frozen-lockfile` on a runner resolved `@unerp` against the runner's own
-localhost. Publishing `@unerp/*` to a hosted registry — GitHub Packages is the obvious candidate,
+`pnpm install --frozen-lockfile` on a runner resolved `@kannan19302` against the runner's own
+localhost. Publishing `@kannan19302/*` to a hosted registry — GitHub Packages is the obvious candidate,
 since the org and the OIDC-federated publish tokens in § 10 already exist there — makes the
 cutover survivable, and per-repo images follow from it. Until then the monorepo is the build, and
 § 14 rule 4 says that is the correct intermediate state rather than an unfinished one.
@@ -1351,7 +1351,7 @@ void without; it has been decorative since it was added.
 The critical that mattered is closed: `next` was pinned at `15.3.4` in `apps/console` and
 `apps/developer` — exactly, not as a range — against a React-flight RCE patched in `15.3.6`.
 `apps/web` was on a range that permitted a fixed version and resolved to the vulnerable one
-anyway, because a wide optional peer in `@unerp/ui` held the old resolution in the lockfile. A
+anyway, because a wide optional peer in `@kannan19302/ui` held the old resolution in the lockfile. A
 workspace-wide `pnpm.overrides` entry is what actually moved it, which is the honest lesson: with
 three applications and a peer-dependent package, the version that ships is decided by the
 lockfile, not by the three ranges.
@@ -1396,10 +1396,10 @@ silently applies nothing and succeeds is worse than one that fails; the path is 
 `docker-compose.dev.yml` rather than `services:`, which made the whole compose file fail
 validation, and its credentials authenticated against nothing in the stack.
 
-**§ 7.2 is delivered.** The thirteen `@unerp/ui-*` packages were merged into `packages/ui/src/<area>`
-and deleted; `@unerp/ui` now publishes one build graph with thirteen subpath exports
-(`@unerp/ui/components`, `@unerp/ui/charts`, …) emitted to `dist/<area>/index.js`, with CSS mirrored
-alongside. No application file imported an `@unerp/ui-*` package directly, so the change is
+**§ 7.2 is delivered.** The thirteen `@kannan19302/ui-*` packages were merged into `packages/ui/src/<area>`
+and deleted; `@kannan19302/ui` now publishes one build graph with thirteen subpath exports
+(`@kannan19302/ui/components`, `@kannan19302/ui/charts`, …) emitted to `dist/<area>/index.js`, with CSS mirrored
+alongside. No application file imported an `@kannan19302/ui-*` package directly, so the change is
 contained to `packages/`, `packages/config/typescript/*`, `packages/storybook`, and one
 `serverExternalPackages` list in `apps/web/next.config.mjs` that shrank from fourteen entries to
 one. Workspace typecheck is 24/24 green and the design system's 37 tests pass. This removes the 42
@@ -1411,21 +1411,21 @@ boundary.
 two typecheck functions were defined and never called, its envelope validator had empty bodies,
 and its version check only warned. It has been rebuilt to do what § 4.5 specifies — each of the 12
 consumers publishes `cdc/expectations.json`, the exact set of symbols it imports from each
-`@unerp/*` provider, and the harness replays that corpus against the provider's current exported
+`@kannan19302/*` provider, and the harness replays that corpus against the provider's current exported
 surface, resolving `export *` chains to enumerate what a provider really exports.
 
 It is proven against three deliberately injected breaks, each failing with exit 1 and naming the
 consumer and symbol, and passing again on revert:
 
-1. removing `Spinner` from `@unerp/ui` — caught for `web`, `developer` and `framework`;
-2. removing `hasPermission` from `@unerp/shared` — caught for `api` and `idp`, reached through the
+1. removing `Spinner` from `@kannan19302/ui` — caught for `web`, `developer` and `framework`;
+2. removing `hasPermission` from `@kannan19302/shared` — caught for `api` and `idp`, reached through the
    `.js`-specifier re-export chain;
 3. a stale published expectation — caught as drift.
 
-A provider whose entrypoint re-exports a package outside the workspace (`@unerp/database` →
+A provider whose entrypoint re-exports a package outside the workspace (`@kannan19302/database` →
 `@prisma/client`) has a surface the harness cannot enumerate; absence is unprovable there, so it
 is reported as an OPEN surface and its misses are warnings. Claiming otherwise would make the gate
-lie in the direction that matters. Only `@unerp/database` is currently open.
+lie in the direction that matters. Only `@kannan19302/database` is currently open.
 
 **The control plane is currently fail-closed.** No role grants `system.*`, so platform-operator
 endpoints are unreachable by anyone. That is the correct posture; provisioning platform-staff
@@ -1474,7 +1474,7 @@ repo and expensive across fifteen.**
 4. **Wire the choreography bot (M3)** against the existing `packages/*` graph.
 5. **Rename the 60 `saas-deepening-*` files** into real bounded contexts. One mechanical pass.
    _Free now; a breaking change after extraction._
-6. ~~**Collapse the 14 `ui-*` packages into one `@unerp/ui`** with subpath exports (§ 7.2).~~
+6. ~~**Collapse the 14 `ui-*` packages into one `@kannan19302/ui`** with subpath exports (§ 7.2).~~
    **Done 2026-08-05.** _Extracting 14 packages would have created 42 version-coherence problems
    per release._
 7. **Split `schema.prisma`** into per-context files (R2). Zero runtime risk.
@@ -1511,7 +1511,7 @@ parallel because each depends only on L0, never on each other.
 **Each carries a mechanical layering gate** (`scripts/check-layer.mjs`, wired
 into its CI) asserting § 4.2's invariant: a repository may depend only on
 published artifacts of a strictly lower layer, never sideways, never upward.
-The gate is proven able to fail — adding `@unerp/database` to the design system
+The gate is proven able to fail — adding `@kannan19302/database` to the design system
 exits 1 and names the violation. That check is the entire argument for the
 split; left as prose it is a convention that lasts until someone adds an import,
 and the measured state today is:
@@ -1519,9 +1519,9 @@ and the measured state today is:
 | Repository             | Workspace dependencies | Verdict                                   |
 | :--------------------- | :--------------------- | :---------------------------------------- |
 | `unierp-contracts`     | none                   | L0 root, acyclic by construction          |
-| `unierp-kernel`        | `@unerp/contracts`     | downward only                             |
+| `unierp-kernel`        | `@kannan19302/contracts`     | downward only                             |
 | `unierp-design-system` | none                   | **cannot import a service, structurally** |
-| `unierp-sdk`           | `@unerp/contracts`     | downward only                             |
+| `unierp-sdk`           | `@kannan19302/contracts`     | downward only                             |
 
 **3.3 is done (2026-08-05), with full history.** `unierp-data` carries **61
 commits and 178 migrations**, extracted via `git-filter-repo`. History mattered
@@ -1571,19 +1571,19 @@ artifact level, not the source level". There is no source to extract.
 A local Verdaccio registry — the mechanism § 12.1 already specifies for exactly
 this ("a local Verdaccio registry is available for rehearsing the publish path")
 — was stood up, and **seven packages were published from their extracted
-repositories**: `@unerp/contracts`, `@unerp/kernel`, `@unerp/ui`, `@unerp/sdk`,
-`@unerp/extension-api`, `@unerp/framework`, `@unerp/database`.
+repositories**: `@kannan19302/contracts`, `@kannan19302/kernel`, `@kannan19302/ui`, `@kannan19302/sdk`,
+`@kannan19302/extension-api`, `@kannan19302/framework`, `@kannan19302/database`.
 
 **A correction to an earlier claim in this section.** It previously recorded that
 `unierp-kernel` "typechecks standalone against the published artifact", offered
 as proof the boundary works. It was not proof: `unierp-kernel` names
-`@unerp/contracts` only in a comment and never imports it, so that typecheck
+`@kannan19302/contracts` only in a comment and never imports it, so that typecheck
 passed without ever resolving the package. It demonstrated that the install
 succeeded, nothing more — the same vacuous-pass shape as the RLS suite and the
 CDC harness, and this one was self-inflicted.
 
-The real proof is `unierp-framework` → `@unerp/ui`, which genuinely imports:
-after the fixes below it **compiles with zero errors against `@unerp/ui@1.0.3`
+The real proof is `unierp-framework` → `@kannan19302/ui`, which genuinely imports:
+after the fixes below it **compiles with zero errors against `@kannan19302/ui@1.0.3`
 resolved from the registry**.
 
 #### Publishing the packages proved they were not installable
@@ -1630,7 +1630,7 @@ everything faithfully and a layering gate then judges the result:
   repository, where a file of that name reads as though it means something. It
   was deleted in the monorepo first, so the split inherits a clean tree rather
   than preserving somebody's leftover for another five years.
-- **A phantom dependency on `@unerp/shared`** in `packages/database`, declared
+- **A phantom dependency on `@kannan19302/shared`** in `packages/database`, declared
   and never imported — the only mention in the package is a comment naming an
   error code. The L2 layering gate flagged it as a dependency § 4.2 does not
   permit at L2. The violation was not real, but _a declared dependency is what a
@@ -1665,7 +1665,7 @@ API↔web boundary is complete and has caught at least one deliberately injected
 
 ### Phase 4 — The extension platform _(~10 weeks; the strategic bet)_
 
-1. Publish `@unerp/extension-api` v1 — manifest schema, extension points, typings.
+1. Publish `@kannan19302/extension-api` v1 — manifest schema, extension points, typings.
 2. **Build the sandbox (§ 8.3) before anything runs in it.** Non-negotiable ordering.
 3. Extension registry: install, enable, disable, upgrade, uninstall, per tenant, bound to
    licensing entitlements.
@@ -1723,7 +1723,7 @@ risk-management strategy.
 | Axis                         | Salesforce         | ServiceNow       | Power Platform   | SAP / Oracle | Odoo / ERPNext            | **UniERP (target)**                                     |
 | :--------------------------- | :----------------- | :--------------- | :--------------- | :----------- | :------------------------ | :------------------------------------------------------ |
 | Control / tenant plane split | ✅ Strong          | ✅ Strong        | ✅ Strong        | ✅           | ⚠️ Weak                   | ✅ **Separate repo, origin, realm, ingress** (Phase 1)  |
-| Metadata-driven UI           | ✅ Lightning       | ✅ UI Builder    | ✅ Model-driven  | ⚠️ Heavy     | ✅ Views/XML              | ✅ `@unerp/framework` — **already the strongest asset** |
+| Metadata-driven UI           | ✅ Lightning       | ✅ UI Builder    | ✅ Model-driven  | ⚠️ Heavy     | ✅ Views/XML              | ✅ `@kannan19302/framework` — **already the strongest asset** |
 | Low-code tier                | ✅ Flow            | ✅ Flow Designer | ✅ Best-in-class | ⚠️           | ✅ Studio                 | ✅ Builder → Studio (Phase 5)                           |
 | Pro-code sandbox             | ✅ Apex (governed) | ✅ Server script | ⚠️ Limited       | ✅ ABAP/CAP  | ❌ **Unsandboxed Python** | ✅ **V8 isolates + capabilities** (Phase 4)             |
 | Marketplace                  | ✅ AppExchange     | ✅ Store         | ✅ AppSource     | ✅           | ✅ Apps                   | ✅ Phase 5                                              |
@@ -1844,8 +1844,8 @@ train.
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | By          |
 | :--------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------- |
 | 2026-08-07 | **The monorepo is retired.** `ERPSys` is archived on GitHub (read-only, history preserved) and removed locally, after file-by-file parity was verified for every app, package, the Flutter client and the four extensions, and after the governing documents and CI gates were moved into this repository. `D:/UniERP` now holds the 30 layer repositories and nothing else; the VS Code workspace lists them in layer order rather than alphabetically. The platform was re-tested with the monorepo gone: `pnpm smoke` 18/18 against the containerised stack. | Claude Code |
-| 2026-08-07 | **This document moved here from `ERPSys/docs/`, with the ten `docs/ai/` master files.** § 4.2 makes `unierp-workspace` the L7 meta-repository and the landing README already pointed at it for the architecture — a promise that was not kept while the governing documents lived only in the monorepo being retired. Also completed § 14 Phase 3 step 4 for the application layer: every `@unerp/*` published from its own repo, `workspace:*` gone, and `unierp-infra/docker-compose.platform.yml` composing images built from the split repos. `pnpm smoke` 18/18 against that stack. | Claude Code |
-| 2026-08-06 | The working journey had stopped working: the API did not boot, because `packages/extension-api` and `packages/contracts` re-exported without file extensions and Node's ESM loader will not resolve those. `pnpm verify` was 14/14 green through the failure — every gate in the pipeline resolves modules through a bundler, and the only consumer that does not is the runtime. Fixed by six `.js` specifiers; proven by boot and by an 18/18 `pnpm smoke`. Added gate 15, `check-node-resolution.mjs`, which models Node's resolver over the emitted `dist/` and is proven able to fail; it found six further latent instances in `@unerp/shared`. Added § 14.1: the container story measured. `unierp-infra`'s compose was a byte-copy of the monorepo's that could never have started, and the Dockerfiles in `unierp-api`, `unierp-web` and `unierp-idp` failed on their first `COPY`; the compose is rewritten to the subset infra owns and the three Dockerfiles are removed, with each README stating where the image is really built. Recorded the one decision that unblocks per-repo images: a registry CI can reach. | Claude Code |
+| 2026-08-07 | **This document moved here from `ERPSys/docs/`, with the ten `docs/ai/` master files.** § 4.2 makes `unierp-workspace` the L7 meta-repository and the landing README already pointed at it for the architecture — a promise that was not kept while the governing documents lived only in the monorepo being retired. Also completed § 14 Phase 3 step 4 for the application layer: every `@kannan19302/*` published from its own repo, `workspace:*` gone, and `unierp-infra/docker-compose.platform.yml` composing images built from the split repos. `pnpm smoke` 18/18 against that stack. | Claude Code |
+| 2026-08-06 | The working journey had stopped working: the API did not boot, because `packages/extension-api` and `packages/contracts` re-exported without file extensions and Node's ESM loader will not resolve those. `pnpm verify` was 14/14 green through the failure — every gate in the pipeline resolves modules through a bundler, and the only consumer that does not is the runtime. Fixed by six `.js` specifiers; proven by boot and by an 18/18 `pnpm smoke`. Added gate 15, `check-node-resolution.mjs`, which models Node's resolver over the emitted `dist/` and is proven able to fail; it found six further latent instances in `@kannan19302/shared`. Added § 14.1: the container story measured. `unierp-infra`'s compose was a byte-copy of the monorepo's that could never have started, and the Dockerfiles in `unierp-api`, `unierp-web` and `unierp-idp` failed on their first `COPY`; the compose is rewritten to the subset infra owns and the three Dockerfiles are removed, with each README stating where the image is really built. Recorded the one decision that unblocks per-repo images: a registry CI can reach. | Claude Code |
 | 2026-08-02 | Document established at tag `v1.0.0`. Target hybrid repository architecture, four planes, ADR-006…010.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Claude Code |
 | 2026-08-05 | Phase 3.2: extracted the L1 layer — unierp-kernel, unierp-design-system and unierp-sdk — each tagged v1.0.0 with a mechanical layering gate proven able to fail on an upward dependency. The design system has zero workspace dependencies, so "a UI component cannot import a service" is now structural. Flagged that 3.3 must wait for git-filter-repo: packages/database carries 59 commits of migration history that must survive extraction.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Claude Code |
 | 2026-08-05 | Phase 3 began: 3.1 extracted `unierp-contracts` to its own tagged repository. It typechecks standalone with zero runtime dependencies, and its CI asserts that invariant mechanically. Additive only — the monorepo copy stays authoritative until a registry exists, and verify remains 14/14. Recorded that 3.2 onward needs git-filter-repo and a clean tree.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Claude Code |
@@ -1856,8 +1856,8 @@ train.
 | 2026-08-05 | Design-token migration: hardcoded hex 984 → 305 in four verified passes, baselined at the new floor. Brand marks and the `connect` module's deliberate Google Material palette are excluded on stated grounds rather than swept. Recorded why the 3,215 pixel values are not being swept mechanically: spacing has no recoverable semantics and no visual regression coverage exists to catch a wrong substitution.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Claude Code |
 | 2026-08-05 | R12 completed: unguarded controller routes 284 → 0, baselined at zero, with the 18 deliberately-public routes declared via a new `@Public("<reason>")` decorator that requires its justification at the call site. Closed a real hole found on the way — the service-management ticket controller had no guards at all. Fixed the API suite's apparent flakiness, which was Prisma exhausting Postgres' connection limit under 4 parallel forks, not the tests.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Claude Code |
 | 2026-08-05 | Phase 2's exit criterion met and both infrastructure-blocked Phase 0 items closed. M2 rebuilt from a harness that could not fail into one proven on three injected breaks and wired into `pnpm verify` + CI. RLS verified against PostgreSQL 16 (1,780 tables, ENABLE + FORCE, app role `NOBYPASSRLS`) after strengthening the gate, which had checked only ENABLE. `Float` money 29 → 0. Fixed two latent defects found on the way: `db:deploy` silently applied no migrations after the R2 schema split, and `pgbouncer` sat in the `volumes:` block. `pnpm verify` is 14/14 green with no skipped gate.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Claude Code |
-| 2026-08-05 | § 7.2 delivered: the 13 `@unerp/ui-*` packages merged into `packages/ui/src/<area>` and deleted, leaving one published artifact with 13 subpath exports. § 14 Phase 2 item 6 and the status table updated accordingly; Phase 2 now ~90%, gated only on M2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Claude Code |
-| 2026-08-05 | § 14 programme status re-measured against the tree and `check-policy.mjs --report`. Added a phase-completion table (~45% overall). Recorded as delivered since 2026-08-03: `apps/console` + `apps/idp` exist and `(dashboard)/saas*` is deleted from `apps/web` (Phase 1 deployable), M1 manifest, M2 CDC harness, M3 choreography bot, M4 workspace CLI, the `saas-deepening-*` rename, the 14-file Prisma split, and the R12 fix for 449 unauthenticated routes. Corrected unguarded routes 589 → 284 and hex 1,321 → 984; added pixel-value and HARD-rule rows. Identified § 7.2 (14 `ui-*` packages → one `@unerp/ui`) as the single outstanding item gating Phase 3.                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Claude Code |
+| 2026-08-05 | § 7.2 delivered: the 13 `@kannan19302/ui-*` packages merged into `packages/ui/src/<area>` and deleted, leaving one published artifact with 13 subpath exports. § 14 Phase 2 item 6 and the status table updated accordingly; Phase 2 now ~90%, gated only on M2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Claude Code |
+| 2026-08-05 | § 14 programme status re-measured against the tree and `check-policy.mjs --report`. Added a phase-completion table (~45% overall). Recorded as delivered since 2026-08-03: `apps/console` + `apps/idp` exist and `(dashboard)/saas*` is deleted from `apps/web` (Phase 1 deployable), M1 manifest, M2 CDC harness, M3 choreography bot, M4 workspace CLI, the `saas-deepening-*` rename, the 14-file Prisma split, and the R12 fix for 449 unauthenticated routes. Corrected unguarded routes 589 → 284 and hex 1,321 → 984; added pixel-value and HARD-rule rows. Identified § 7.2 (14 `ui-*` packages → one `@kannan19302/ui`) as the single outstanding item gating Phase 3.                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Claude Code |
 | 2026-08-02 | **Revision 2.** Topology changed from 4-repository consolidation to a fully split, strictly layered 15-repository architecture in 8 layers. Added § 4.5 (M1–M4: release-train manifest, consumer-driven contract tests, change choreography, golden-path CI), § 12.1 (multi-repo Windows dev loop), § 13.1–13.2 (shared gates, four-stage pipeline), rewrote § 14 (7 phases, extraction in dependency order, mechanisms-before-extraction gate), added ADR-011 and ADR-012, expanded § 10 supply-chain and § 17 risks for the widened surface.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Claude Code |
 
 ---

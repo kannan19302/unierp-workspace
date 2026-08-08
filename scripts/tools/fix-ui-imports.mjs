@@ -32,10 +32,10 @@ for (const dir of dirs) {
       let content = fs.readFileSync(file, 'utf8');
       const original = content;
       
-      // Replace @unerp/ui-components -> @unerp/ui/components
-      // Replace @unerp/ui-layout -> @unerp/ui/layout
+      // Replace @kannan19302/ui-components -> @kannan19302/ui/components
+      // Replace @kannan19302/ui-layout -> @kannan19302/ui/layout
       // etc
-      content = content.replace(/@unerp\/ui-([a-zA-Z0-9-]+)/g, '@unerp/ui/$1');
+      content = content.replace(/@kannan19302\/ui-([a-zA-Z0-9-]+)/g, '@kannan19302/ui/$1');
       
       if (content !== original) {
         fs.writeFileSync(file, content);

@@ -10,7 +10,7 @@ if (!fs.existsSync(devAppDir)) {
 
 // Scaffold basic Next.js structure for Developer Studio
 fs.writeFileSync(path.join(devAppDir, 'package.json'), JSON.stringify({
-  name: "@unerp/developer",
+  name: "@kannan19302/developer",
   version: "0.0.1",
   private: true,
   scripts: {
@@ -24,19 +24,19 @@ fs.writeFileSync(path.join(devAppDir, 'package.json'), JSON.stringify({
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@unerp/ui": "workspace:*",
-    "@unerp/sdk": "workspace:*"
+    "@kannan19302/ui": "workspace:*",
+    "@kannan19302/sdk": "workspace:*"
   },
   devDependencies: {
     "typescript": "^5.7.0",
     "@types/react": "^19.0.0",
     "@types/node": "^22.0.0",
-    "@unerp/config": "workspace:*"
+    "@kannan19302/config": "workspace:*"
   }
 }, null, 2));
 
 fs.writeFileSync(path.join(devAppDir, 'tsconfig.json'), JSON.stringify({
-  extends: "@unerp/config/typescript/nextjs.json",
+  extends: "@kannan19302/config/typescript/nextjs.json",
   compilerOptions: {
     baseUrl: ".",
     paths: {

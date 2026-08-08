@@ -134,7 +134,7 @@ const GATES = [
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, 'package.json'), JSON.stringify({
         name: 'unierp-contracts',
-        dependencies: { '@unerp/web': '1.0.0' }
+        dependencies: { '@kannan19302/web': '1.0.0' }
       }));
     },
     cleanup: () => {

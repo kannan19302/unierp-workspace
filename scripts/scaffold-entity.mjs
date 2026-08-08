@@ -72,9 +72,9 @@ console.log(`✅ Generated DTO: ${dtoPath}`);
 
 // 2. Generate Service file
 const serviceContent = `import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService, updateWithVersionGuard } from '@unerp/database';
-// Track G.9 platform contracts: list query + pagination meta come from @unerp/shared.
-import { buildPaginationMeta, listQuerySchema, type ListQuery } from '@unerp/shared';
+import { PrismaService, updateWithVersionGuard } from '@kannan19302/database';
+// Track G.9 platform contracts: list query + pagination meta come from @kannan19302/shared.
+import { buildPaginationMeta, listQuerySchema, type ListQuery } from '@kannan19302/shared';
 import { Create${entityName}Input, Update${entityName}Input } from './dto/${entityKebab}.dto';
 
 @Injectable()

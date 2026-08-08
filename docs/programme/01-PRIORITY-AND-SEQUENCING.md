@@ -112,7 +112,7 @@ Solid arrows are hard blocks. A phase may not start until every upstream track's
 
 | Block | Why it cannot be bypassed |
 | :---- | :------------------------ |
-| **A01–A02 → everything** | Until `@unerp/*` resolves from a registry CI can reach, no repo has a reproducible clean install and no container build is trustworthy. Work done before this is work built on an unverifiable dependency tree. |
+| **A01–A02 → everything** | Until `@kannan19302/*` resolves from a registry CI can reach, no repo has a reproducible clean install and no container build is trustworthy. Work done before this is work built on an unverifiable dependency tree. |
 | **B01–B12 → C, D, E, F, H screens** | 14 primitives cannot express an ERP. Every screen built before the primitives exist hand-rolls a table, a tab set and a toast, and every one of those is thrown away later. |
 | **D13–D22 → E** | The per-app settings contract must exist before 45 modules each declare settings, or you get 45 settings dialects. |
 | **A16 → G, and G09–G18 → F** | The sandbox is what stands between tenant-authored code and every other tenant's data (`00-BASELINE § 4⑥`, D009). Shipping builders first ships that risk. F's page runtime is G's runtime; building it twice is the only alternative. |

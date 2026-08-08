@@ -68,7 +68,7 @@ The hardening suite is written test-first (src/hardening.spec.ts, 44 tests):
    suite re-run. The exit criterion FAILS as expected.
 --------------------------------------------------------------------------
 
-> @unerp/sandbox@1.0.4 test:hardening
+> @kannan19302/sandbox@1.0.4 test:hardening
 > vitest run src/hardening.spec.ts
 
 

@@ -225,7 +225,7 @@ const HARD = [
       // and the seed reported MISSING in every repo instead of delegating to unierp-data.
       const seedCandidates = [
         "packages/database/prisma/seed.ts",
-        "node_modules/@unerp/database/prisma/seed.ts",
+        "node_modules/@kannan19302/database/prisma/seed.ts",
       ];
       // Each target belongs to a specific repository post-extraction. read() records a
       // delegation for anything owned elsewhere, so an absent file is either "not this

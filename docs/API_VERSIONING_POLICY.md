@@ -10,7 +10,7 @@
 | :------------ | :-----------------------: | :------------: | :-------------------------------- |
 | Tenant Plane  |         `/api/v1`         |       —        | Active                            |
 | Control Plane |    `/api/platform/v1`     |       —        | Active                            |
-| Extension API | `@unerp/extension-api` v1 |       —        | Active — 3-year support guarantee |
+| Extension API | `@kannan19302/extension-api` v1 |       —        | Active — 3-year support guarantee |
 
 ## Versioning Rules
 
@@ -27,10 +27,10 @@
 
 | Boundary                          | Window                                             |
 | :-------------------------------- | :------------------------------------------------- |
-| `@unerp/extension-api` (public)   | 3 years support, 12 months deprecation notice      |
+| `@kannan19302/extension-api` (public)   | 3 years support, 12 months deprecation notice      |
 | `@unierp/sdk` ↔ API major         | 2 majors concurrent                                |
-| `@unerp/contracts` ↔ `unierp-api` | Same train ± 1                                     |
-| `@unerp/database` ↔ `unierp-api`  | Migration backward-compatible for one full train   |
+| `@kannan19302/contracts` ↔ `unierp-api` | Same train ± 1                                     |
+| `@kannan19302/database` ↔ `unierp-api`  | Migration backward-compatible for one full train   |
 | Internal L0/L1 packages           | Same train; may break between trains subject to M2 |
 
 ## Deprecated Endpoints

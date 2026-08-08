@@ -10,7 +10,7 @@
 
 - **k6** installed locally: <https://grafana.com/docs/k6/latest/setup/install/>
 - A running UniERP deployment with seeded data (default: `http://localhost:3001`)
-- Default test credentials: `admin@unerp.dev` / `admin123` (from seed)
+- Default test credentials: `admin@kannan19302.dev` / `admin123` (from seed)
 
 ---
 
@@ -37,7 +37,7 @@ pnpm test:load:all
 # Point at a different deployment
 k6 run load-tests/scenarios/login.js \
   --env BASE_URL=https://staging.unerp.dev \
-  --env LOAD_TEST_EMAIL=test@unerp.dev \
+  --env LOAD_TEST_EMAIL=test@kannan19302.dev \
   --env LOAD_TEST_PASSWORD=s3cret
 
 # Output results to JSON for analysis

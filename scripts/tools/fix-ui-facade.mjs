@@ -24,9 +24,9 @@ pkg.exports = {
 
 for (const sub of subPkgs) {
   // Create proxy files
-  fs.writeFileSync(path.join(uiDir, `${sub}.d.ts`), `export * from "@unerp/ui-${sub}";\n`);
-  fs.writeFileSync(path.join(uiDir, `${sub}.js`), `export * from "@unerp/ui-${sub}";\n`);
-  fs.writeFileSync(path.join(uiDir, `${sub}.cjs`), `module.exports = require("@unerp/ui-${sub}");\n`);
+  fs.writeFileSync(path.join(uiDir, `${sub}.d.ts`), `export * from "@kannan19302/ui-${sub}";\n`);
+  fs.writeFileSync(path.join(uiDir, `${sub}.js`), `export * from "@kannan19302/ui-${sub}";\n`);
+  fs.writeFileSync(path.join(uiDir, `${sub}.cjs`), `module.exports = require("@kannan19302/ui-${sub}");\n`);
 
   // Update exports
   pkg.exports[`./${sub}`] = {
@@ -38,4 +38,4 @@ for (const sub of subPkgs) {
 }
 
 fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-console.log('Created proxy files and updated @unerp/ui package.json');
+console.log('Created proxy files and updated @kannan19302/ui package.json');

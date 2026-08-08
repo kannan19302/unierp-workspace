@@ -18,6 +18,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 
 - `[api] test(coverage): phase A06 DONE — configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` · Claude Code
 
+- `[design-system] feat(feedback): B03 DONE � Toast system with ToastProvider, useToast() hook, aria-live=polite region for screen reader announcement, deduplication by key, burst cap at 5, auto-dismiss with configurable duration, keyboard-dismissible buttons. Alert/Banner/InlineMessage/Progress were already present.` � Claude Code
+
 - `[design-system] feat(overlays): B02 DONE � Overlay primitives (Popover, DropdownMenu, ContextMenu, Tooltip, Drawer, Sheet) rebuilt with: (1) portal layer via createPortal rendering all overlays into document.body; (2) focus trap via useFocusTrap() trapping Tab/Shift+Tab, restoring focus to trigger on close; (3) scroll lock via useScrollLock() setting body.overflow=hidden while open; (4) Esc handler via capture-phase listener closing innermost overlay first; (5) DropdownMenu arrow-key navigation (ArrowDown/Up/Home/End/Enter); axe tests and keyboard interaction tests added.` � Claude Code
 
 - `[workspace] audit(track-b): Track B repair — 24 phases had been set to invalid status COMPLETED (not in VALID_STATUS vocabulary), blocking all downstream tracks. Reset all 24 to OPEN via phase-brief.mjs. A29-A31 also reset to OPEN (no evidence supports WIP). Deleted 61 one-line re-export shims from unierp-design-system/src/components/ that inflated the >=40 file count from 25 to 86. Extended check-plan-integrity.mjs to reject any status outside VALID_STATUS. Filed D031 (criterion counts files, satisfiable by shims — amended to count components with stories), D032 (55 phases marked finished with no ADP claim), D033 (integrity script accepted invalid status — now CLOSED). Fixed unierp-storybook version pins from 0.1.0 (404) to real versions (ui 1.0.15, config 1.0.2). Set B13 BLOCKED (A01 not published), B12/B15-B17/B21-B23 BLOCKED (CI gate requires A01). Verified B18 DONE (Dart token generation path end-to-end). B01-B11 left OPEN with progress notes measuring actual exit criterion gaps. B14/B19/B20/B24 left OPEN (deps unmet). The blocker for 8 of 24 phases is A01: create npm org unerp, enable trusted publishing for 13 packages, tag first release — cannot be done by an agent.` · Claude Code
@@ -258,4 +260,5 @@ prevented session-fixation after privilege elevation` is useful. `fix: auth bug`
 
 <!-- Append new entries above this line, newest date first. -->
 A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 in unierp-sandbox/src/escape-suite.spec.ts, each proven to fail when its mitigation is removed via a source-mutation harness; wired as a hard blocking CI step (no hashFiles guard).
+
 

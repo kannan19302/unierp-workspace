@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[api] test(coverage): phase A06 DONE — configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` · Claude Code
+
 - `[infra] ops(pitr): phase A23 DONE — implemented per-tenant point-in-time recovery rehearsal script rehearse-tenant-pitr.mjs in unierp-infra, proving T-1h single-tenant restoration with zero cross-tenant contamination.` · Claude Code
 
 - `[contracts] feat(tenancy): phase A26 DONE — added residencyRegion attribute to Tenant model in core-part-1.prisma and exported assertTenantResidency enforcement in @unerp/contracts (resolving G-3).` · Claude Code

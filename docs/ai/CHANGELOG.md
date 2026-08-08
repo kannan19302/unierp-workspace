@@ -358,3 +358,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (A01):** Published remaining 12 packages to public npm registry via Granular Automation Token; verified CDN resolution.
 
 - **2026-08-08 (A02):** Fixed missing @hyperledger/fabric-gateway dependency in unierp-api and successfully verified fresh-clone builds across the workspace.
+
+- **2026-08-08 (C01):** Control-plane shell, auth and realm separation — added `realm`/`amr`/`mfaVerified` claims to @kannan19302/auth SessionTokenPayload; implemented `/auth/provider/login` in unierp-idp scoped to provider-slug tenant; ControlPlaneGuard now rejects tokens where realm !== 'provider' (11 tests pass); unierp-console middleware enforces realm+MFA check; App Shell, login page and (control-plane) layout created. Phase status set DONE.

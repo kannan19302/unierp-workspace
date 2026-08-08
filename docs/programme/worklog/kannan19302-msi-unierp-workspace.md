@@ -541,3 +541,9 @@ Work has NOT started. This block exists so no other agent takes this phase.
 Exit criterion check: '<table' in unierp-web returns 191 hand-rolled tables, not 0. Phase is partly done (data-grid exists) but unierp-web still uses raw tables.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:35:56Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: overlays do not use a portal layer, focus trap, or scroll-lock. They are basic inline components. Phase partly done.
+```
+

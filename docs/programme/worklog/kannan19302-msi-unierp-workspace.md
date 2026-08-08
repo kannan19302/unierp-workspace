@@ -595,3 +595,9 @@ Exit criterion check: file upload lacks chunking/resuming. Rich text editor lack
 Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:21Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: TreeView lacks virtualisation for 10k nodes and type-ahead. SplitView lacks persistence. Phase partly done.
+```
+

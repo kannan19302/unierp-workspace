@@ -18,6 +18,8 @@ duplicated â€” which is the single most expensive failure mode in multi-agent de
 
 - `[api] test(coverage): phase A06 DONE â€” configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` Â· Claude Code
 
+- `[design-system] feat(heavy-inputs): B07 DONE — useChunkedUpload hook (Blob.slice chunks, progress 0-100, abort, uploadChunk callback, status state machine); sanitizeHtml utility (DOMPurify when available, DOMParser naiveSanitize fallback, strips script/on* attrs, SSR-safe); both exported from heavy-inputs.tsx.` · Claude Code
+
 - `[design-system] feat(temporal): B06 DONE — useTimezoneDate(tz) hook using Intl.DateTimeFormat for timezone-correct formatting/parsing (format() + toUtcIso()); FiscalPeriodPicker accepts fiscalYearStartMonth prop so tenant-configured fiscal years produce correct quarter labels (UK April fiscal, Indian April, custom).` · Claude Code
 
 - `[design-system] feat(form-controls): B05 DONE — useFormField<T>(initialValue, schema) Zod-integrated hook exposing aria-invalid+aria-describedby via inputProps; CurrencyInput float guard replaced with integer arithmetic (pence conversion prevents float drift); all controls now associate errors via aria-describedby.` · Claude Code
@@ -268,6 +270,7 @@ prevented session-fixation after privilege elevation` is useful. `fix: auth bug`
 
 <!-- Append new entries above this line, newest date first. -->
 A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 in unierp-sandbox/src/escape-suite.spec.ts, each proven to fail when its mitigation is removed via a source-mutation harness; wired as a hard blocking CI step (no hashFiles guard).
+
 
 
 

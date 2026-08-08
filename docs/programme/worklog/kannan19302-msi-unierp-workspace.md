@@ -577,3 +577,9 @@ Phase asserts a CI gate but CI is red at npm install because A01 has never publi
 Exit criterion check: temporal controls lack timezone conversion and fiscal calendar integration. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:16Z · kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
+```
+

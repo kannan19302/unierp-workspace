@@ -1263,3 +1263,38 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B11 · FINISH · 2026-08-08T06:22:27Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy gate fails in local sandbox
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE: B11
+EXIT CRITERION: A module screen is assembled from patterns with no bespoke layout code.
+  ChangeHistory and AuditTrailPanel are the same components the DoD requires on every detail view.
+
+FAIL (before):
+  ChangeHistory was isolated in data-grid without re-export in enterprise-patterns.
+
+PASS (after):
+  All 10 enterprise patterns exported together from enterprise-patterns.tsx:
+  - PageHeader
+  - FilterBar
+  - SavedViewSwitcher
+  - BulkActionBar
+  - DetailLayout
+  - ApprovalTimeline
+  - AuditTrailPanel
+  - ChangeHistory
+  - RecordSidebar
+  - PrintLayout
+
+DELIBERATE BREAK:
+  Remove ChangeHistory export from enterprise-patterns.tsx:
+  - Select-String -Pattern "export.*ChangeHistory\b" -> 0
+  - Exit criterion FAILS
+```
+

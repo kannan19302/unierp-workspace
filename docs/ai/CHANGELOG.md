@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[contracts] feat(tenancy): phase A26 DONE — added residencyRegion attribute to Tenant model in core-part-1.prisma and exported assertTenantResidency enforcement in @unerp/contracts (resolving G-3).` · Claude Code
+
 - `[workspace] ci(pii): phase A25 DONE — retargeted read-schema.mjs to polyrepo paths and verified field-level PII registry check for all 33 PII models (including HealthcarePatient and EducationStudent) via check-pii-registry.mjs.` · Claude Code
 
 - `[infra] ops(secrets): phase A24 DONE — documented secret custody in SECRETS-CUSTODY.md and implemented rehearse-secret-rotation.mjs to rehearse secret rotation across JWT keys, DB credentials, and PII master keys.` · Claude Code

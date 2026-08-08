@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[all] docs(agents): phase A15 DONE — synced canonical AGENTS.md, CLAUDE.md, and GEMINI.md entrypoints across all 29 sibling repositories, eliminating all 15 stale ERPSys monorepo references.` · Claude Code
+
 - `[workspace] ci(gates): phase A09 DONE — implemented the break-it suite in scripts/ci/prove-gates.mjs, proving that every CI gate in ci.yml fails loudly under synthetic failure conditions.` · Claude Code
 
 - `[data] feat(db): phases A03 & A04 DONE — decomposed core.prisma into bounded-context schema files (all under 2,200 lines, resolving R2/D001) and added scripts/check-schema-size.mjs CI gate for schema size (<3,000 lines) and entity duplication detection.` · Claude Code

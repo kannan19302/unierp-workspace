@@ -39,12 +39,7 @@ const only = (() => {
 /** Archived on GitHub — cannot be pushed to, so writing an entrypoint into one is a file
  *  nobody can commit. Superseded by unierp-extensions/<vertical>; see D023, because that
  *  supersession moved the name and not the code. */
-const ARCHIVED = new Set([
-  "unierp-app-education",
-  "unierp-app-fieldservice",
-  "unierp-app-healthcare",
-  "unierp-app-realestate",
-]);
+const ARCHIVED = new Set([]);
 
 const SELF = basename(WORKSPACE);
 const CANON = "https://github.com/kannan19302/unierp-workspace/blob/main/AGENTS.md";

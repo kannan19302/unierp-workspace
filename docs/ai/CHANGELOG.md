@@ -372,3 +372,7 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (C06):** Tenant directory and detail — added aggregated health/usage metrics to getTenantDetail in SuperAdminService, and created TenantDetailPage in unierp-web with actions to suspend/resume/purge. Phase DONE.
 
 - **2026-08-08 (C07):** Provisioning and lifecycle transitions — added offboard, export, and complete lifecycle UI hooks to TenantDetailPage. Phase DONE.
+
+- **2026-08-08 (C08 & C09):** Impersonation — added TenantConsent and ImpersonationSession schema, updated PlatformService and SuperAdminService for endpoints, and implemented token impersonation and persistent banner in UI. Phases DONE.
+
+- **2026-08-08 (C10):** Cross-tenant search for support — implemented rate-limited and audited global search in SuperAdmin controller with UI in dashboard.

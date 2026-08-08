@@ -404,3 +404,8 @@ for (const r of rows)
       r.verdict,
   );
 console.log();
+
+if (rows.some((r) => r.verdict === "FAIL")) {
+  console.error("❌ Architecture audit failed: one or more checks reported FAIL");
+  process.exit(1);
+}

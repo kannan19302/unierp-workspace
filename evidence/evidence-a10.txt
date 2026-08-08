@@ -1,0 +1,21 @@
+EXIT COMMAND:
+node scripts/ci/check-secrets.mjs --staged
+
+PASSING OUTPUT:
+✅ Secret scan clean (144 files)
+
+BROKEN OUTPUT (when synthetic AKIA key is staged):
+────────────────────────────────────────────────────────────────────────
+  ❌ POSSIBLE SECRET COMMITTED — 1 finding(s)
+────────────────────────────────────────────────────────────────────────
+   temp_secret_test.txt:1  —  AWS access key id  [aws-access-key]
+
+  If any of these is real:
+    1. ROTATE IT NOW. Assume it is compromised the moment it is written to
+       disk in a git repository — removing the commit does not un-leak it.
+    2. Move the value to an environment variable / OpenBao / SOPS.
+    3. Purge it from history if it was already pushed.
+
+  If it is a false positive, make it obviously non-real (use a placeholder
+  such as <YOUR_KEY> or process.env.X) rather than weakening this gate.
+────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,9 @@
+EXIT COMMAND:
+grep_search "workspace:" in package.json files across all repos
+
+PASSING OUTPUT:
+No results found (0 workspace:* specifiers across all 30 repositories)
+
+BROKEN OUTPUT (when workspace:* was in unierp-storybook/package.json):
+d:\UniERP\unierp-storybook\package.json:11:    "@unerp/ui": "workspace:*",
+d:\UniERP\unierp-storybook\package.json:23:    "@unerp/config": "workspace:*",

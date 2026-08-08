@@ -761,36 +761,36 @@ it was detected._
 
 | ID | Sev | Summary | Fixed by | Status |
 | :- | :-- | :------ | :------- | :----- |
-| D001 | 🔴 High | `core.prisma` is 31,092 lines; R2 criterion (≤ 3,000) unmet | A03 | OPEN |
+| D001 | 🔴 High | `core.prisma` is 31,092 lines; R2 criterion (≤ 3,000) unmet | A03 | CLOSED |
 | D002 | 🔴 High | Coverage gate cannot fail: `all: false`, no thresholds | A06, J02 | OPEN |
-| D003 | 🔴 High | `@unerp` scope resolves to `localhost:4873` in 18 repos | A01 | OPEN |
+| D003 | 🔴 High | `@unerp` scope resolves to `localhost:4873` in 18 repos | A01 | CLOSED |
 | D004 | 🟠 Med | `ARCHITECTURE.md` places the outbox in `unierp-kernel` | A12 | OPEN |
-| D005 | 🟠 Med | Documented run instructions point at the retired monorepo | A15, A12 | OPEN |
-| D006 | 🟠 Med | 11 repair scripts + 3 error dumps tracked in `unierp-mobile` | A14, I01, I02 | OPEN |
-| D007 | 🟠 Med | `unierp-storybook/.storybook/.storybook/` self-nesting | A14 | OPEN |
-| D008 | 🟠 Med | `unierp-storybook` still `workspace:*`; cannot install | A02, B13 | OPEN |
-| D009 | 🟠 Med | 393-line sandbox carries the isolation claim, untested | A16–A19 | OPEN |
+| D005 | 🟠 Med | Documented run instructions point at the retired monorepo | A15, A12 | CLOSED |
+| D006 | 🟠 Med | 11 repair scripts + 3 error dumps tracked in `unierp-mobile` | A14, I01, I02 | CLOSED |
+| D007 | 🟠 Med | `unierp-storybook/.storybook/.storybook/` self-nesting | A14 | CLOSED |
+| D008 | 🟠 Med | `unierp-storybook` still `workspace:*`; cannot install | A02, B13 | CLOSED |
+| D009 | 🟠 Med | 393-line sandbox carries the isolation claim, untested | A16–A19 | CLOSED |
 | D010 | 🟡 Low | `unierp-corporate-site-template` has no source files | F16 | OPEN |
-| D011 | 🟡 Low | `ROADMAP.md` extraction status materially stale | A12 | OPEN |
+| D011 | 🟡 Low | `ROADMAP.md` extraction status materially stale | A12 | CLOSED |
 | D012 | 🟡 Low | Builder `[id]` editors are 9-line stubs | G10, G11, G16 | OPEN |
-| **D013** | 🔴 **Crit** | **Layer gate declared in 21 repos, script exists in 0** | A07, A08, A12 | OPEN |
-| D014 | 🟠 Med | `audit-architecture.mjs` targets the retired `ERPSys` path | A11 | OPEN |
-| D015 | 🟠 Med | All 15 agent entrypoints point at the retired monorepo; 25 repos have none | `sync-agent-entrypoints.mjs`, A15 | OPEN |
+| **D013** | 🔴 **Crit** | **Layer gate declared in 21 repos, script exists in 0** | A07, A08, A12 | CLOSED |
+| D014 | 🟠 Med | `audit-architecture.mjs` targets the retired `ERPSys` path | A11 | CLOSED |
+| D015 | 🟠 Med | All 15 agent entrypoints point at the retired monorepo; 25 repos have none | `sync-agent-entrypoints.mjs`, A15 | CLOSED |
 | **D016** | 🔴 **Crit** | **70 % of test-suite volume cannot fail (`catch(e){expect(e).toBeDefined()}`), and CI excludes it. Blocks A06.** | L11–L14 | OPEN |
 | D017 | 🟠 Med | 86 non-test files exceed the 1,000-line hard ceiling `CODE_STANDARDS § 4` calls unjustifiable; nothing enforces it | L01, L07–L09 | OPEN |
 | D018 | 🟠 Med | `CODE_STANDARDS § 10`'s R13 lint rules (size, complexity, naming, silent catch, TODO discipline) were never implemented and had no phase | L01–L06 | OPEN |
-| **D019** | 🔴 High | **`workflow_call` used in 0 repos — every CI file is a hand copy, contradicting workspace's stated invariant. Makes A07/A08 30× and temporary.** | A29 | OPEN |
-| **D020** | 🔴 **Crit** | **Extension kill switch is per-process and unpersisted — an operator using it in an incident would see it succeed while the extension kept running** | A17 | OPEN |
-| **D021** | 🔴 **Crit** | **Egress "allowlist" is a hostname string match — DNS rebinding reaches cloud metadata and localhost; redirects unchecked; no scheme restriction** | A17 | OPEN |
-| **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | OPEN |
+| **D019** | 🔴 High | **`workflow_call` used in 0 repos — every CI file is a hand copy, contradicting workspace's stated invariant. Makes A07/A08 30× and temporary.** | A29 | CLOSED |
+| **D020** | 🔴 **Crit** | **Extension kill switch is per-process and unpersisted — an operator using it in an incident would see it succeed while the extension kept running** | A17 | CLOSED |
+| **D021** | 🔴 **Crit** | **Egress "allowlist" is a hostname string match — DNS rebinding reaches cloud metadata and localhost; redirects unchecked; no scheme restriction** | A17 | CLOSED |
+| **D022** | 🔴 High | **No cap on bridge payload size or concurrent isolates — one tenant can OOM the process serving all tenants** | A17 | CLOSED |
 | **D023** | 🔴 High | **The 4 verticals are archived on GitHub; 2,249 source lines replaced by 138. The supersession moved the name, not the code. Family is 26 live repos, not 30.** | E26 | OPEN |
-| **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | OPEN |
+| **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | CLOSED |
 | **D025** | 🔴 **Crit** | **5 of workspace CI's 8 jobs ran 27 pnpm steps in a repo with no package.json — never ran, never failed, sat "skipped". The application gates (lint, typecheck, test, coverage, audit, RLS, PII) run NOWHERE.** | A31 | OPEN |
 | **D026** | 🟠 Med | **`ev-a17.txt` committed at the root of `unierp-workspace` (D006/R5 recurrence) — turned every family `verify.mjs` "Repo hygiene" gate red on `main`, unrelated to the phase in flight** | `e403d0c` | CLOSED |
 | **D027** | 🟠 Med | **Reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` (`_avg` reaches Prisma as `{ select: undefined }`) — every grouped/aggregated report query fails; plain `findMany` works** | E35 | OPEN |
-| **D028** | 🔴 **Crit** | **`start.mjs` `publish()` clobbers the real git index and pushes a mass revert on every claim.** It calls `git([...], { env: { GIT_INDEX_FILE } })`, but the `git()` helper (`start.mjs:69`) destructures only `{ allowFail }` and drops `env`, so `read-tree adp-state` rewrites the working index instead of a scratch one. The following `add` + `commit` then reverts every file changed since the `adp-state` ref. Reproduced 2026-08-08: claiming J02 pushed `3bc2ddc`, reverting 8 Track A statuses (A01, A06, A23–A28), 14 `CHANGELOG` lines, `read-schema.mjs` and `start.mjs` itself to the A19-era tree. Restored in `6bdd3f2`. **Every claim since A27 landed has been silently rewriting the plan.** | A27 | OPEN |
-| **D029** | 🔴 High | **`prove-gates.mjs` stamps 6 of its 11 gates `PROVEN` without ever making one fail.** `alwaysPasses: true` on Suppression ratchet, Policy gate, Decimal arithmetic ratchet, Architecture audit, Policy-gate coverage and Layering rule takes a clean run as proof and prints `Clean baseline execution verified` in the OBSERVED FAILURE column. A09's exit criterion requires an observed failure per gate and that any gate which cannot be made to fail is reported as decorative — this is the D013 pattern inside the tool built to detect it | A09 | OPEN |
-| **D030** | 🟠 Med | **A10's three-layer secret scanning is one layer.** `.gitleaks.toml` is committed in 28 repos but `gitleaks` is invoked by no workflow and no hook; there is no `husky`, `lefthook`, `pre-commit` config or `core.hooksPath` anywhere in the family, so `.git/hooks` holds only samples. The working mechanism is `check-secrets.mjs`, and it runs in CI only. Pre-commit and pre-push do not exist | A10 | OPEN |
+| **D028** | 🔴 **Crit** | **`start.mjs` `publish()` clobbers the real git index and pushes a mass revert on every claim.** It calls `git([...], { env: { GIT_INDEX_FILE } })`, but the `git()` helper (`start.mjs:69`) destructures only `{ allowFail }` and drops `env`, so `read-tree adp-state` rewrites the working index instead of a scratch one. The following `add` + `commit` then reverts every file changed since the `adp-state` ref. Reproduced 2026-08-08: claiming J02 pushed `3bc2ddc`, reverting 8 Track A statuses (A01, A06, A23–A28), 14 `CHANGELOG` lines, `read-schema.mjs` and `start.mjs` itself to the A19-era tree. Restored in `6bdd3f2`. **Every claim since A27 landed has been silently rewriting the plan.** | A27 | CLOSED |
+| **D029** | 🔴 High | **`prove-gates.mjs` stamps 6 of its 11 gates `PROVEN` without ever making one fail.** `alwaysPasses: true` on Suppression ratchet, Policy gate, Decimal arithmetic ratchet, Architecture audit, Policy-gate coverage and Layering rule takes a clean run as proof and prints `Clean baseline execution verified` in the OBSERVED FAILURE column. A09's exit criterion requires an observed failure per gate and that any gate which cannot be made to fail is reported as decorative — this is the D013 pattern inside the tool built to detect it | A09 | CLOSED |
+| **D030** | 🟠 Med | **A10's three-layer secret scanning is one layer.** `.gitleaks.toml` is committed in 28 repos but `gitleaks` is invoked by no workflow and no hook; there is no `husky`, `lefthook`, `pre-commit` config or `core.hooksPath` anywhere in the family, so `.git/hooks` holds only samples. The working mechanism is `check-secrets.mjs`, and it runs in CI only. Pre-commit and pre-push do not exist | A10 | CLOSED |
 
 ---
 

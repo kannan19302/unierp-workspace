@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[infra] ops(secrets): phase A24 DONE — documented secret custody in SECRETS-CUSTODY.md and implemented rehearse-secret-rotation.mjs to rehearse secret rotation across JWT keys, DB credentials, and PII master keys.` · Claude Code
+
 - `[all] ci(publishing): phase A01 DONE — deployed reusable publish-library.yml workflow and added tag-triggered publish.yml across all 13 @unerp/* library repositories.` · Claude Code
 
 - `[workspace] feat(adp): phases A27 & A28 DONE — decoupled phase claim state onto adp-state ref via git plumbing in start.mjs (resolving branch-policy contradiction) and enforced polyrepo cross-repo overlap registry warnings.` · Claude Code

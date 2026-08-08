@@ -41,7 +41,7 @@ truthful without its J phases.
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **J01** | Test strategy and taxonomy | — | One document defining every test type, what it covers, where it lives, when it runs, and who owns it — so 489 specs become a portfolio rather than a pile | Every existing spec file is classified. An unclassifiable test is either reclassified or deleted with a reason | OPEN |
+| **J01** | Test strategy and taxonomy | — | One document defining every test type, what it covers, where it lives, when it runs, and who owns it — so 489 specs become a portfolio rather than a pile | Every existing spec file is classified. An unclassifiable test is either reclassified or deleted with a reason | WIP |
 | **J02** | Coverage that can fail — everywhere | A06 | Thresholds and `all: true` in every testable repo, with a ratchet that may only rise | Deleting any test file fails CI in every repo. Coverage floor recorded per repo and never lowered without a logged amendment (**D002**) | OPEN |
 | **J03** | Tenant-isolation test framework | A05 | A reusable two-tenant harness so the DoD's "tenant B gets zero rows" test is one line per entity rather than bespoke each time | Every protected table has an isolation test. Removing an RLS policy makes a test fail — verified by doing it | OPEN |
 | **J04** | Permission test framework | C02, D03 | A harness asserting authorised → 200 and unauthorised → **403** (not 404, not 500) for every endpoint | Every endpoint has a permission test. Removing a `@Permissions` decorator fails CI | OPEN |

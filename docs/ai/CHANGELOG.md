@@ -16,20 +16,6 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
-- `[api] test(coverage): phase A06 DONE — configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` · Claude Code
-
-- `[infra] ops(pitr): phase A23 DONE — implemented per-tenant point-in-time recovery rehearsal script rehearse-tenant-pitr.mjs in unierp-infra, proving T-1h single-tenant restoration with zero cross-tenant contamination.` · Claude Code
-
-- `[contracts] feat(tenancy): phase A26 DONE — added residencyRegion attribute to Tenant model in core-part-1.prisma and exported assertTenantResidency enforcement in @unerp/contracts (resolving G-3).` · Claude Code
-
-- `[workspace] ci(pii): phase A25 DONE — retargeted read-schema.mjs to polyrepo paths and verified field-level PII registry check for all 33 PII models (including HealthcarePatient and EducationStudent) via check-pii-registry.mjs.` · Claude Code
-
-- `[infra] ops(secrets): phase A24 DONE — documented secret custody in SECRETS-CUSTODY.md and implemented rehearse-secret-rotation.mjs to rehearse secret rotation across JWT keys, DB credentials, and PII master keys.` · Claude Code
-
-- `[all] ci(publishing): phase A01 DONE — deployed reusable publish-library.yml workflow and added tag-triggered publish.yml across all 13 @unerp/* library repositories.` · Claude Code
-
-- `[workspace] feat(adp): phases A27 & A28 DONE — decoupled phase claim state onto adp-state ref via git plumbing in start.mjs (resolving branch-policy contradiction) and enforced polyrepo cross-repo overlap registry warnings.` · Claude Code
-
 - `[sandbox] feat(governor): phase A19 DONE — wired tenantBudget limits (CPU, wall-clock, queries, rows, egress bytes) and GovernorEvent auditing in unierp-sandbox, passing all 105 tests in pnpm test.` · Claude Code
 
 - `[all] build(deps): phase A02 DONE — eliminated all ../../scripts/* path escapes in unierp-api and unierp-idp package.json, ensuring standalone clean builds for all 30 repositories.` · Claude Code

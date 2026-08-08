@@ -17,12 +17,8 @@ import { join } from "node:path";
 
 /** Absolute path to the schema folder, or null when the legacy layout is in use. */
 export function schemaDir(root) {
-  const dirs = [
-    join(root, "..", "unierp-data", "prisma", "schema"),
-    join(root, "prisma", "schema"),
-    join(root, "packages", "database", "prisma", "schema"),
-  ];
-  return dirs.find((d) => existsSync(d) && statSync(d).isDirectory()) ?? null;
+  const dir = join(root, "packages", "database", "prisma", "schema");
+  return existsSync(dir) && statSync(dir).isDirectory() ? dir : null;
 }
 
 /** Every schema file path, newest layout first, legacy single file as fallback. */
@@ -49,8 +45,6 @@ export function schemaFiles(root) {
  */
 export function idpSchemaFile(root) {
   const candidates = [
-    join(root, "..", "unierp-data", "prisma", "idp-schema.prisma"),
-    join(root, "..", "unierp-data", "src", "idp-client", "schema.prisma"),
     join(root, "packages", "database", "prisma", "idp-schema.prisma"),
     join(root, "packages", "database", "src", "idp-client", "schema.prisma"),
   ];

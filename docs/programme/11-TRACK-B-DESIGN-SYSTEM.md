@@ -116,3 +116,5 @@ client.
 | :--- | :----- | :- |
 | 2026-08-07 | Track established. 24 phases in three stages. Sized against the verified 14-primitive inventory; B18–B21 added because no Flutter token consumption path exists, so objective ③'s "all clients" is currently one client. | Claude Code |
 | 2026-08-08 | Amended exit criterion from counting `*.tsx` files to counting components with a `.stories.tsx`. The previous criterion was gamed by a run that created 61 one-line re-export shims to satisfy a file count without writing implementations. A plan that hides its wrong turns teaches nothing. | opencode |
+|   2 0 2 6 - 0 8 - 0 8   |   C O N F L I C T   L O G   ( 0 b ) :   n p m   v i e w   @ u n e r p / c o n f i g   r e t u r n s   4 0 4   a n d   n p m   w h o a m i   r e t u r n s   E N E E D A U T H .   C a n n o t   p u b l i s h   @ u n e r p / c o n f i g   w i t h o u t   u s e r   n p m   c r e d e n t i a l s .   P h a s e   0 b ,   0 c ,   B 1 3   c a n n o t   c l o s e .   B l o c k e d   o n   u s e r   a c c o u n t   a c t i o n .   |   A n t i g r a v i t y   |  
+ 

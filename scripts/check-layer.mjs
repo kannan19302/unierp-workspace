@@ -10,6 +10,7 @@ import { join, basename } from 'node:path';
 
 const LAYERS = {
   'unierp-contracts': 0,
+  'unierp-config': 0,
 
   'unierp-kernel': 1,
   'unierp-design-system': 1,
@@ -17,7 +18,6 @@ const LAYERS = {
   'unierp-shared': 1,
   'unierp-auth': 1,
   'unierp-service-kit': 1,
-  'unierp-config': 1,
 
   'unierp-data': 2,
   'unierp-framework': 2,

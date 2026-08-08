@@ -553,3 +553,9 @@ Exit criterion check: overlays do not use a portal layer, focus trap, or scroll-
 Exit criterion check: toasts lack screen reader announcement, queueing, and deduping logic. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:05Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: command palette lacks global shortcut and route/record search integration. Tabs lack arrow navigation. Phase partly done.
+```
+

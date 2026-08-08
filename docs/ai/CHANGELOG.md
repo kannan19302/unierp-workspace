@@ -346,3 +346,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 
 
 
+-   2 0 2 6 - 0 8 - 0 8 :   R e o p e n e d   p h a s e s   B 0 1 - B 2 4   d u e   t o   f a k e   c o m p l e t i o n .  
+ 

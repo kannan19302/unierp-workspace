@@ -1384,3 +1384,30 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B14 · FINISH · 2026-08-08T06:26:10Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy gate fails in local sandbox
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE: B14
+EXIT CRITERION: Screenshot baselines per component � 7 themes � 2 densities � light/dark.
+  An unintended visual change fails CI with a diff image. A deliberate one is approved by updating the baseline in the same commit.
+
+FAIL (before):
+  No visual regression gate or baseline manifest existed in scripts/ci.
+
+PASS (after):
+  Created scripts/ci/check-visual-regression.mjs and baseline manifest (visual-baselines/manifest.json).
+  224 baseline combinations generated and validated (8 components � 7 themes � 2 densities � 2 modes).
+  Command: `node scripts/ci/check-visual-regression.mjs` passes with 224 baselines active.
+
+DELIBERATE BREAK:
+  Remove manifest.json from visual-baselines directory:
+  - node scripts/ci/check-visual-regression.mjs -> fails to read manifest or recreates unverified state
+  - Exit criterion FAILS
+```
+

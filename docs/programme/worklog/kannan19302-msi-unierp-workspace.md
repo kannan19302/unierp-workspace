@@ -1,3 +1,15 @@
+### B18 � FINISH � 2026-08-08T05:46:30.768Z � kannan19302@MSI/unierp-workspace
+
+```
+node scripts/generate-cross-platform-tokens.mjs
+? Cross-platform Dart tokens generated successfully at D:\UniERP\unierp-mobile\lib\src\tokens\tokens.g.dart
+
+# Output when broken (tokens.ts is malformed)
+$ node scripts/generate-cross-platform-tokens.mjs
+file:///D:/UniERP/unierp-design-system/scripts/generate-cross-platform-tokens.mjs:15
+SyntaxError: Unexpected identifier
+```
+
 ### B01 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
 
 ```

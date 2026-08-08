@@ -39,9 +39,25 @@ console.log(`Screens using @unerp/ui: ${designSystemScreens}`);
 console.log(`Coverage Floor: ${coveragePercent}%`);
 
 const REPORT_FILE = path.join(process.cwd(), "scripts", "ci", "design-system-adoption.json");
-fs.writeFileSync(
-  REPORT_FILE,
-  JSON.stringify({ totalScreens, designSystemScreens, coveragePercent: Number(coveragePercent), timestamp: new Date().toISOString() }, null, 2)
-);
+let previousFloor = 80.0;
 
+if (fs.existsSync(REPORT_FILE)) {
+  try {
+    const prevData = JSON.parse(fs.readFileSync(REPORT_FILE, "utf-8"));
+    if (prevData.coveragePercent) previousFloor = prevData.coveragePercent;
+  } catch (e) {}
+}
+
+const currentCoverage = Number(coveragePercent);
 console.log(`✅ Adoption report published to scripts/ci/design-system-adoption.json`);
+
+if (currentCoverage < previousFloor) {
+  console.error(`❌ Adoption regression: Coverage fell from ${previousFloor}% to ${currentCoverage}%`);
+  process.exit(1);
+} else {
+  fs.writeFileSync(
+    REPORT_FILE,
+    JSON.stringify({ totalScreens, designSystemScreens, coveragePercent: currentCoverage, timestamp: new Date().toISOString() }, null, 2)
+  );
+}
+

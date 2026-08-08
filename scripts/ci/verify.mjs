@@ -112,6 +112,7 @@ const GATES = [
     // fall. Found 706 the first time it ran, including a GL journal balance
     // check whose 0.01 tolerance existed only to absorb its own float error.
     cmd: ["node", ["scripts/ci/check-decimal-arithmetic.mjs"]],
+    needsAppSource: true,
   },
   {
     name: "PII registry",

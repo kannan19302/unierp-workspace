@@ -370,3 +370,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (C05):** Operations dashboard — added getDashboardSummary in OperationsService to return Grafana links, queue depth, outbox lag, and degraded tenants. Endpoint exposed as GET /platform/v1/operations/dashboard. Phase DONE.
 
 - **2026-08-08 (C06):** Tenant directory and detail — added aggregated health/usage metrics to getTenantDetail in SuperAdminService, and created TenantDetailPage in unierp-web with actions to suspend/resume/purge. Phase DONE.
+
+- **2026-08-08 (C07):** Provisioning and lifecycle transitions — added offboard, export, and complete lifecycle UI hooks to TenantDetailPage. Phase DONE.

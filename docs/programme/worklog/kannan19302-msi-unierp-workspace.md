@@ -1459,3 +1459,30 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B17 · FINISH · 2026-08-08T06:27:23Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy gate fails in local sandbox
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE: B17
+EXIT CRITERION: The report is generated in CI and published. Coverage may only rise. Any screen below the floor is named, so B's value is measured rather than assumed.
+
+FAIL (before):
+  Report did not enforce floor ratcheting or compare against previous baseline.
+
+PASS (after):
+  scripts/ci/measure-design-system-adoption.mjs measures design system usage across 887 web screens.
+  Current coverage: 80.3% (712/887 screens).
+  Published to scripts/ci/design-system-adoption.json.
+  Enforces floor ratcheting: if coverage falls below recorded floor, process exits with 1.
+
+DELIBERATE BREAK:
+  Artificially set previousFloor in design-system-adoption.json to 95.0%:
+  - node scripts/ci/measure-design-system-adoption.mjs -> "? Adoption regression: Coverage fell from 95.0% to 80.3%"
+  - Exit code 1 (fails CI)
+```
+

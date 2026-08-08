@@ -415,7 +415,7 @@ breaks no build.
 
 ---
 
-### D003 · 🔴 High · `@kannan19302` scope points at `localhost:4873` in 18 repos
+### D003 · 🔴 High · `@unerp` scope points at `localhost:4873` in 18 repos
 
 **Found:** 2026-08-07 (previously identified in `ROADMAP.md § Now`).
 **Fixed by:** [A01](10-TRACK-A-FOUNDATION.md).
@@ -808,7 +808,7 @@ it was detected._
 | :- | :-- | :------ | :------- | :----- |
 | D001 | 🔴 High | `core.prisma` is 31,092 lines; R2 criterion (≤ 3,000) unmet | A03 | CLOSED |
 | D002 | 🔴 High | Coverage gate cannot fail: `all: false`, no thresholds | A06, J02 | OPEN |
-| D003 | 🔴 High | `@kannan19302` scope resolves to `localhost:4873` in 18 repos | A01 | CLOSED |
+| D003 | 🔴 High | `@unerp` scope resolves to `localhost:4873` in 18 repos | A01 | CLOSED |
 | D004 | 🟠 Med | `ARCHITECTURE.md` places the outbox in `unierp-kernel` | A12 | OPEN |
 | D005 | 🟠 Med | Documented run instructions point at the retired monorepo | A15, A12 | CLOSED |
 | D006 | 🟠 Med | 11 repair scripts + 3 error dumps tracked in `unierp-mobile` | A14, I01, I02 | CLOSED |

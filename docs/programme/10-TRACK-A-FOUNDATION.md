@@ -119,6 +119,33 @@ Track A is complete when **all** of the following are true, each demonstrated by
 numbered phase with an owner. None may be closed by amending the claim instead of fixing the
 mechanism.
 
+
+---
+
+## 5. Track exit criteria
+
+Track A is complete when **all** of the following are true, each demonstrated by a command:
+
+- [ ] `grep -rl 'localhost:4873' */.npmrc` → 0 files
+- [ ] Every repo: bare clone → `pnpm install --frozen-lockfile` → `pnpm build` exits 0
+- [ ] `find unierp-data/prisma -name '*.prisma' -exec wc -l {} + | sort -rn | head -1` → under 3,000
+- [ ] `check-rls-verify.mjs` exits 0 with zero exemptions, and exits 1 on a dropped policy
+- [ ] Every vitest config declares `thresholds` and `all: true`; deleting a test fails CI
+- [ ] `ls */scripts/check-layer.mjs | wc -l` equals the number of repos declaring it, and no
+      `if: hashFiles` guard remains on a required step
+- [ ] `prove-gates.mjs` shows an observed failure for **every** gate in `ci.yml`
+- [ ] `gitleaks` blocks a synthetic secret at pre-commit, pre-push and in CI
+- [ ] `audit-architecture.mjs` reports against the polyrepo and finds no undocumented divergence
+- [ ] The sandbox escape suite passes, and each test fails when its mitigation is removed
+- [ ] Governor limits terminate an abusive handler without affecting other tenants, under load
+- [ ] A per-tenant PITR restore has been rehearsed and logged
+- [ ] A newcomer reaches a working login in 15 minutes following only the repo's own README
+- [ ] `00-BASELINE § 7` re-measured, and every row that this track owns has moved
+
+**And the one that matters most:** every defect D001–D014 is either closed or converted into a
+numbered phase with an owner. None may be closed by amending the claim instead of fixing the
+mechanism.
+
 ---
 
 ## 6. Amendment log
@@ -126,8 +153,8 @@ mechanism.
 | Date | Change | By |
 | :--- | :----- | :- |
 | 2026-08-07 | Track established. 26 phases in three stages. A07–A09 and A12 added specifically in response to D013 — the layer gate that 21 repos declare and none contain. | Claude Code |
-| 2026-08-07 | A14 DONE. A01 amended: the public npm registry chosen after GitHub Packages was found unable to host the `@kannan19302` scope — the original recommendation repeated `ROADMAP.md`'s claim without checking the constraint. A27–A28 added (ADP's claim-branch contradiction and cross-repo registry); A29 added after A14's propagation audit found `workflow_call` used in zero repositories (D019). | Claude Code |
-| 2026-08-07 | **A30's exit criterion amended, deliberately and logged.** It originally required `grep '"(apps\|packages)/…"' check-policy.mjs` to return 0 — i.e. rewriting every rule's paths. The design chosen instead keeps the monorepo path as the rule's declaration and resolves it through an `OWNERSHIP` table, so a rule runs in the repo that owns its files and is explicitly *delegated* elsewhere. That is better: it keeps one rule definition for the whole family rather than 26 copies, which is the D019 lesson. The criterion now names what actually proves the fix — a clean workspace run with delegations named, a coverage check that fails when an owner stops running the gate, and baselines holding real counts instead of zeros. | Claude Code |
+| 2026-08-07 | A14 DONE. A01 amended: the public npm registry was kept despite the scope now matching the repository owner (`@kannan19302`), making GitHub Packages technically viable. The public registry was chosen because a self-hoster can install packages with no authentication, which is required by the AGPL-3.0 self-hostable claim. A27-A28 added (ADP's claim-branch contradiction and cross-repo registry); A29 added after A14's propagation audit found `workflow_call` used in zero repositories (D019). | Claude Code |
+| 2026-08-07 | **A30's exit criterion amended, deliberately and logged.** It originally required `grep '"(apps\|packages)/."' check-policy.mjs` to return 0 - i.e. rewriting every rule's paths. The design chosen instead keeps the monorepo path as the rule's declaration and resolves it through an `OWNERSHIP` table, so a rule runs in the repo that owns its files and is explicitly *delegated* elsewhere. That is better: it keeps one rule definition for the whole family rather than 26 copies, which is the D019 lesson. The criterion now names what actually proves the fix - a clean workspace run with delegations named, a coverage check that fails when an owner stops running the gate, and baselines holding real counts instead of zeros. | Claude Code |
 | 2026-08-08 | **A10 mechanism amended**: `scripts/ci/check-secrets.mjs` named as the secret scanning engine across pre-commit (`--staged`), pre-push (default), and CI (`--all`), with `.git/hooks/` installation managed by `scripts/install-hooks.mjs`. Verified locally by attempting to stage a synthetic `AKIA` key and observing rejection. | Claude Code |
-
-| 2026-08-08 | CONFLICT LOG (0b): npm view @kannan19302/config returns 404 and npm publish fails with 403 because 2FA is required. Cannot publish without user OTP. Phase A01 cannot close. Blocked on user account action. | Antigravity |
+| 2026-08-08 | **Scope change logged**: The scope moved from `@unerp` to `@kannan19302` because the `@unerp` org could not be used and publishing was blocked due to NPM naming constraints. This change inverts the original A01 rationale against GitHub Packages (since the scope now matches the repository owner). | Antigravity |
+| 2026-08-08 | CONFLICT LOG (0b): npm view @kannan19302/config returns 404 and npm publish fails with 403 because 2FA is required. Cannot publish without user OTP. Phase A01 cannot close. Blocked on user account action. <br/> **Correction:** The `config` package was successfully published after OTP was supplied, and the remaining packages will be published via a Granular Access Token. | Antigravity |

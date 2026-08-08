@@ -474,3 +474,12 @@ FOUND
     check now surfaces this class automatically.
 ```
 
+### A08 · CLAIMED · 2026-08-08T04:08:46Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    main
+selected  lowest READY phase in Wave 0
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

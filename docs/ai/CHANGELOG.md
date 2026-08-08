@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[workspace] ci(pii): phase A25 DONE — retargeted read-schema.mjs to polyrepo paths and verified field-level PII registry check for all 33 PII models (including HealthcarePatient and EducationStudent) via check-pii-registry.mjs.` · Claude Code
+
 - `[infra] ops(secrets): phase A24 DONE — documented secret custody in SECRETS-CUSTODY.md and implemented rehearse-secret-rotation.mjs to rehearse secret rotation across JWT keys, DB credentials, and PII master keys.` · Claude Code
 
 - `[all] ci(publishing): phase A01 DONE — deployed reusable publish-library.yml workflow and added tag-triggered publish.yml across all 13 @unerp/* library repositories.` · Claude Code

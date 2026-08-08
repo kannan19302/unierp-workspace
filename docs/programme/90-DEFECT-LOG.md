@@ -715,6 +715,40 @@ reasons unrelated to the phase in flight, until the file was deleted there.
 
 ---
 
+### D027 · 🟠 Med · Reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR`
+
+**Found:** 2026-08-08 by A20. **Fixed by:** E35 (Ad-hoc report builder — grouping, totals).
+
+**Reproduction:**
+
+```bash
+# POST /api/v1/reporting/engine/query — tenant session + CSRF cookie
+# body: {"entity":"invoices","groupBy":["status"],
+#        "aggregations":[{"fn":"SUM","field":"totalAmount"},{"fn":"COUNT","field":"id"}],"limit":100}
+
+HTTP 400
+{"code":"DB_VALIDATION_ERROR","message":"Invalid database query"}
+
+# API log root cause:
+#   Invalid `prisma.invoice.groupBy()` invocation:
+#     ...
+#     _avg: { select: undefined }
+#   The `select` statement for type InvoiceAvgAggregateOutputType needs at least one truthy value.
+```
+
+`reporting-engine.service.ts:281` builds `model.groupBy({ by, where, _sum, _avg, _count, take })`
+where each aggregation is passed as `Object.keys(a).length > 0 ? a : undefined`. When a report asks
+for SUM + COUNT only (no AVG), the empty `_avg` still reaches Prisma as `{ select: undefined }` and
+the entire groupBy invocation throws — so every grouped/aggregated report query 400s. Plain
+`findMany` report queries work, which is why the defect surfaced only when exercising the
+aggregation path. Different option shapes produce sibling Prisma validation errors (e.g.
+"Every field used for orderBy must be included in the by-arguments. Missing fields: id"). Root
+cause is in the service's option-shaping, not the schema.
+
+**Closed:** _open — E35.
+
+---
+
 ## 3. Closed defects
 
 _None yet. When closing one, move its entry here, add `**Closed:** <date> by <phase>`, and state
@@ -753,6 +787,7 @@ it was detected._
 | **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | OPEN |
 | **D025** | 🔴 **Crit** | **5 of workspace CI's 8 jobs ran 27 pnpm steps in a repo with no package.json — never ran, never failed, sat "skipped". The application gates (lint, typecheck, test, coverage, audit, RLS, PII) run NOWHERE.** | A31 | OPEN |
 | **D026** | 🟠 Med | **`ev-a17.txt` committed at the root of `unierp-workspace` (D006/R5 recurrence) — turned every family `verify.mjs` "Repo hygiene" gate red on `main`, unrelated to the phase in flight** | `e403d0c` | CLOSED |
+| **D027** | 🟠 Med | **Reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` (`_avg` reaches Prisma as `{ select: undefined }`) — every grouped/aggregated report query fails; plain `findMany` works** | E35 | OPEN |
 
 ---
 
@@ -761,3 +796,4 @@ it was detected._
 | Date | Change | By |
 | :--- | :----- | :- |
 | 2026-08-07 | Log established with D001–D014 from the programme baseline audit. D013 (layer gate declared in 21 repos, present in none) is the most consequential: the platform's central invariant is asserted by a CI step that has never executed. | Claude Code |
+| 2026-08-08 | D027 filed by A20: reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` — reproduced via `POST /reporting/engine/query` with `groupBy` + `aggregations`; root cause in `reporting-engine.service.ts` option-shaping (`_avg` reaches Prisma as `{ select: undefined }`). Fixing phase E35. | opencode |

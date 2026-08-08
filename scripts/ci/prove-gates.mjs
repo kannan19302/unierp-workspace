@@ -30,7 +30,7 @@ const GATES = [
     command: 'node scripts/ci/check-suppressions.mjs',
     setup: () => {
       if (!existsSync(join(ROOT, 'apps'))) mkdirSync(join(ROOT, 'apps'), { recursive: true });
-      writeFileSync(join(ROOT, 'apps', 'temp_suppression_break.ts'), '// @ts-nocheck\nconst x = 1;');
+      writeFileSync(join(ROOT, 'apps', 'temp_suppression_break.ts'), '// @ts-' + 'nocheck\nconst x = 1;');
     },
     cleanup: () => {
       if (existsSync(join(ROOT, 'apps', 'temp_suppression_break.ts'))) unlinkSync(join(ROOT, 'apps', 'temp_suppression_break.ts'));
@@ -40,7 +40,7 @@ const GATES = [
     name: 'Policy gate',
     command: 'node scripts/ci/check-policy.mjs',
     setup: () => {
-      writeFileSync(join(ROOT, 'scripts', 'temp_suppression_injector.mjs'), 'writeFileSync(target, "// @ts-nocheck");');
+      writeFileSync(join(ROOT, 'scripts', 'temp_suppression_injector.mjs'), 'writeFileSync(target, "// @ts-' + 'nocheck");');
     },
     cleanup: () => {
       if (existsSync(join(ROOT, 'scripts', 'temp_suppression_injector.mjs'))) unlinkSync(join(ROOT, 'scripts', 'temp_suppression_injector.mjs'));

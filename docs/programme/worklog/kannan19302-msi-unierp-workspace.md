@@ -649,3 +649,21 @@ Phase asserts a CI gate but CI is red at npm install because A01 has never publi
 Exit criterion check: six states exist as simple components, but no lint rule enforces their usage. Phase partly done.
 ```
 
+### A01 · FINISH · 2026-08-08T05:38:09Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch policy gate fails locally on sandbox
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+node scripts\generate-cross-platform-tokens.mjs
+? Cross-platform Dart tokens generated successfully at D:\UniERP\unierp-mobile\lib\src\tokens\tokens.g.dart
+
+# Output when broken (tokens.ts is malformed)
+$ node scripts\generate-cross-platform-tokens.mjs
+file:///D:/UniERP/unierp-design-system/scripts/generate-cross-platform-tokens.mjs:15
+SyntaxError: Unexpected identifier
+```
+

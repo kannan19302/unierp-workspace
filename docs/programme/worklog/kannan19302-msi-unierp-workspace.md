@@ -559,3 +559,9 @@ Exit criterion check: toasts lack screen reader announcement, queueing, and dedu
 Exit criterion check: command palette lacks global shortcut and route/record search integration. Tabs lack arrow navigation. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:09Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: inputs lack aria-describedby error association and Zod integration. CurrencyInput can produce floats. Phase partly done.
+```
+

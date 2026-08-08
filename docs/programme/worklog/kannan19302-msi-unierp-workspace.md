@@ -565,3 +565,9 @@ Exit criterion check: command palette lacks global shortcut and route/record sea
 Exit criterion check: inputs lack aria-describedby error association and Zod integration. CurrencyInput can produce floats. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:12Z · kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
+```
+

@@ -1,0 +1,31 @@
+# Reusable: layer gate verification
+#
+# Phase A29. Declared by repositories in L0-L7 to assert layering rules mechanically.
+name: Layer Gate
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node version
+        type: string
+        default: "22"
+
+jobs:
+  layer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Check out workspace scripts
+        uses: actions/checkout@v4
+        with:
+          repository: kannan19302/unierp-workspace
+          path: .workspace-scripts
+
+      - name: Layer rule
+        run: node .workspace-scripts/scripts/check-layer.mjs

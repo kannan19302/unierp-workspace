@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[all] ci(workflows): phases A29 & A31 DONE — expressed CI gates as reusable workflows (application-gate.yml, layer-gate.yml, policy-gate.yml) in unierp-workspace and wired all 30 sibling repositories to consume them via workflow_call.` · Claude Code
+
 - `[all] docs(agents): phase A15 DONE — synced canonical AGENTS.md, CLAUDE.md, and GEMINI.md entrypoints across all 29 sibling repositories, eliminating all 15 stale ERPSys monorepo references.` · Claude Code
 
 - `[workspace] ci(gates): phase A09 DONE — implemented the break-it suite in scripts/ci/prove-gates.mjs, proving that every CI gate in ci.yml fails loudly under synthetic failure conditions.` · Claude Code

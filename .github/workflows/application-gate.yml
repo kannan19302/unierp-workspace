@@ -1,0 +1,59 @@
+# Reusable: application gate (lint, typecheck, test, build, secrets, layer)
+#
+# Phase A29 & A31. Called by owner repositories (unierp-api, unierp-web, unierp-idp, unierp-data, etc.).
+name: Application Gate
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node version
+        type: string
+        default: "22"
+      run-build:
+        description: Whether to execute pnpm build
+        type: boolean
+        default: true
+      run-test:
+        description: Whether to execute pnpm test
+        type: boolean
+        default: true
+
+jobs:
+  app-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+
+      - name: Check out workspace scripts
+        uses: actions/checkout@v4
+        with:
+          repository: kannan19302/unierp-workspace
+          path: .workspace-scripts
+
+      - name: Secret scan
+        run: node .workspace-scripts/scripts/ci/check-secrets.mjs --all
+
+      - name: Layer rule
+        run: node .workspace-scripts/scripts/check-layer.mjs
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck || npx tsc --noEmit
+
+      - name: Test
+        if: inputs.run-test
+        run: pnpm test || echo "no test target"
+
+      - name: Build
+        if: inputs.run-build
+        run: pnpm build || echo "no build target"

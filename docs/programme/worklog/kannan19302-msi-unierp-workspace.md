@@ -601,3 +601,9 @@ Phase asserts a CI gate but CI is red at npm install because A01 has never publi
 Exit criterion check: TreeView lacks virtualisation for 10k nodes and type-ahead. SplitView lacks persistence. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:25Z · kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
+```
+

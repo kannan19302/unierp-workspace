@@ -368,3 +368,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (C04):** Two-person control — added TwoPersonControlGuard and @TwoPersonControl decorator; applied to tenant purge, export, platform backups, and key rotation. Requires valid x-approval-token or raises an audited ControlPlaneReviewTask on break-glass. Phase DONE.
 
 - **2026-08-08 (C05):** Operations dashboard — added getDashboardSummary in OperationsService to return Grafana links, queue depth, outbox lag, and degraded tenants. Endpoint exposed as GET /platform/v1/operations/dashboard. Phase DONE.
+
+- **2026-08-08 (C06):** Tenant directory and detail — added aggregated health/usage metrics to getTenantDetail in SuperAdminService, and created TenantDetailPage in unierp-web with actions to suspend/resume/purge. Phase DONE.

@@ -749,6 +749,39 @@ cause is in the service's option-shaping, not the schema.
 
 ---
 
+### D028 — Med — `docs/runbooks/` is duplicated between `unierp-workspace` and `unierp-infra` and has already diverged
+
+**Found:** 2026-08-08 by A13. **Fixed by:** an operations/hygiene phase (A-track or K-track) that
+names one canonical home for the operational runbook set.
+
+**Reproduction:**
+
+```bash
+# Two live copies of the same runbook, in two repos:
+git -C unierp-workspace ls-files docs/runbooks   # INCIDENT-RESPONSE.md, SLO-DEFINITIONS.yaml, DATABASE-FAILOVER.md
+git -C unierp-infra     ls-files docs/runbooks   # same three filenames
+
+# They have already diverged. The workspace copy is the original 19-line stub:
+unierp-workspace/docs/runbooks/INCIDENT-RESPONSE.md   # Roles + 5-step procedure, 19 lines
+unierp-infra/docs/runbooks/INCIDENT-RESPONSE.md       # + alert-routing section, 5 SLO playbooks, Rehearsal log (97 lines)
+
+# DATABASE-FAILOVER.md diverged first (A22 added a rehearsal section only to infra):
+git -C unierp-workspace diff --no-index --stat docs/runbooks/DATABASE-FAILOVER.md \
+  ../unierp-infra/docs/runbooks/DATABASE-FAILOVER.md   # 13 lines added in infra only
+
+# SLO-DEFINITIONS.yaml's runbook anchors (#login-failure etc.) point at one of the two copies
+# with no statement about which — an on-call engineer reading the stale copy finds no playbook.
+```
+
+Two owners is no owner: an SLO/alerting change landed in `unierp-infra` only (A13), a failover
+rehearsal in `unierp-infra` only (A22), and neither was mirrored. The next incident response reads
+the wrong copy. The operational runbook set should live in exactly one repository (infra is the
+L7 ops home) and the other copy should be removed or reduced to a pointer.
+
+**Closed:** _open.
+
+---
+
 ## 3. Closed defects
 
 _None yet. When closing one, move its entry here, add `**Closed:** <date> by <phase>`, and state

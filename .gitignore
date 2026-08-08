@@ -40,6 +40,9 @@ Thumbs.db
 *.orig
 scratch/
 
+# Local backup artifacts (scripts/backup-database.mjs) — never commit a dump
+var/
+
 # Storybook
 storybook-static/
 

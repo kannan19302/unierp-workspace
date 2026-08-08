@@ -691,6 +691,30 @@ newcomer reads to decide whether the project is alive.
 
 ---
 
+### D026 · 🟠 Med · `ev-a17.txt` committed at the root of `unierp-workspace` — a D006/R5 recurrence that turned the repo-hygiene gate red
+
+**Found:** 2026-08-08 by A22. **Fixed by:** commit `e403d0c` on `unierp-workspace` main,
+`chore(workspace): remove stray ev-a17.txt tracked at root (repo hygiene)`.
+
+**Reproduction:**
+
+```bash
+node scripts/ci/check-repo-hygiene.mjs --repo unierp-workspace
+# 1 violation: FAIL unierp-workspace/ev-a17.txt ('.txt' file at a repository root) — exit 1
+```
+
+`ev-a17.txt` was an exit-criterion evidence scratch file that the A17 phase committed to the
+repository root (commit `c860b82`, `docs(ai): A17 DONE changelog line + ev-a17.txt exit-criterion
+evidence`). It sat on `main`; the A22 worktree branch (`autopilot/a22-backup`) never carried it
+(`git cat-file -e HEAD:ev-a17.txt` → fatal). Evidence files are consumed by `start.mjs --finish`
+and belong in the worklog, never tracked at a repo root — the exact D006/R5 defect, in a second
+repo. Because it was on `main`, every `verify.mjs` run over the family failed "Repo hygiene" for
+reasons unrelated to the phase in flight, until the file was deleted there.
+
+**Closed:** 2026-08-08 by commit `e403d0c` (removed the stray root file). Not fixed inline by A22.
+
+---
+
 ## 3. Closed defects
 
 _None yet. When closing one, move its entry here, add `**Closed:** <date> by <phase>`, and state
@@ -728,6 +752,7 @@ it was detected._
 | **D023** | 🔴 High | **The 4 verticals are archived on GitHub; 2,249 source lines replaced by 138. The supersession moved the name, not the code. Family is 26 live repos, not 30.** | E26 | OPEN |
 | **D024** | 🔴 **Crit** | **`main`'s CI has been red for 5+ runs since extraction — 9 policy-rule targets are monorepo paths in a repo checked out alone. "Nothing merges red" has not held for days.** | A30 | OPEN |
 | **D025** | 🔴 **Crit** | **5 of workspace CI's 8 jobs ran 27 pnpm steps in a repo with no package.json — never ran, never failed, sat "skipped". The application gates (lint, typecheck, test, coverage, audit, RLS, PII) run NOWHERE.** | A31 | OPEN |
+| **D026** | 🟠 Med | **`ev-a17.txt` committed at the root of `unierp-workspace` (D006/R5 recurrence) — turned every family `verify.mjs` "Repo hygiene" gate red on `main`, unrelated to the phase in flight** | `e403d0c` | CLOSED |
 
 ---
 

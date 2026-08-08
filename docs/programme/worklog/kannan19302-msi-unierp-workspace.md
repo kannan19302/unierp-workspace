@@ -934,3 +934,12 @@ DELIBERATE BREAK:
   - Colour-blind axe test would flag missing non-colour cue -> exit criterion FAILS
 ```
 
+### B04 · CLAIMED · 2026-08-08T06:03:01Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    main
+selected  explicitly requested
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

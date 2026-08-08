@@ -547,3 +547,9 @@ Exit criterion check: '<table' in unierp-web returns 191 hand-rolled tables, not
 Exit criterion check: overlays do not use a portal layer, focus trap, or scroll-lock. They are basic inline components. Phase partly done.
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:01Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: toasts lack screen reader announcement, queueing, and deduping logic. Phase partly done.
+```
+

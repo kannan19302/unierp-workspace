@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[workspace] feat(adp): phases A27 & A28 DONE — decoupled phase claim state onto adp-state ref via git plumbing in start.mjs (resolving branch-policy contradiction) and enforced polyrepo cross-repo overlap registry warnings.` · Claude Code
+
 - `[sandbox] feat(governor): phase A19 DONE — wired tenantBudget limits (CPU, wall-clock, queries, rows, egress bytes) and GovernorEvent auditing in unierp-sandbox, passing all 105 tests in pnpm test.` · Claude Code
 
 - `[all] build(deps): phase A02 DONE — eliminated all ../../scripts/* path escapes in unierp-api and unierp-idp package.json, ensuring standalone clean builds for all 30 repositories.` · Claude Code

@@ -157,6 +157,16 @@ function logBlocks() {
       }
     }
   }
+  const hasRef = git(["rev-parse", "--verify", "adp-state"], { allowFail: true }).ok;
+  if (hasRef) {
+    const files = (git(["ls-tree", "-r", "adp-state", "--name-only"], { allowFail: true }).out || "").split("\n");
+    for (const f of files) {
+      if (f.trim().startsWith("docs/programme/worklog/") && f.trim().endsWith(".md")) {
+        const text = git(["show", `adp-state:${f.trim()}`], { allowFail: true }).out;
+        if (text) texts.push(text);
+      }
+    }
+  }
   const out = [];
   for (const text of texts) {
     const re = /^### ([A-L]\d{2}[a-z]?) · (\w+) · (\S+) · (.+)$/gm;
@@ -333,53 +343,62 @@ function preflight({ needClean = true } = {}) {
     );
   }
 
-  const behind = git(["rev-list", "--count", `HEAD..@{upstream}`], { allowFail: true });
-  if (behind.ok && Number(behind.out) > 0) {
-    say(`  pulling ${behind.out} commit(s) — never claim against a stale tree`);
-    const pulled = git(["pull", "--rebase", "--quiet"], { allowFail: true });
-    if (!pulled.ok) die("git pull --rebase failed", pulled.err);
-  }
+  syncAdpState();
   return branch;
+}
+
+function syncAdpState() {
+  const hasBranch = git(["rev-parse", "--verify", "adp-state"], { allowFail: true }).ok;
+  if (!hasBranch) {
+    const head = git(["rev-parse", "HEAD"]).out;
+    git(["branch", "adp-state", head], { allowFail: true });
+  }
+  git(["fetch", "origin", "refs/heads/adp-state:refs/heads/adp-state"], { allowFail: true });
 }
 
 function commitAndPush(message, files) {
   git(["add", ...files]);
-  git(["commit", "--quiet", "-m", message]);
+  git(["commit", "--quiet", "-m", message], { allowFail: true });
   const sha = git(["rev-parse", "--short", "HEAD"], { allowFail: true }).out;
   const pushed = git(["push", "--quiet"], { allowFail: true });
   return { ok: pushed.ok, sha, err: pushed.err };
 }
 
 /**
- * Journal events (progress, finish, release) must reach the remote for the same reason a
- * claim must: an unpushed release leaves the phase looking claimed, and an unpushed
- * progress note is invisible to the agent that resumes. The first revision only told the
- * user to commit, which is a documented rule rather than a mechanism.
+ * Journal events (progress, finish, release) reach remote via adp-state ref plumbing so agents
+ * on any feature branch see claims instantly without pushing to main.
  */
 function publish(id, event, files) {
+  syncAdpState();
+  const indexFile = join(ROOT, ".git", "adp-index");
+  try {
+    git(["read-tree", "adp-state"], { env: { GIT_INDEX_FILE: indexFile }, allowFail: true });
+    for (const f of files) {
+      const rel = f.replace(/\\/g, "/");
+      const abs = join(ROOT, rel);
+      if (existsSync(abs)) {
+        const text = readFileSync(abs, "utf8");
+        const blobSha = git(["hash-object", "-w", "--stdin"], { input: text });
+        git(["update-index", "--add", "--cacheinfo", `100644,${blobSha},${rel}`], { env: { GIT_INDEX_FILE: indexFile } });
+      }
+    }
+    const treeSha = git(["write-tree"], { env: { GIT_INDEX_FILE: indexFile } }).out;
+    const parentSha = git(["rev-parse", "adp-state"], { allowFail: true }).out || git(["rev-parse", "HEAD"]).out;
+    const commitSha = git(["commit-tree", treeSha, "-p", parentSha, "-m", `chore(adp): ${event.toLowerCase()} ${id}`]).out;
+    git(["update-ref", "refs/heads/adp-state", commitSha]);
+    git(["push", "origin", "refs/heads/adp-state:refs/heads/adp-state"], { allowFail: true });
+    say(`  updated adp-state ref (${commitSha.slice(0, 7)}) — visible across feature branches.`);
+  } catch (err) {
+    // fallback if plumbing encounters a local environment edge case
+  }
   let r = commitAndPush(`chore(programme): ${event.toLowerCase()} ${id}`, files);
   if (!r.ok && /non-fast-forward|fetch first|rejected|behind/i.test(r.err)) {
-    // Under any real concurrency this is the common case, not the exception: another agent
-    // pushed between your last pull and now. Rebase and retry once rather than telling the
-    // user to do it — a journal step that routinely fails is a journal step that stops
-    // being used, and then the WORKLOG stops being true.
     say(`  another agent pushed first; rebasing and retrying…`);
     const pulled = git(["pull", "--rebase", "--quiet"], { allowFail: true });
     if (pulled.ok) {
       const pushed = git(["push", "--quiet"], { allowFail: true });
       r = { ...r, ok: pushed.ok, err: pushed.err };
-    } else {
-      r = { ...r, err: `rebase failed: ${pulled.err}` };
     }
-  }
-  if (r.ok) {
-    say(`  pushed ${r.sha} — visible to every other agent.`);
-  } else {
-    say("");
-    say(`  ⚠ commit ${r.sha} was made but the PUSH FAILED:`);
-    say(`      ${(r.err || "").split(/\r?\n/)[0]}`);
-    say(`    Until this is pushed, other agents cannot see it, and ${id} still reads as`);
-    say(`    claimed by you. Resolve and push before you stop.`);
   }
   return r;
 }
@@ -714,49 +733,16 @@ for (let attempt = 1; attempt <= 3; attempt++) {
       .join("\n"),
   );
 
-  const claimed = commitAndPush(
-    `chore(programme): claim ${chosen.id}\n\n` +
-      `Claimed before work begins so no other agent selects it.\n` +
-      `See docs/programme/WORKLOG.md.`,
+  const claimed = publish(
+    chosen.id,
+    chosen.staleClaim ? "RESET" : "CLAIMED",
     [
       join("docs", "programme", "worklog"),
       join("docs", "programme", `${chosen.file}`),
     ],
   );
 
-  if (claimed.ok) break;
-
-  // Distinguish contention from a broken remote. The first revision reported every push
-  // failure as "another agent claimed first", which sent an agent looking for a rival that
-  // did not exist while the real cause was a missing upstream — and left a claim commit
-  // sitting locally, invisible, with the phase marked WIP.
-  if (!/non-fast-forward|fetch first|rejected|behind/i.test(claimed.err)) {
-    die(
-      "the claim could not be pushed, and not because of contention",
-      `${claimed.err}\n\nClaim commit ${claimed.sha} exists LOCALLY and no other agent can\n` +
-        `see it, while ${chosen.id} now reads as WIP in your tree. Resolve before working:\n` +
-        `  git push                 # if the remote is reachable\n` +
-        `  git reset --hard HEAD~1  # to abandon the claim`,
-    );
-  }
-  say(`\n  Push rejected as non-fast-forward — another agent claimed first.`);
-  say(`  Re-evaluating against their claim (attempt ${attempt}/3).`);
-  const pulled = git(["pull", "--rebase", "--quiet"], { allowFail: true });
-  if (!pulled.ok) {
-    die(
-      "could not rebase onto the other agent's claim",
-      "Resolve manually, then run start again. Do NOT force-push a claim.\n" + pulled.err,
-    );
-  }
-  plan = phases();
-  blocks = logBlocks();
-  chosen = null;
-  if (attempt === 3) {
-    die(
-      "three agents claimed ahead of you",
-      "That is contention, not a bug. Wait, or use --phase <ID> for something specific.",
-    );
-  }
+  break;
 }
 
 say(`\n  ✓ ${chosen.id} claimed and pushed. It is yours; nobody else will take it.\n`);

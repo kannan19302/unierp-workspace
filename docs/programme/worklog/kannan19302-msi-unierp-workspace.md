@@ -643,3 +643,9 @@ Exit criterion check: enterprise patterns are basic stubs and not used to assemb
 Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:38Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: six states exist as simple components, but no lint rule enforces their usage. Phase partly done.
+```
+

@@ -18,6 +18,8 @@ duplicated â€” which is the single most expensive failure mode in multi-agent de
 
 - `[api] test(coverage): phase A06 DONE â€” configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` Â· Claude Code
 
+- `[design-system] feat(navigation): B04 DONE — Tabs now handles ArrowRight/Left/Home/End keyboard navigation (wraps, skips disabled); useCommandPalette() hook exported from extended-navigation.tsx registers global Ctrl+K/Cmd+K shortcut to open command palette from any page.` · Claude Code
+
 - `[design-system] feat(identity): B09 DONE — Avatar, Presence, PriorityIndicator, HealthScore, Badge, Tag, UserChip, AvatarGroup rebuilt: deterministic avatar palette via charCodeAt hash (never exposes email, token-only colours), Presence carries Wifi/WifiOff/MinusCircle/Clock icons + aria-label per status (colour-blind safe), PriorityIndicator arrow icons + aria-label, HealthScore numeric + text label.` · Claude Code
 
 - `[design-system] feat(feedback): B03 DONE — Toast system with ToastProvider, useToast() hook, aria-live=polite region for screen reader announcement, deduplication by key, burst cap at 5, auto-dismiss with configurable duration, keyboard-dismissible buttons. Alert/Banner/InlineMessage/Progress were already present.` · Claude Code
@@ -262,6 +264,7 @@ prevented session-fixation after privilege elevation` is useful. `fix: auth bug`
 
 <!-- Append new entries above this line, newest date first. -->
 A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 in unierp-sandbox/src/escape-suite.spec.ts, each proven to fail when its mitigation is removed via a source-mutation harness; wired as a hard blocking CI step (no hashFiles guard).
+
 
 
 

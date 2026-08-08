@@ -1,3 +1,117 @@
+### B01 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: '<table' in unierp-web returns 191 hand-rolled tables, not 0. Phase is partly done (data-grid exists) but unierp-web still uses raw tables.
+```
+
+### B02 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: overlays do not use a portal layer, focus trap, or scroll-lock. They are basic inline components. Phase partly done.
+```
+
+### B03 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: toasts lack screen reader announcement, queueing, and deduping logic. Phase partly done.
+```
+
+### B04 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: command palette lacks global shortcut and route/record search integration. Tabs lack arrow navigation. Phase partly done.
+```
+
+### B05 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: inputs lack aria-describedby error association and Zod integration. CurrencyInput can produce floats. Phase partly done.
+```
+
+### B06 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: temporal controls lack timezone conversion and fiscal calendar integration. Phase partly done.
+```
+
+### B07 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: file upload lacks chunking/resuming. Rich text editor lacks sanitization. Phase partly done.
+```
+
+### B08 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: TreeView lacks virtualisation for 10k nodes and type-ahead. SplitView lacks persistence. Phase partly done.
+```
+
+### B09 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: Avatar fallbacks and status colors lack non-color cues for accessibility. Phase partly done.
+```
+
+### B10 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: charts lack data-table fallbacks and theme integration. Phase partly done.
+```
+
+### B11 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: enterprise patterns are basic stubs and not used to assemble module screens yet. Phase partly done.
+```
+
+### B13 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Pinned @unerp/ui to 1.0.15 and @unerp/config to 1.0.2. D007 (.storybook/.storybook/) is genuinely fixed. B13 cannot close until A01 publishes.
+```
+
+### B15 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B16 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B17 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B21 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B22 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B23 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
+### B12 � PROGRESS � 2026-08-08T05:45:32.635Z � kannan19302@MSI/unierp-workspace
+
+```
+Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01.
+```
+
 # Journal — kannan19302@MSI/unierp-workspace
 
 > Written by `scripts/start.mjs`. Do not hand-edit. Newest block last.

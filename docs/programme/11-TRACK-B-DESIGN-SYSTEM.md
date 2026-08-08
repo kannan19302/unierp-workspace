@@ -70,7 +70,7 @@ and is not restated per row.
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **B13** | Storybook as a real deployed surface | A02, B01 | `unierp-storybook` installable and published. Currently `workspace:*`-locked and uninstallable, with a `.storybook/.storybook/` self-nesting defect (**D007**, **D008**) | Storybook builds from a clean clone and deploys on every merge. Every exported component has at least one story; a component without one fails CI | OPEN |
+| **B13** | Storybook as a real deployed surface | A02, B01 | `unierp-storybook` installable and published. Currently `workspace:*`-locked and uninstallable, with a `.storybook/.storybook/` self-nesting defect (**D007**, **D008**) | Storybook builds from a clean clone and deploys on every merge. Every exported component has at least one story; a component without one fails CI | BLOCKED |
 | **B14** | Visual regression gate | B13 | Screenshot baselines per component × 7 themes × 2 densities × light/dark | An unintended visual change fails CI with a diff image. A deliberate one is approved by updating the baseline in the same commit | OPEN |
 | **B15** | Token enforcement gate | B01 | CI fails on any literal hex, `rgb()`, or `px` in a consuming repo's styles — the rule `IMPLEMENTATION_PLAN § 6.5` already states but nothing enforces | Adding `color: #fff` to any page in `unierp-web` fails CI. Baseline of existing violations recorded and ratcheted down, never up | BLOCKED |
 | **B16** | Component API contract and versioning | B01–B12 | Prop-naming conventions, controlled/uncontrolled rules, a deprecation policy with a stated window, and semver discipline | A breaking prop change without a major bump and a deprecation shim fails CI. Deprecated props warn in development with the replacement named | BLOCKED |
@@ -86,7 +86,7 @@ client.
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **B18** | Tokens as the single cross-platform source of truth | B01 | Tokens defined once and generated to CSS custom properties, Dart, and platform theme formats | One token edit propagates to web and Flutter with no hand-editing. A Dart token file that has drifted from source fails CI | OPEN |
+| **B18** | Tokens as the single cross-platform source of truth | B01 | Tokens defined once and generated to CSS custom properties, Dart, and platform theme formats | One token edit propagates to web and Flutter with no hand-editing. A Dart token file that has drifted from source fails CI | DONE |
 | **B19** | Flutter component library at parity | B18, B01–B09 | The B01–B09 primitives implemented in Flutter against generated tokens | A screen described by the same schema renders equivalently on web and mobile. Parity is asserted by a checklist gate, not by eye | OPEN |
 | **B20** | Desktop surface | B18 | The desktop target (Flutter Windows, present in `unierp-mobile/windows`) treated as first-class: window chrome, menus, keyboard conventions, multi-window, native file dialogs | The desktop build runs the full navigation with platform-correct shortcuts and menu bar. Density defaults differ from mobile and are user-overridable | OPEN |
 | **B21** | Responsive and density system across clients | B18–B20 | One set of breakpoints and density scales honoured by all three clients | Every screen is usable at 320 px, at 200 % zoom, and at each density. Verified in CI at three viewports | BLOCKED |

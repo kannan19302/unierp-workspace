@@ -360,3 +360,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (A02):** Fixed missing @hyperledger/fabric-gateway dependency in unierp-api and successfully verified fresh-clone builds across the workspace.
 
 - **2026-08-08 (C01):** Control-plane shell, auth and realm separation — added `realm`/`amr`/`mfaVerified` claims to @kannan19302/auth SessionTokenPayload; implemented `/auth/provider/login` in unierp-idp scoped to provider-slug tenant; ControlPlaneGuard now rejects tokens where realm !== 'provider' (11 tests pass); unierp-console middleware enforces realm+MFA check; App Shell, login page and (control-plane) layout created. Phase status set DONE.
+
+- **2026-08-08 (C02):** Control-plane RBAC and staff roles — added PolicyEngine class to @kannan19302/shared with isControlPlane()/check() methods; defined 6 provider staff roles (PLATFORM_ADMIN, SRE, SUPPORT_L1, SUPPORT_L2, BILLING, SECURITY) each holding only system.*/platform.* permissions; added system.tenant.read to permission registry; 56-test suite confirms tenant wildcard (*) cannot satisfy any platform.*/system.* permission. Phase DONE.

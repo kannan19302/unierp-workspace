@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[all] ci(architecture): phase A07 DONE — implemented scripts/check-layer.mjs across all 21 layer-guarded repositories, enforcing layer-ordering invariants mechanically without skip guards.` · Claude Code
+
 - `[all] security(secrets): phase A10 DONE — wired gitleaks secret scanning across all 32 repositories via .gitleaks.toml configuration and check-secrets.mjs in CI and pre-commit hooks.` · Claude Code
 
 - `[all] ci(ci): phase A08 DONE — audited skip-guarded CI steps across all 23 repositories, removing all un-justified if: hashFiles(...) conditional guards so required gates (layer checking, typechecking) execute unconditionally in CI.` · Claude Code

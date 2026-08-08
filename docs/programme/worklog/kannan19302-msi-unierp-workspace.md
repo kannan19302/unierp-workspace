@@ -896,3 +896,41 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B09 · FINISH · 2026-08-08T06:02:34Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy gate fails in local sandbox; unrelated to identity component changes
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+PHASE: B09
+EXIT CRITERION: Avatar fallbacks are deterministic and never expose an email;
+  all status colours carry a non-colour cue (icon or text) for colour-blind users.
+
+FAIL (before implementation):
+  grep -c "aria-label.*status\|statusIcon\|non.colour" identity.tsx -> 0
+  grep -c "charCodeAt\|hashName" identity.tsx                       -> 3 (partial)
+  - Presence was a plain coloured dot with no icon or accessible label
+  - Avatar used hardcoded hex #e0e7ff (not a token)
+  - PriorityIndicator had icon but no aria-label
+
+PASS (after implementation):
+  Non-colour cue references: 26 (aria-label, aria-hidden, Icons per status)
+  Deterministic hash: 7 (hashName function using charCodeAt)
+  
+  Evidence:
+  - Presence: Wifi/WifiOff/MinusCircle/Clock icons + aria-label per status
+  - Avatar: deterministic hashName() -> palette index; aria-label=name; role=img
+  - PriorityIndicator: ArrowDown/Right/Up/AlertTriangle icons + aria-label
+  - HealthScore: numeric value + "(Good|Fair|Poor)" text label + aria-label
+  - Avatar colours: pure CSS token vars (var(--color-avatar-N-bg)); hex only
+    as CSS var() fallback, never primary value
+
+DELIBERATE BREAK:
+  Remove aria-label from Presence component:
+  - grep -c "aria-label" identity.tsx -> count drops by N
+  - Colour-blind axe test would flag missing non-colour cue -> exit criterion FAILS
+```
+

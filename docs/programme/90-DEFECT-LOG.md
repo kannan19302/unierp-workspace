@@ -973,3 +973,32 @@ During end-to-end browser testing of unierp-console (Plane 1), authenticating wi
 3. Navigate to http://localhost:3002/tenants
 4. **Observed:** Page renders full Tenant Directory with cross-tenant details and "Provision Tenant" / "Impersonate" actions.
 5. **Expected:** 403 Forbidden or Access Denied UI block for non-provider staff users.
+
+### D042 · ?? High · unierp-console/next.config.mjs defaults piBaseUrl fallback to port 3003 instead of 3001
+
+**Found:** 2026-08-08 by Track C (PSC UI E2E Exercise). **Fixed by:** Open.
+
+In unierp-console/next.config.mjs, the fallback piBaseUrl was defined as process.env.API_URL || 'http://localhost:3003'. Because unierp-api listens on port 3001 (and 3003 is reserved for unierp-corporate-website), all Next.js API rewrites (/api/platform/v1/*, /api/v1/*) fail with ECONNREFUSED when API_URL is omitted from the environment.
+
+**Reproduction:**
+1. Run 
+pm run dev in unierp-console without API_URL set.
+2. Navigate to http://localhost:3002/tenants
+3. **Observed:** Server log prints Failed to proxy http://localhost:3003/api/platform/v1/super-admin/tenants [AggregateError: ] { code: 'ECONNREFUSED' }.
+4. **Expected:** Fallback target should be http://localhost:3001.
+
+### D043 · ?? High · unierp-api Docker build fails TypeScript check due to stale published Prisma client in @kannan19302/data
+
+**Found:** 2026-08-08 by Track C (Container Stack Bring-up). **Fixed by:** Open.
+
+During docker build of unierp-api, 
+pm install fetches @kannan19302/data from egistry.npmjs.org. Its postinstall hook runs prisma generate using the schema packaged in that published version (v1.0.15). The local workspace unierp-api/src/platform/v1/plans.service.ts and super-admin.service.ts reference updated fields (SaaSPlan.version, supersededBy, 	enantConsent, impersonationSession) that were added to schema.prisma locally but are absent in the published npm package. Thus 
+pm run build inside Docker fails with 20 TypeScript compiler errors.
+
+**Reproduction:**
+`ash
+docker build -t unierp-api ./unierp-api
+# error TS2353: Object literal may only specify known properties, and 'version' does not exist in type 'SaaSPlanCreateInput'
+`
+**Fix Required:** Either publish updated @kannan19302/data package to registry or mount local Prisma schemas during Docker build to run 
+px prisma generate.

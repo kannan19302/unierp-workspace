@@ -848,3 +848,128 @@ it was detected._
 | **D033** | ?? Med | **check-plan-integrity.mjs accepts an invalid status** | Track repair | CLOSED |
 | 2026-08-07 | Log established with D001â€“D014 from the programme baseline audit. D013 (layer gate declared in 21 repos, present in none) is the most consequential: the platform's central invariant is asserted by a CI step that has never executed. | Claude Code |
 | 2026-08-08 | D027 filed by A20: reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` â€” reproduced via `POST /reporting/engine/query` with `groupBy` + `aggregations`; root cause in `reporting-engine.service.ts` option-shaping (`_avg` reaches Prisma as `{ select: undefined }`). Fixing phase E35. | opencode |
+
+### D034 · ?? High · package-lock.json enforces localhost:4873 causing EINTEGRITY on real registries
+
+**Found:** 2026-08-08 by Track C (PSC Bring-up). **Fixed by:** Track C.
+
+The Dockerfiles for the 5 container apps run 
+pm install after rewriting .npmrc to a new registry (e.g. egistry.npmjs.org), but package-lock.json contains locked tarball URLs pointing to localhost:4873 (Verdaccio). 
+This mismatch causes 
+pm install to fail with EINTEGRITY when the new registry returns valid tarballs with different integrity hashes than those cached for Verdaccio.
+
+**Reproduction:**
+`ash
+docker compose -f docker-compose.dev.yml -f docker-compose.platform.yml --profile console up --build
+# fails with npm ERR! code EINTEGRITY
+`
+**Fix:** Removed package-lock.json prior to 
+pm install in all five Dockerfiles.
+
+---
+
+### D035 · ?? High · Unmigrated schema drift blocks seeding for saas_plans.version and 	enants.residency_region
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+schema.prisma contains fields (SaaSPlan.version, Tenant.residency_region) that do not exist in the database because no prisma migrate dev was ever run to generate migrations for them. The seeding script (db:seed) fails when attempting to populate these models.
+
+**Reproduction:**
+`ash
+npm run db:seed
+# ? Error during seeding: PrismaClientKnownRequestError: 
+# The column ersion does not exist in the current database.
+`
+**Fix:** Created manual migrations 20260808030000_add_residency_region and 20260808040000_add_saas_plan_version.
+
+---
+
+### D036 · ?? High · Seeding script expects Role and User in main PrismaClient
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+Role, User, and ApiKey models were moved to idp-schema.prisma, but seed.ts and seed-platform.ts still attempt to call prisma.role.upsert() using the main client, causing immediate crashes since the models are undefined.
+
+**Reproduction:**
+`ash
+npm run db:seed
+# TypeError: Cannot read properties of undefined (reading 'upsert') at main
+`
+**Fix:** Imported IdpPrismaClient in both seed scripts and used it for IdP model seeding.
+
+---
+
+### D037 · ?? High · unierp-console relies on unpublished SessionTokenPayload export
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+When building console from the real npmjs registry, the build fails because the published @kannan19302/auth package does not export SessionTokenPayload. The code in unierp-console/src/lib/middleware.ts expects it, meaning the workspace was ahead of the registry.
+
+**Reproduction:**
+`ash
+npm run build # inside unierp-console container
+# Type error: Module '"@kannan19302/auth"' has no exported member 'SessionTokenPayload'.
+`
+**Fix:** Defined SessionTokenPayload locally in middleware.ts.
+
+---
+
+### D038 · ?? High · 
+ode:22-alpine network timeouts on musl headers for isolated-vm
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+The isolated-vm native compilation step on 
+ode:22-alpine fetches headers from unofficial-builds.nodejs.org, which frequently times out (ETIMEDOUT), breaking container builds entirely.
+
+**Reproduction:**
+`ash
+docker compose up --build
+# npm error gyp http fetch GET https://unofficial-builds.nodejs.org/... failed with ETIMEDOUT
+`
+**Fix:** Switched all Dockerfiles to use 
+ode:22-slim (Debian) which relies on standard glibc and the official nodejs infrastructure, and updated package manager dependencies from pk to pt-get.
+
+### D039 · ?? High · Misplaced "use client" directives break unierp-web production build
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+Several files in unierp-web/app had the "use client" directive placed *after* import statements, which causes a fatal webpack error during Next.js production builds (
+pm run build).
+
+**Reproduction:**
+`ash
+# Inside unierp-web container
+npm run build
+# Error: The "use client" directive must be placed before other expressions. Move it to the top of the file to resolve this issue.
+`
+**Fix:** Created and ran a script to identify all files containing "use client" and moved the directive to the very first line of the file.
+
+### D040 · ?? High · TypeScript Set generic missing in unierp-web register page
+
+**Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
+
+The unierp-web container build failed during 
+pm run build due to a TypeScript error in pp/(auth)/register/page.tsx, where 
+ew Set(prev) was implicitly typed as Set<unknown> and passed to a state setter expecting Set<string>.
+
+**Reproduction:**
+`ash
+npm run build
+# Type error: Argument of type '(prev: any) => Set<unknown>' is not assignable to parameter of type 'SetStateAction<Set<string>>'.
+`
+**Fix:** Explicitly defined the generic type 
+ew Set<string>(prev) in egister/page.tsx.
+
+### D041 · ?? High · Tenant user can access plane-1 /tenants and /extensions views in Platform Admin Console (unierp-console)
+
+**Found:** 2026-08-08 by Track C (PSC UI E2E Exercise). **Fixed by:** Open.
+
+During end-to-end browser testing of unierp-console (Plane 1), authenticating with a tenant user credential (dmin@kannan19302.dev) allowed the tenant user to access /tenants (viewing all provisioned cross-tenant data) and /extensions without a 403 authorization block. While sub-routes under /marketplace/analytics correctly enforced a 403 "Access Denied" page, the root /tenants and /extensions views failed to verify that the session payload carried ealm === 'provider'.
+
+**Reproduction:**
+1. Open http://localhost:3002/login
+2. Authenticate as tenant admin dmin@kannan19302.dev / dmin123
+3. Navigate to http://localhost:3002/tenants
+4. **Observed:** Page renders full Tenant Directory with cross-tenant details and "Provision Tenant" / "Impersonate" actions.
+5. **Expected:** 403 Forbidden or Access Denied UI block for non-provider staff users.

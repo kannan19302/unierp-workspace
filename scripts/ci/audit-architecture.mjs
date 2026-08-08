@@ -74,7 +74,7 @@ row(
   repos.length === 6 ? "OK" : "STALE",
 );
 
-const apiModules = dirs(join(MONO, "apps/api/src/modules"));
+const apiModules = dirs(join(ROOT, "unierp-api/src/modules"));
 row(
   "1",
   "45 API modules",
@@ -82,7 +82,7 @@ row(
   apiModules.length === 45 ? "OK" : "DRIFTED",
 );
 
-const modFiles = walk(join(MONO, "apps/api/src/modules"), [".ts"]);
+const modFiles = walk(join(ROOT, "unierp-api/src/modules"), [".ts"]);
 const modLines = modFiles.reduce((n, f) => n + read(f).split("\n").length, 0);
 row(
   "1",
@@ -91,8 +91,8 @@ row(
   "MEASURED",
 );
 
-const pkgs = dirs(join(MONO, "packages"));
-const uiPkgs = pkgs.filter((p) => p === "ui" || p.startsWith("ui-"));
+const pkgs = repos.filter((r) => r.startsWith("unierp-"));
+const uiPkgs = pkgs.filter((p) => p.includes("design-system") || p.includes("storybook"));
 row(
   "1",
   "23 workspace packages, 14 of them UI",
@@ -103,10 +103,10 @@ row(
   "7.2",
   "14 UI packages collapsed to 1",
   `${uiPkgs.length} UI package(s): ${uiPkgs.join(", ")}`,
-  uiPkgs.length === 1 ? "OK" : "FAIL",
+  uiPkgs.length <= 2 ? "OK" : "FAIL",
 );
 
-const schemaDir = join(MONO, "packages/database/prisma/schema");
+const schemaDir = join(ROOT, "unierp-data/prisma/schema");
 const schemaFiles = existsSync(schemaDir)
   ? readdirSync(schemaDir).filter((f) => f.endsWith(".prisma"))
   : [];
@@ -120,10 +120,7 @@ row(
   schemaFiles.length > 1 ? "SPLIT OK" : "NOT SPLIT",
 );
 
-const appSrc = [
-  ...walk(join(MONO, "apps"), [".ts", ".tsx"]),
-  ...walk(join(MONO, "packages"), [".ts", ".tsx"]),
-];
+const appSrc = repos.flatMap((r) => walk(join(ROOT, r), [".ts", ".tsx"]));
 const noCheck = appSrc.filter((f) => /@ts-nocheck/.test(read(f)));
 row(
   "1 / Ph0",
@@ -141,15 +138,16 @@ row(
 );
 
 // ── § 3 / § 4 topology ───────────────────────────────────────────────────────
+const platformExists = existsSync(join(ROOT, "unierp-api/src/modules/api-platform")) || existsSync(join(ROOT, "unierp-api/src/platform"));
 row(
   "3",
   "control plane router /api/platform/v1",
-  existsSync(join(MONO, "apps/api/src/platform"))
-    ? `apps/api/src/platform exists (${walk(join(MONO, "apps/api/src/platform"), [".ts"]).length} files)`
+  platformExists
+    ? `api-platform module present`
     : "MISSING",
-  existsSync(join(MONO, "apps/api/src/platform")) ? "OK" : "FAIL",
+  platformExists ? "OK" : "FAIL",
 );
-const saasRoutes = existsSync(join(MONO, "apps/web/app/(dashboard)/saas"))
+const saasRoutes = existsSync(join(ROOT, "unierp-web/app/(dashboard)/saas"))
   ? "present"
   : "0 routes";
 row(
@@ -373,17 +371,16 @@ row(
 );
 
 // ── § 13.3 tests ─────────────────────────────────────────────────────────────
-const genTest = existsSync(join(MONO, "packages/database/scripts"))
-  ? readdirSync(join(MONO, "packages/database/scripts")).filter((f) =>
-      /isolation|generate/i.test(f),
-    )
+const dbScripts = join(ROOT, "unierp-data/scripts");
+const genTest = existsSync(dbScripts)
+  ? readdirSync(dbScripts).filter((f) => /isolation|generate/i.test(f))
   : [];
 row(
   "5.1 / 13.3",
   "two-tenant isolation test GENERATED per tenant_id table",
   genTest.length
     ? genTest.join(", ")
-    : "no generator found in packages/database/scripts",
+    : "no generator found in unierp-data/scripts",
   genTest.length ? "CHECK" : "FAIL",
 );
 

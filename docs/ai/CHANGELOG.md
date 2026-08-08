@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-08
 
+- `[sandbox] feat(governor): phase A19 DONE — wired tenantBudget limits (CPU, wall-clock, queries, rows, egress bytes) and GovernorEvent auditing in unierp-sandbox, passing all 105 tests in pnpm test.` · Claude Code
+
 - `[all] build(deps): phase A02 DONE — eliminated all ../../scripts/* path escapes in unierp-api and unierp-idp package.json, ensuring standalone clean builds for all 30 repositories.` · Claude Code
 
 - `[all] ci(workflows): phases A29 & A31 DONE — expressed CI gates as reusable workflows (application-gate.yml, layer-gate.yml, policy-gate.yml) in unierp-workspace and wired all 30 sibling repositories to consume them via workflow_call.` · Claude Code

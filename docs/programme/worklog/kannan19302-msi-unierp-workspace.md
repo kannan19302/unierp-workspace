@@ -607,3 +607,9 @@ Exit criterion check: TreeView lacks virtualisation for 10k nodes and type-ahead
 Phase asserts a CI gate but CI is red at npm install because A01 has never published. Blocked by A01 (requires npm organisation unerp, trusted publishing, tag first release).
 ```
 
+### A01 · PROGRESS · 2026-08-08T05:36:26Z · kannan19302@MSI/unierp-workspace
+
+```
+Exit criterion check: Avatar fallbacks and status colors lack non-color cues for accessibility. Phase partly done.
+```
+

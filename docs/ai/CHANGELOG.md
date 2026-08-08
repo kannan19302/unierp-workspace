@@ -18,6 +18,8 @@ duplicated â€” which is the single most expensive failure mode in multi-agent de
 
 - `[api] test(coverage): phase A06 DONE â€” configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` Â· Claude Code
 
+- `[design-system] feat(accessibility): B23 DONE — published WCAG 2.2 AA Conformance Statement (WCAG_CONFORMANCE.md) and created check-axe-a11y.mjs CI gate enforcing zero axe violations.` · Claude Code
+
 - `[design-system] feat(tenant-branding): B22 DONE — validateTenantBrandContrast() in branding.ts enforcing WCAG AA 4.5:1 ratio for tenant white-label branding, rejecting failures at save with failing pair named.` · Claude Code
 
 - `[design-system] feat(responsive-density): B21 DONE — created check-responsive-density.mjs CI gate validating unified breakpoints (600, 1024) across 320px/768px/1280px viewports.` · Claude Code
@@ -43,6 +45,8 @@ duplicated â€” which is the single most expensive failure mode in multi-agent de
 - `[design-system] feat(data-display): B01 DONE — Table component exported from @unerp/design-system data-grid; migrated all 188 hand-rolled <table> instances across 149 files in unierp-web to <Table> design system component.` · Claude Code
 
 - `[design-system] feat(charts): B10 DONE — CHART_PALETTE[] using var(--chart-N) token vars; ChartAccessibleWrapper (role=figure, aria-label, Show/Hide data table fallback); HeatmapChart replaced rgba(59,130,246) with color-mix(var(--chart-1)) for theme compliance.` · Claude Code
+
+- `[design-system] feat(accessibility): B23 DONE — published WCAG 2.2 AA Conformance Statement (WCAG_CONFORMANCE.md) and created check-axe-a11y.mjs CI gate enforcing zero axe violations.` · Claude Code
 
 - `[design-system] feat(tenant-branding): B22 DONE — validateTenantBrandContrast() in branding.ts enforcing WCAG AA 4.5:1 ratio for tenant white-label branding, rejecting failures at save with failing pair named.` · Claude Code
 
@@ -320,6 +324,7 @@ prevented session-fixation after privilege elevation` is useful. `fix: auth bug`
 
 <!-- Append new entries above this line, newest date first. -->
 A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 in unierp-sandbox/src/escape-suite.spec.ts, each proven to fail when its mitigation is removed via a source-mutation harness; wired as a hard blocking CI step (no hashFiles guard).
+
 
 
 

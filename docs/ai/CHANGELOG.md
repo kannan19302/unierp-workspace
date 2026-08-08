@@ -376,3 +376,5 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 - **2026-08-08 (C08 & C09):** Impersonation — added TenantConsent and ImpersonationSession schema, updated PlatformService and SuperAdminService for endpoints, and implemented token impersonation and persistent banner in UI. Phases DONE.
 
 - **2026-08-08 (C10):** Cross-tenant search for support — implemented rate-limited and audited global search in SuperAdmin controller with UI in dashboard.
+
+- **2026-08-08 (C11):** Tenant audit-trail viewer — added UI and API for support agents to view and export a tenant's internal audit trail.

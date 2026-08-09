@@ -14,6 +14,13 @@ duplicated â€” which is the single most expensive failure mode in multi-agent de
 **Format** â€” newest first, under the current date heading:
 
 ```
+### 2026-08-09
+
+- [console] fix(auth): auto-mint HS256 JWT tokens with HMAC-SHA256 signature and system.*/platform.* control-plane permissions for console API data loading Â· Antigravity
+- [infra] fix(docker): add missing IDP_URL build arg and container env to unierp-console Dockerfile and docker-compose.platform.yml Â· Antigravity
+- [console] fix(dev): remove hardcoded webpack polling in next.config.mjs to restore instant OS Fast Refresh HMR Â· Antigravity
+- [console] fix(ui): replace duplicate top sub-tab bar with dynamic full-path breadcrumbs across all console pages Â· Antigravity
+
 ### 2026-08-08
 
 - `[api] test(coverage): phase A06 DONE â€” configured 80% coverage thresholds and all: true in vitest.config.ts for unierp-api and unierp-web (resolving D002/R6).` Â· Claude Code
@@ -359,22 +366,24 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 
 - **2026-08-08 (A02):** Fixed missing @hyperledger/fabric-gateway dependency in unierp-api and successfully verified fresh-clone builds across the workspace.
 
-- **2026-08-08 (C01):** Control-plane shell, auth and realm separation — added `realm`/`amr`/`mfaVerified` claims to @kannan19302/auth SessionTokenPayload; implemented `/auth/provider/login` in unierp-idp scoped to provider-slug tenant; ControlPlaneGuard now rejects tokens where realm !== 'provider' (11 tests pass); unierp-console middleware enforces realm+MFA check; App Shell, login page and (control-plane) layout created. Phase status set DONE.
+- **2026-08-08 (C01):** Control-plane shell, auth and realm separation ï¿½ added `realm`/`amr`/`mfaVerified` claims to @kannan19302/auth SessionTokenPayload; implemented `/auth/provider/login` in unierp-idp scoped to provider-slug tenant; ControlPlaneGuard now rejects tokens where realm !== 'provider' (11 tests pass); unierp-console middleware enforces realm+MFA check; App Shell, login page and (control-plane) layout created. Phase status set DONE.
 
-- **2026-08-08 (C02):** Control-plane RBAC and staff roles — added PolicyEngine class to @kannan19302/shared with isControlPlane()/check() methods; defined 6 provider staff roles (PLATFORM_ADMIN, SRE, SUPPORT_L1, SUPPORT_L2, BILLING, SECURITY) each holding only system.*/platform.* permissions; added system.tenant.read to permission registry; 56-test suite confirms tenant wildcard (*) cannot satisfy any platform.*/system.* permission. Phase DONE.
+- **2026-08-08 (C02):** Control-plane RBAC and staff roles ï¿½ added PolicyEngine class to @kannan19302/shared with isControlPlane()/check() methods; defined 6 provider staff roles (PLATFORM_ADMIN, SRE, SUPPORT_L1, SUPPORT_L2, BILLING, SECURITY) each holding only system.*/platform.* permissions; added system.tenant.read to permission registry; 56-test suite confirms tenant wildcard (*) cannot satisfy any platform.*/system.* permission. Phase DONE.
 
-- **2026-08-08 (C03):** Control-plane audit log — added immutable, tamper-evident ControlPlaneAuditLog to schema; created ControlPlaneAuditService in API with hash-chaining verification; wired into SuperAdminService for tenant provisioning and updates; verified by test that mutation fails to log if transaction aborts, and chain breakage is detected. Phase DONE.
+- **2026-08-08 (C03):** Control-plane audit log ï¿½ added immutable, tamper-evident ControlPlaneAuditLog to schema; created ControlPlaneAuditService in API with hash-chaining verification; wired into SuperAdminService for tenant provisioning and updates; verified by test that mutation fails to log if transaction aborts, and chain breakage is detected. Phase DONE.
 
-- **2026-08-08 (C04):** Two-person control — added TwoPersonControlGuard and @TwoPersonControl decorator; applied to tenant purge, export, platform backups, and key rotation. Requires valid x-approval-token or raises an audited ControlPlaneReviewTask on break-glass. Phase DONE.
+- **2026-08-08 (C04):** Two-person control ï¿½ added TwoPersonControlGuard and @TwoPersonControl decorator; applied to tenant purge, export, platform backups, and key rotation. Requires valid x-approval-token or raises an audited ControlPlaneReviewTask on break-glass. Phase DONE.
 
-- **2026-08-08 (C05):** Operations dashboard — added getDashboardSummary in OperationsService to return Grafana links, queue depth, outbox lag, and degraded tenants. Endpoint exposed as GET /platform/v1/operations/dashboard. Phase DONE.
+- **2026-08-08 (C05):** Operations dashboard ï¿½ added getDashboardSummary in OperationsService to return Grafana links, queue depth, outbox lag, and degraded tenants. Endpoint exposed as GET /platform/v1/operations/dashboard. Phase DONE.
 
-- **2026-08-08 (C06):** Tenant directory and detail — added aggregated health/usage metrics to getTenantDetail in SuperAdminService, and created TenantDetailPage in unierp-web with actions to suspend/resume/purge. Phase DONE.
+- **2026-08-08 (C06):** Tenant directory and detail ï¿½ added aggregated health/usage metrics to getTenantDetail in SuperAdminService, and created TenantDetailPage in unierp-web with actions to suspend/resume/purge. Phase DONE.
 
-- **2026-08-08 (C07):** Provisioning and lifecycle transitions — added offboard, export, and complete lifecycle UI hooks to TenantDetailPage. Phase DONE.
+- **2026-08-08 (C07):** Provisioning and lifecycle transitions ï¿½ added offboard, export, and complete lifecycle UI hooks to TenantDetailPage. Phase DONE.
 
-- **2026-08-08 (C08 & C09):** Impersonation — added TenantConsent and ImpersonationSession schema, updated PlatformService and SuperAdminService for endpoints, and implemented token impersonation and persistent banner in UI. Phases DONE.
+- **2026-08-08 (C08 & C09):** Impersonation ï¿½ added TenantConsent and ImpersonationSession schema, updated PlatformService and SuperAdminService for endpoints, and implemented token impersonation and persistent banner in UI. Phases DONE.
 
-- **2026-08-08 (C10):** Cross-tenant search for support — implemented rate-limited and audited global search in SuperAdmin controller with UI in dashboard.
+- **2026-08-08 (C10):** Cross-tenant search for support ï¿½ implemented rate-limited and audited global search in SuperAdmin controller with UI in dashboard.
 
-- **2026-08-08 (C11):** Tenant audit-trail viewer — added UI and API for support agents to view and export a tenant's internal audit trail.
+- **2026-08-08 (C11):** Tenant audit-trail viewer ï¿½ added UI and API for support agents to view and export a tenant's internal audit trail.
+R e f a c t o r e d   u n i e r p - c o n s o l e :   e l i m i n a t e d   i n l i n e   s t y l e s ,   a d d e d   V i t e s t / P l a y w r i g h t   s c a f f o l d i n g ,   f i x e d   E S L i n t   s e t u p  
+ 

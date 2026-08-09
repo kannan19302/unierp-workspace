@@ -16,6 +16,8 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-09
 
+- [console] feat(control-plane): comprehensive platform admin console UI/UX overhaul across all sub-modules, WebSocket real-time updates via ConsoleGateway in unierp-api, design system integration, and test coverage · Antigravity
+- [infra] chore(docker): console container definition centralized in unierp-infra (docker-compose.platform.yml); removed standalone unierp-console docker-compose.yml and cleaned up duplicate Docker containers. · Antigravity
 - [workspace] chore(license): phase K01 DONE — check-licenses.mjs now uses process.cwd() to support polyrepo roots, handles AND composite license expressions, and acts as a hard CI gate for AGPL-3.0 compliance without || true bypasses. · Antigravity
 - [console] fix(auth): auto-mint HS256 JWT tokens with HMAC-SHA256 signature and system.*/platform.* control-plane permissions for console API data loading · Antigravity
 - [infra] fix(docker): add missing IDP_URL build arg and container env to unierp-console Dockerfile and docker-compose.platform.yml · Antigravity

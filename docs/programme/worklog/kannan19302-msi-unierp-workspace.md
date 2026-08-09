@@ -1812,3 +1812,12 @@ status → BLOCKED
 J03 stranded branch — stale WIP (13.6h, no progress notes). Freeing it per user decision; console expansion work proceeds as a directed build outside further plan claims.
 ```
 
+### K01 · CLAIMED · 2026-08-09T10:58:47Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    main
+selected  lowest READY phase in Wave 0
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

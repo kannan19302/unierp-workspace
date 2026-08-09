@@ -14,7 +14,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
+const ROOT = process.cwd();
 const includeDev = process.argv.includes('--all');
 
 /** Permitted outright — permissive or weak-copyleft with dynamic linking. */
@@ -86,8 +86,9 @@ for (const [licence, packages] of Object.entries(data)) {
 
     const normalised = String(licence).replace(/^\(|\)$/g, '').trim();
     // An OR expression passes if ANY branch is allowed.
+    // An AND expression passes if ALL parts are allowed.
     const branches = normalised.split(/\s+OR\s+/i).map((s) => s.trim());
-    if (branches.some((b) => ALLOWED.has(b))) continue;
+    if (branches.some((branch) => branch.split(/\s+AND\s+/i).every((b) => ALLOWED.has(b.trim().replace(/^\(|\)$/g, ''))))) continue;
 
     if (branches.some((b) => NEEDS_ADR.has(b))) {
       needsAdr.push({ name, version: pkg.version, licence: normalised });
@@ -109,6 +110,11 @@ if (needsAdr.length) {
   console.error(`
      These licences (AGPL / SSPL / BUSL / Elastic / GPL / non-commercial) conflict with
      the self-host promise in TRD § 1, or impose disclosure obligations on customers.
+
+     AGPL implications: If we include an AGPL dependency, any tenant running UniERP 
+     and adding their own custom code or extensions would be forced to open-source 
+     their proprietary business logic under the AGPL. This makes the platform legally 
+     toxic for commercial marketplace use and self-hosters building private extensions.
 
      Either replace the dependency, or record an ADR in docs/ai/TRD.md § 9 explaining
      why it is safe here, then add it to ADR_EXEMPTIONS in this script.

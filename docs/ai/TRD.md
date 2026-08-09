@@ -24,6 +24,7 @@ Concretely:
    Elastic, "Commons Clause", or any source-available licence. Forbidden: anything with a
    field-of-use or user-count restriction.
 5. **Every proprietary adapter ships with a working open alternative in the same release.**
+6. **AGPL-3.0 is generally rejected.** If we include an AGPL dependency, any tenant running UniERP and adding their own custom code or extensions would be forced to open-source their proprietary business logic under the AGPL. This makes the platform legally toxic for commercial marketplace use and self-hosters building private extensions.
 
 | Concern            | Open default (mandatory, must work)                            | Optional proprietary adapter            |
 | :----------------- | :------------------------------------------------------------- | :-------------------------------------- |

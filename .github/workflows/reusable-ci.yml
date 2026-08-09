@@ -21,8 +21,15 @@ jobs:
         run: npm install -g pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Checkout unierp-workspace for CI scripts
+        uses: actions/checkout@v4
+        with:
+          repository: kannan19302/unierp-workspace
+          path: unierp-workspace
       - name: Run checks
         run: |
           pnpm run build || true
           pnpm run lint || true
           pnpm run test || true
+      - name: Check dependency licences
+        run: node unierp-workspace/scripts/ci/check-licenses.mjs

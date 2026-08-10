@@ -389,4 +389,4 @@ A18: sandbox escape-attempt suite - one adversarial test per A16 threat T01-T19 
 
 - **2026-08-08 (C11):** Tenant audit-trail viewer � added UI and API for support agents to view and export a tenant's internal audit trail.
 R e f a c t o r e d   u n i e r p - c o n s o l e :   e l i m i n a t e d   i n l i n e   s t y l e s ,   a d d e d   V i t e s t / P l a y w r i g h t   s c a f f o l d i n g ,   f i x e d   E S L i n t   s e t u p  
- 
+ - **2026-08-10 (D01):** Implemented plane-2 boundary by adding a Next.js middleware guard in unierp-web that blocks non-admin users with a 403 response.

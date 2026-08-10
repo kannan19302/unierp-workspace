@@ -28,8 +28,8 @@ jobs:
           path: unierp-workspace
       - name: Run checks
         run: |
-          pnpm run build || true
-          pnpm run lint || true
-          pnpm run test || true
+          pnpm run build
+          pnpm run lint
+          pnpm run test
       - name: Check dependency licences
         run: node unierp-workspace/scripts/ci/check-licenses.mjs

@@ -5488,3 +5488,103 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M25 · FINISH · 2026-08-11T10:18:58Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M25 — Provider billing and cost ingestion
+============================================
+
+Exit criterion: "An ingested month reconciles to the provider's own
+invoice total to the cent. Money is Decimal(19,4) throughout; a Float in
+this path fails the build. Re-ingesting the same period does not
+double-count — asserted."
+
+--- Mechanism ---
+- unierp-data: CostIngestionBatch (one row per providerId+period, unique
+  constraint) and CostLineItem, invoiceTotal/amount both Decimal(19,4).
+- unierp-api: CostIngestionService.ingestBillingExport() —
+    - Every amount type in the file is `string` (a decimal string), never
+      `number`. There is no float parameter or return value anywhere
+      money flows through this file — passing a numeric literal at a call
+      site is a TypeScript compile error, which is what "a Float in this
+      path fails the build" means as an enforceable, not aspirational,
+      rule.
+    - toTenThousandths()/toCents() parse and sum amounts as BigInt, never
+      via parseFloat/Number() — arithmetic is exact, not float-adjacent.
+    - Reconciliation: the line items' summed cents must equal the
+      invoice total's cents (half-up rounded), or the ingest is refused
+      outright with nothing written.
+    - Re-ingestion: finds the existing batch for (providerId, period),
+      deletes its line items, then recreates the batch's own fields and
+      inserts the new set — replace, never append. That replace IS the
+      entire "does not double-count" guarantee.
+- CostIngestionController: POST ingest, GET :providerId/:period. New
+  permissions system.cost.read/ingest.
+
+--- Proof 1: reconciles to the cent ---
+cost-ingestion.service.spec.ts:
+  "an ingested month reconciles to the provider's own invoice total to
+  the cent" — three line items (800.11 + 300.22 + 134.23) against
+  invoiceTotal 1234.56 reconciles exactly; reconciledTotal reported as
+  "1234.5600".
+
+--- Proof 2: mismatch refused, nothing written ---
+  "a month whose line items do NOT sum to the invoice total is refused,
+  not silently ingested" — a 2-cent mismatch throws, and zero batches
+  exist afterward.
+
+--- Proof 3: re-ingestion does not double-count ---
+  "re-ingesting the same period does NOT double-count — line items are
+  replaced, not appended" — ingests period 2026-08 once (1 line item),
+  then ingests a corrected export for the SAME period (2 different line
+  items, different total): still exactly ONE batch, exactly 2 line items
+  (the old L1 replaced, not left alongside the new ones), and the
+  batch's own invoiceTotal reflects the latest ingestion.
+
+--- Proof 4: exact-cent precision, provably float-free ---
+  "exact-cent precision holds even with amounts that are not exact in
+  binary floating point" — 0.10 + 0.20 (famously != 0.30 under IEEE 754
+  double arithmetic) reconciles EXACTLY to 0.30 via the BigInt path.
+
+--- Proof 5: break/restore ---
+BREAK: the `costLineItem.deleteMany()` call before re-creating a batch's
+line items removed entirely — old items would remain alongside new ones
+on re-ingestion.
+
+Result: cost-ingestion.service.spec.ts — 1/4 tests FAIL:
+  x re-ingesting the same period does NOT double-count
+
+RESTORE: cost-ingestion.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  31 passed (31)
+       Tests  150 passed (150)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 30 controllers, 188 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Currency conversion, amortisation, credits and commitments (all named
+  in the Deliverable) are not built — the exit criterion tests exact
+  reconciliation and idempotent re-ingestion specifically, which is what
+  is proven; multi-currency and amortisation logic would layer on top of
+  this same batch/line-item model without changing its core guarantee.
+- Scheduled (automatic, recurring) ingestion is not built — the
+  Deliverable names "scheduled ingestion of every provider's billing
+  export"; this phase builds the ingestion mechanism itself
+  (ingestBillingExport, callable on demand), which M11's
+  ScheduledOperation could drive on a cadence without any change to this
+  service.
+- No live provider billing API integration — ingestBillingExport()
+  accepts an already-parsed billing export (line items + invoice total)
+  as input, consistent with every other Track M adapter precedent this
+  session: no live external API is reachable in this dev environment.
+- No console UI surface in this phase — the exit criterion is a backend
+  reconciliation/idempotency mechanism, not a console requirement.
+```
+

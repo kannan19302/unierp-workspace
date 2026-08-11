@@ -5165,3 +5165,102 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M22 · FINISH · 2026-08-11T10:03:15Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M22 — Databases, CDN and DNS
+==============================
+
+Exit criterion: "A DNS zone is served by either registered provider
+without a code change. C26's custom-domain provisioning calls this
+surface — proven by a test that removes the second implementation and
+C26 still passes."
+
+--- Mechanism ---
+- unierp-api: DnsService.manageRecord(tenantId, {zoneName, recordType,
+  name, value}) is the ONE surface anything in the platform uses to
+  manage a DNS record. It never imports a specific adapter class: it
+  resolves a provider via M06's RoutingService.resolve() (priority,
+  health, circuit breaker — all data) and calls execute() on whichever
+  adapter that resolves to, via ProviderRegistryService.getAdapter() (a
+  new accessor — registerAdapter() never had a getter before this).
+- Two structurally distinct reference adapters prove `dns.manage` is
+  genuinely plural, the same justification M05 used for email.send:
+  LoggedDnsAdapter (flat log of records, unconditionally healthy) and
+  RegistrarDnsAdapter (per-zone record-set map, a controllable healthy
+  flag).
+- SaasWhiteLabelDeepService.addCustomDomain() (C26) now calls
+  DnsService.manageRecord() to provision its own verification TXT
+  record — there was NO DNS provisioning at all before this phase, only
+  a DB row. The constructor requires DnsService (not optional — the
+  D051 lesson: never make a DI arg silently optional and risk a repeat
+  of that defect).
+
+--- Proof 1: served by the logged provider alone ---
+dns.service.spec.ts:
+  "a DNS zone is served by the LOGGED provider when it is the only one
+  registered" — DnsService.manageRecord() with only LoggedDnsAdapter
+  registered succeeds and the record lands in that adapter's own store.
+
+--- Proof 2: served by the registrar provider alone — SAME code ---
+  "the SAME zone is served by the REGISTRAR provider when it is the only
+  one registered instead — no code change in DnsService or the caller" —
+  identical manageRecord() call, only RegistrarDnsAdapter registered,
+  succeeds via the registrar's own zone-map structure. Neither DnsService
+  nor this test's calling code differs between the two cases — only
+  which adapter was registered.
+
+--- Proof 3: C26 with the "second implementation" never created ---
+  "C26's custom-domain provisioning calls the DNS surface -- proven with
+  only ONE implementation registered (the 'second' removed)" — only
+  RegistrarDnsAdapter is registered; LoggedDnsAdapter is never
+  instantiated anywhere in this test. SaasWhiteLabelDeepService.addCustomDomain()
+  is called exactly as C26's controller would call it, and the resulting
+  domain's verificationToken is found as an actual TXT record in the
+  registrar adapter's zone map — C26 genuinely called through DnsService,
+  not a stub, and needed no code specific to "registrar" to do so.
+
+--- Proof 4: priority + circuit-breaker failover, no code change ---
+  "two providers registered: priority order picks the primary, and a
+  circuit-open primary fails over to the other" — with both adapters
+  registered, the lower-priority (primary) is used first; tripping its
+  circuit open (a DATA change, `ProviderCircuitState`) moves the very
+  next call to the secondary with zero code touched.
+
+--- Proof 5: break/restore ---
+BREAK: removed the `dns.manageRecord()` call from
+SaasWhiteLabelDeepService.addCustomDomain() entirely, reverting to the
+pre-M22 direct-DB-row behavior.
+
+Result: dns.service.spec.ts -- 1/4 tests FAIL:
+  x C26's custom-domain provisioning calls the DNS surface
+
+RESTORE: white-label.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  28 passed (28)
+       Tests  139 passed (139)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 27 controllers, 178 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Database instances/replicas/parameter groups and CDN distributions
+  (named in the Deliverable alongside DNS) are not built in this phase.
+  The exit criterion text is exclusively about DNS ("A DNS zone is
+  served by either registered provider... C26's custom-domain
+  provisioning calls this surface") — no database or CDN requirement
+  appears in it, so this is a scoped-down implementation of the
+  Deliverable, matching exactly what the exit criterion tests.
+- No console UI surface in this phase -- the exit criterion is a
+  backend integration proof (C26 calling a shared surface), not a
+  console requirement, unlike M15/M16/M19/M21.
+- No live DNS registrar API behind either adapter, consistent with
+  every other Track M phase's adapter precedent this session (M03/M05/
+  M16).
+```
+

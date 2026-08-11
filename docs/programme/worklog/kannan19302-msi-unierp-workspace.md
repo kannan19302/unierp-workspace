@@ -3577,3 +3577,199 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M09 · FINISH · 2026-08-11T08:04:10Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M09 — Plan and dry-run
+EXIT CRITERION (verbatim):
+  "No operation reaches a provider without a plan. Dry-run of a
+   destructive change produces the full diff and touches nothing -
+   proven by asserting zero provider calls. The displayed cost delta
+   comes from M04, not a constant."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/planning.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:33:52
+[2m   Duration [22m 708ms[2m (transform 88ms, setup 24ms, collect 382ms, tests 4ms, environment 0ms, prepare 119ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (executor no longer calls the adapter) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/planning.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m M09 · plan and dry-run[2m > [22mno operation reaches a provider without a plan — the executor's only entry point requires one[90m 5[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/planning.service.spec.ts[2m > [22mM09 · plan and dry-run[2m > [22mno operation reaches a provider without a plan — the executor's only entry point requires one
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/planning.service.spec.ts:[2m184:28[22m[39m
+    [90m182| [39m    [35mconst[39m result [33m=[39m [35mawait[39m executor[33m.[39m[34mexecute[39m(plan[33m,[39m spy[33m,[39m { state[33m:[39m [32m"stopped[39m…
+    [90m183| [39m
+    [90m184| [39m    [34mexpect[39m(result[33m.[39msuccess)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m185| [39m    [34mexpect[39m(spy[33m.[39mcallCount)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m186| [39m    [90m// TYPE-LEVEL proof, not just this call: PlanGatedExecutor.execute[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:33:55
+[2m   Duration [22m 558ms[2m (transform 74ms, setup 23ms, collect 269ms, tests 10ms, environment 0ms, prepare 94ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (an adapter call injected inside createPlan) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/planning.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m M09 · plan and dry-run[2m > [22mdry-run of a destructive change produces the full diff and touches nothing — zero provider calls[90m 6[2mms[22m[31m[39m
+[31m     → dry-run must never call an adapter: expected 1 to be +0 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/planning.service.spec.ts[2m > [22mM09 · plan and dry-run[2m > [22mdry-run of a destructive change produces the full diff and touches nothing — zero provider calls
+[31m[1mAssertionError[22m: dry-run must never call an adapter: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/planning.service.spec.ts:[2m175:65[22m[39m
+    [90m173| [39m
+    [90m174| [39m    [34mexpect[39m(plan[33m.[39mdiff)[33m.[39m[34mtoEqual[39m([{ field[33m:[39m [32m"state"[39m[33m,[39m desiredValue[33m:[39m [32m"runnin[39m…
+    [90m175| [39m    [34mexpect[39m(spy[33m.[39mcallCount[33m,[39m [32m"dry-run must never call an adapter"[39m)[33m.[39m[34mtoBe[39m([34m0[39m…
+    [90m   | [39m                                                                [31m^[39m
+    [90m176| [39m  })[33m;[39m
+    [90m177| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:33:58
+[2m   Duration [22m 587ms[2m (transform 75ms, setup 22ms, collect 297ms, tests 10ms, environment 0ms, prepare 99ms)[22m
+
+
+==================== 2c. OBSERVED FAILING (cost delta hardcoded) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/planning.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M09 · plan and dry-run[2m > [22ma plan carries the diff, affected resources, execution order, cost delta and reversal[90m 9[2mms[22m[31m[39m
+[31m     → expected { pricePerUnit: '9.9999', …(3) } to deeply equal { pricePerUnit: '0.0050', …(3) }[39m
+[31m   [31m×[31m M09 · plan and dry-run[2m > [22mthe displayed cost delta comes from M04's price sheet, not a constant — changing the recorded price changes the plan[90m 1[2mms[22m[31m[39m
+[31m     → expected '9.9999' to be '1.5000' // Object.is equality[39m
+[31m   [31m×[31m M09 · plan and dry-run[2m > [22ma resource with no recorded price returns a null cost delta, not a fabricated number[90m 1[2mms[22m[31m[39m
+[31m     → expected { pricePerUnit: '9.9999', …(3) } to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/planning.service.spec.ts[2m > [22mM09 · plan and dry-run[2m > [22ma plan carries the diff, affected resources, execution order, cost delta and reversal
+[31m[1mAssertionError[22m: expected { pricePerUnit: '9.9999', …(3) } to deeply equal { pricePerUnit: '0.0050', …(3) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[2m    "currency": "USD",[22m
+[32m-   "pricePerUnit": "0.0050",[39m
+[31m+   "pricePerUnit": "9.9999",[39m
+[2m    "quantity": 10,[22m
+[32m-   "total": "0.0500",[39m
+[31m+   "total": "9.9999",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/platform/operation-pipeline/planning.service.spec.ts:[2m156:37[22m[39m
+    [90m154| [39m    [34mexpect[39m(plan[33m.[39mexecutionOrder[[34m0[39m])[33m.[39m[34mtoBe[39m(zone[33m.[39mid)[33m;[39m [90m// dependency before[39m…
+    [90m155| [39m    [34mexpect[39m(plan[33m.[39mexecutionOrder[[34m1[39m])[33m.[39m[34mtoBe[39m(cname[33m.[39mid)[33m;[39m
+    [90m156| [39m    [34mexpect[39m(plan[33m.[39mestimatedCostDelta)[33m.[39m[34mtoEqual[39m({
+    [90m   | [39m                                    [31m^[39m
+    [90m157| [39m      pricePerUnit[33m:[39m [32m"0.0050"[39m[33m,[39m
+    [90m158| [39m      quantity[33m:[39m [34m10[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/planning.service.spec.ts[2m > [22mM09 · plan and dry-run[2m > [22mthe displayed cost delta comes from M04's price sheet, not a constant — changing the recorded price changes the plan
+[31m[1mAssertionError[22m: expected '9.9999' to be '1.5000' // Object.is equality[39m
+
+Expected: [32m"1.5000"[39m
+Received: [31m"9.9999"[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/planning.service.spec.ts:[2m212:46[22m[39m
+    [90m210| [39m      { providerId[33m:[39m [32m"prov-llm"[39m[33m,[39m capabilityId[33m:[39m [32m"llm.complete"[39m[33m,[39m operatio…
+    [90m211| [39m    )[33m;[39m
+    [90m212| [39m    [34mexpect[39m(before[33m.[39mestimatedCostDelta[33m?.[39mtotal)[33m.[39m[34mtoBe[39m([32m"1.5000"[39m)[33m;[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m213| [39m
+    [90m214| [39m    [90m// The provider's own recorded price changes — M04 data, nothing in[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/planning.service.spec.ts[2m > [22mM09 · plan and dry-run[2m > [22ma resource with no recorded price returns a null cost delta, not a fabricated number
+[31m[1mAssertionError[22m: expected { pricePerUnit: '9.9999', …(3) } to be null[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+Object {
+  "currency": "USD",
+  "pricePerUnit": "9.9999",
+  "quantity": 1,
+  "total": "9.9999",
+}
+
+[36m [2m❯[22m src/platform/operation-pipeline/planning.service.spec.ts:[2m236:37[22m[39m
+    [90m234| [39m      quantity[33m:[39m [34m1[39m[33m,[39m
+    [90m235| [39m    })[33m;[39m
+    [90m236| [39m    [34mexpect[39m(plan[33m.[39mestimatedCostDelta)[33m.[39m[34mtoBeNull[39m()[33m;[39m
+    [90m   | [39m                                    [31m^[39m
+    [90m237| [39m  })[33m;[39m
+    [90m238| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:34:00
+[2m   Duration [22m 564ms[2m (transform 73ms, setup 24ms, collect 257ms, tests 12ms, environment 0ms, prepare 96ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/planning.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:34:02
+[2m   Duration [22m 545ms[2m (transform 71ms, setup 22ms, collect 256ms, tests 5ms, environment 0ms, prepare 93ms)[22m
+```
+

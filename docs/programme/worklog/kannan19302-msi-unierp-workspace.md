@@ -9266,3 +9266,114 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### D16 · FINISH · 2026-08-11T15:57:01Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+D16 — Settings versioning and migration
+Exit criterion: "A setting renamed in v2 preserves every tenant's v1
+value. A changed default does not move a tenant that never set it."
+
+MECHANISM
+=========
+unierp-contracts/src/settings-migration.ts, two independent guarantees:
+
+1. RENAME PRESERVATION
+   registerRename(oldKey, newKey, effectiveVersion) declares a rename.
+   migrateStoredValues(storedValues) copies the old key's value to the
+   new key ONLY if the new key has no value already (idempotent — a
+   tenant who explicitly changed the new key after a first migration is
+   never clobbered by a later run), then removes the old key. A tenant
+   with no value under the old key at all is simply unaffected.
+
+2. DEFAULT-CHANGE ISOLATION
+   pinDefaultBeforeChange(tenantValuesByTenantId, key, oldDefault),
+   called BEFORE a setting's defaultValue is updated in the registry:
+   writes the CURRENT (about-to-become-old) default as an EXPLICIT
+   stored value for every tenant with no existing entry for that key.
+   A tenant who never touched the setting therefore keeps behaving
+   exactly as before once the schema's default changes; only a
+   genuinely new tenant (never present in the pinned map at all) ever
+   resolves to the new default via normal scope resolution (D15).
+
+PROOF
+=====
+settings-migration.spec.ts (7 tests): a rename preserves each tenant's
+v1 value independently under the new key, with the old key removed; a
+tenant with no old-key value is unaffected; migration is idempotent
+(running it twice never overwrites a tenant's own post-migration
+change); registered renames are queryable for audit; pinning locks in
+the old default for a tenant who never set a value while leaving a
+tenant who DID set one untouched; a pinned tenant's resolved value stays
+at the old default independent of what the schema's current default
+becomes; a brand-new tenant (never in the pinned set) is correctly
+absent, so normal resolution applies to it. All 7 passed on first run.
+
+Broke migrateStoredValues() by removing the rename-application loop
+entirely (returns the input unchanged), commented `// BROKEN FOR
+PROOF: rename application removed -- a v1 value under the old key
+would be silently lost on migration`.
+
+  $ npx vitest run src/settings-migration.spec.ts
+  ×  a RENAME preserves every tenant's v1 value under the new key
+  ×  migration is IDEMPOTENT — running it twice never overwrites a
+       value the tenant already set under the new key
+
+Exactly the two rename-dependent tests failed. Restored, then:
+
+  $ npx vitest run src/settings-migration.spec.ts
+  Tests  7 passed (7)
+
+Broke pinDefaultBeforeChange() by removing the pin branch (every
+tenant passes through unchanged regardless of whether they have an
+existing entry), commented `// BROKEN FOR PROOF: pin logic removed --
+every tenant passes through unchanged, so a tenant who never set the
+value would silently inherit the new default`.
+
+  $ npx vitest run src/settings-migration.spec.ts
+  ×  A CHANGED DEFAULT DOES NOT MOVE A TENANT THAT NEVER SET IT —
+       pinDefaultBeforeChange() locks in the old default for tenants
+       with no explicit value
+  ×  after pinning, the schema's default can change freely without
+       affecting any already-pinned tenant
+
+Exactly the two pinning-dependent tests failed. Restored, then:
+
+  $ npx vitest run src/settings-migration.spec.ts src/settings-resolution.spec.ts src/settings.spec.ts src/residency.spec.ts
+  Test Files  4 passed (4)
+       Tests  23 passed (23)
+
+BUILD
+=====
+$ npx tsc --noEmit
+  (clean, no output)
+
+$ npm run build
+  > @kannan19302/contracts@1.0.4 build
+  > tsc
+  (clean)
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- No retyping migration beyond rename (the Deliverable text names
+  "renamed or retyped settings" — this phase's exit criterion only
+  tests renames and default changes; a value-transforming migration
+  for a type change, e.g. string-to-enum, would need its own
+  transform function, a natural extension of the same registerRename-
+  style pattern, not built here).
+- No wiring into a real settings-storage backend — both functions are
+  pure, operating on plain objects a caller assembles from and writes
+  back to real storage; the actual read/write integration is a later,
+  runtime phase's work (the same boundary D15 stated).
+- No automatic migration-runner that walks a version history end to
+  end (v1 -> v2 -> v3 in one call) — migrateStoredValues() applies
+  every CURRENTLY-registered rename in one pass, which is sufficient
+  for the exit criterion's "renamed in v2" case but not a general
+  multi-hop migration engine.
+
+COMMITS
+=======
+unierp-contracts  4bbc811  settings-migration.ts, spec, index.ts export
+```
+

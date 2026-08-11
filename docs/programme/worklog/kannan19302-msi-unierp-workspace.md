@@ -2274,3 +2274,81 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M48 · FINISH · 2026-08-11T03:48:32Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M48 — Close D048: wire the plane-1 audit log that was never called
+EXIT CRITERION (as recorded in Track M):
+  "control-plane-audit-wiring.spec.ts reports the interceptor registered and reading
+   the correct marker, and HAS BEEN OBSERVED FAILING with it unregistered. C03
+   exit criterion - no console mutation is possible without an audit record - was
+   false for all 22 mounted controllers before this phase; re-run after, it holds
+   for the write-attempt guarantee D048 states."
+
+==================== 1. PASSING (current tree) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/v1/control-plane-audit-wiring.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/common/guards/tests/control-plane-audit.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 09:17:23
+[2m   Duration [22m 572ms[2m (transform 68ms, setup 49ms, collect 261ms, tests 21ms, environment 0ms, prepare 229ms)[22m
+
+
+==================== 2. OBSERVED FAILING (pre-M48 tree, before the interceptor existed) ====================
+$ before this phase, control-plane-audit-wiring.spec.ts did not exist; reconstructing its
+  original 3 assertions (the version that discovered the gap) against the pre-fix app.module.ts:
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/v1/control-plane-audit-wiring.spec.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m C03 · control-plane audit — is the mechanism actually wired?[2m > [22mControlPlaneAuditInterceptor is registered as a global APP_INTERCEPTOR[90m 6[2mms[22m[31m[39m
+[31m     → app.module.ts must register ControlPlaneAuditInterceptor as a global APP_INTERCEPTOR — otherwise no plane-1 controller's mutations produce a tamper-evident record no matter what any individual controller does.: expected false to be true // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/v1/control-plane-audit-wiring.spec.ts[2m > [22mC03 · control-plane audit — is the mechanism actually wired?[2m > [22mControlPlaneAuditInterceptor is registered as a global APP_INTERCEPTOR
+[31m[1mAssertionError[22m: app.module.ts must register ControlPlaneAuditInterceptor as a global APP_INTERCEPTOR — otherwise no plane-1 controller's mutations produce a tamper-evident record no matter what any individual controller does.: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/platform/v1/control-plane-audit-wiring.spec.ts:[2m70:7[22m[39m
+    [90m 68| [39m        [32m"APP_INTERCEPTOR — otherwise no plane-1 controller's mutations[39m…
+    [90m 69| [39m        [32m"a tamper-evident record no matter what any individual control[39m…
+    [90m 70| [39m    )[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m      [31m^[39m
+    [90m 71| [39m  })[33m;[39m
+    [90m 72| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 09:17:33
+[2m   Duration [22m 321ms[2m (transform 35ms, setup 26ms, collect 15ms, tests 12ms, environment 0ms, prepare 101ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/v1/control-plane-audit-wiring.spec.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m   Start at [22m 09:17:36
+[2m   Duration [22m 354ms[2m (transform 35ms, setup 24ms, collect 16ms, tests 7ms, environment 0ms, prepare 100ms)[22m
+```
+

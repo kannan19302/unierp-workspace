@@ -47,7 +47,7 @@ truthful without its J phases.
 | **J04** | Permission test framework | C02, D03 | A harness asserting authorised → 200 and unauthorised → **403** (not 404, not 500) for every endpoint | Every endpoint has a permission test. Removing a `@Permissions` decorator fails CI | DONE |
 | **J05** | Contract testing across 30 repos | A01, A02 | The existing CDC expectations (`cdc/expectations.json`, `cdc-harness.mjs`) enforced for every consumer/provider pair | A provider change that breaks any published consumer expectation fails the provider's CI. Verified by breaking one on purpose | OPEN |
 | **J06** | Integration test environment | A15 | Reproducible ephemeral environments with real Postgres, real migrations and seeded data — no mocked database in integration tests | Integration suites run against a real database in CI and locally with one command, and are not flaky across ten consecutive runs | OPEN |
-| **J07** | Accessibility as a blocking gate | B23 | `axe` in CI across every component and every route; keyboard-navigation assertions; the documented screen-reader script | A new `axe` violation fails CI. Zero violations across the component library and all routes (**G-16**) | OPEN |
+| **J07** | Accessibility as a blocking gate | B23 | `axe` in CI across every component and every route; keyboard-navigation assertions; the documented screen-reader script | A new `axe` violation fails CI. Zero violations across the component library and all routes (**G-16**) | WIP |
 | **J08** | Visual regression | B14 | Screenshot baselines per component × 7 themes × 2 densities × light/dark, and per critical route | An unintended visual change fails CI with a diff. A deliberate one updates the baseline in the same commit | OPEN |
 
 ---

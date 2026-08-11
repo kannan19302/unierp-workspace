@@ -1466,3 +1466,22 @@ before).
 run before today — none had a test exercising two rapid consecutive calls against the same
 resource the way M20's rollback test does, which is exactly why it went undetected in M12/M13/M19
 despite being present in their code from the start.
+
+### D054 · 🟡 Medium · `InvoicingService.calculateInvoiceTotals()` does tax/total arithmetic in JS `number` (float) despite `SaaSInvoice`'s own columns being `Decimal(15,2)`
+
+Noticed in passing while building M28 (margin), which reads `SaaSInvoice.totalAmount` as
+ground truth for tenant revenue. `InvoicingService.calculateInvoiceTotals(subtotal: number,
+taxRatePct: number, discountAmount: number)` in `unierp-api/src/platform/v1/invoicing.service.ts`
+computes `taxAmount`/`totalAmount` via `Math.round(x * 100) / 100` float arithmetic, then
+(presumably, not traced further) writes the result into `SaaSInvoice`'s `Decimal(15,2)` columns —
+the column type is correct, but the value that lands in it was computed in floating point first.
+This is the exact class of defect M25's `CostIngestionService` and M27's `cost-allocation.ts`
+were built this session specifically to avoid (BigInt-cents arithmetic, `string` money types
+throughout, no `number` in the money path).
+
+**Not fixed here:** out of scope for M28, which only reads `totalAmount` after it has already
+been written — fixing the read side cannot fix a value already computed wrong upstream, and
+`calculateInvoiceTotals()` belongs to C16 (invoicing), a different track's surface. Worth a
+dedicated phase or defect-fix pass: convert `calculateInvoiceTotals()` to decimal-string/BigInt
+arithmetic matching the pattern this session established in M25/M27, and audit whether any other
+`unierp-api/src/platform/v1/*.service.ts` file does money math in `number` the same way.

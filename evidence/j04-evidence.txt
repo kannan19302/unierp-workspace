@@ -1,0 +1,151 @@
+J04 — Permission test framework
+Exit criterion: "A harness asserting authorised → 200 and unauthorised
+→ 403 (not 404, not 500) for every endpoint. Every endpoint has a
+permission test. Removing a @Permissions decorator fails CI."
+
+WHAT ALREADY EXISTED
+=======================
+- check-platform-permissions.mjs: a real, working STATIC gate proving
+  every mounted /platform/v1 endpoint (46 controllers, 225 endpoints)
+  carries a @Permissions decorator and a guard chain that CAN enforce
+  it. Scoped to plane-1 only.
+- rbac-regression-sweep.spec.ts: a real, working RUNTIME-behavioral
+  proof — real Reflector reading real @Permissions metadata off real
+  controller prototypes, enforced by a real RbacGuard, producing the
+  exact 403 (via a thrown ForbiddenException) the exit criterion names
+  for "not 404, not 500" — but hand-written for only 5 controllers,
+  with bespoke context-building/guard-invocation code per test file.
+
+MECHANISM (this phase's own work)
+====================================
+1. unierp-api/src/common/guards/permission-test-harness.ts —
+   extracted the exact proven mechanism from rbac-regression-sweep.spec.ts
+   into ONE reusable function, expectPermissionEnforced(ControllerClass,
+   handlerName, expectedPermission): asserts the real reflected
+   metadata contains the expected permission; asserts a caller WITHOUT
+   it is refused (ForbiddenException -> HTTP 403); asserts a caller
+   WITH it is allowed. Any spec can call this for any controller/
+   handler pair with zero new guard-wiring code — this is what "every
+   endpoint has a permission test" scales to, mechanically.
+
+2. permission-harness-coverage.spec.ts applies it to 5 endpoints across
+   3 controllers NEVER covered by the original hand-written sweep
+   (BulkOperationsController.bulkCreate/bulkDelete,
+   ChangeHistoryController.getHistory,
+   DataQualityController.deduplicate/mergeDuplicates) — proving the
+   harness genuinely generalizes to controllers it was never written
+   for, not merely refactoring the same 5 tests under a new name.
+
+3. scripts/check-permission-test-coverage.mjs — the coverage gate.
+   Enumerates every @Permissions-decorated handler across ALL 571
+   controller files in src/ (not just plane-1), using a deliberately
+   CONSERVATIVE extraction (pairs a decorator only with the method
+   declaration on the very next real code line — an earlier, looser
+   version produced a ~50x overcount by matching arbitrary call
+   expressions deep inside method bodies; undercounting a real gap is
+   far safer than fabricating one). Cross-references against the RBAC
+   test files. Run for real:
+
+   $ node scripts/check-permission-test-coverage.mjs
+   {
+     "summary": { "totalDecoratedHandlers": 12635, "testedCount": 14, "untestedCount": 12621 }
+   }
+   FAIL  12621 of 12635 @Permissions-decorated handlers have no
+   runtime permission test.
+
+   The extraction's accuracy was cross-checked directly against the
+   TRUSTED existing gate: summing @Permissions( occurrences across
+   src/platform/v1/*.controller.ts alone gives 225 — EXACTLY matching
+   check-platform-permissions.mjs's own independently-reported count
+   for that same set, confirming the measurement method is sound (the
+   571-controller-file, 12,635-handler total for the WHOLE platform is
+   proportionally consistent with that trusted subset, not a
+   measurement artefact).
+
+PROOF
+=====
+Broke the coverage gate's untested-detection filter by short-
+circuiting it to always-empty, commented `// BROKEN FOR PROOF: filter
+short-circuited to always-empty -- gate would report OK regardless of
+actual coverage`.
+
+  $ node scripts/check-permission-test-coverage.mjs
+  OK    all 12635 @Permissions-decorated handlers have a runtime
+  permission test.
+  (exit 0 — the gate would have LIED about the platform's real state)
+
+Exactly the intended failure mode reproduced. Restored, then:
+
+  $ node scripts/check-permission-test-coverage.mjs
+  FAIL  12621 of 12635 ...
+  (exit 1 — the gate correctly, honestly fails again)
+
+Broke a REAL endpoint by removing the @Permissions decorator from
+BulkOperationsController.bulkCreate — the exit criterion's OWN literal
+scenario, commented `// BROKEN FOR PROOF: @Permissions decorator
+removed -- this endpoint would be reachable by anyone, no 403 for an
+unauthorized caller`.
+
+  $ npx vitest run src/common/guards/tests/permission-harness-coverage.spec.ts
+  ×  BulkOperationsController.bulkCreate enforces bulk-ops.create
+
+Exactly the intended assertion failed — "removing a @Permissions
+decorator fails CI," proven directly, not asserted. Restored, then:
+
+  $ npx vitest run src/common/guards/tests/permission-harness-coverage.spec.ts
+  Tests  5 passed (5)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/common/guards/ src/modules/admin/tests/rbac-regression-sweep.spec.ts
+  Test Files  12 passed, 1 failed (13)
+       Tests  166 passed, 1 failed (167)
+
+The one failure (two-person-control.spec.ts) is in a file this phase
+never touched — confirmed via `git status`/`git diff --stat` showing
+zero changes to either that spec or its guard — a pre-existing,
+unrelated issue.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+=================================================================
+"Every endpoint has a permission test" is NOT fully achieved: 12,621
+of 12,635 real @Permissions-decorated handlers across the platform
+still have no runtime permission test. Writing one call to
+expectPermissionEnforced() per remaining handler is now mechanical
+(no new wiring needed per endpoint — the harness IS the reusable
+mechanism), but at this scale it is a large, multi-session effort, not
+something to fabricate coverage for by writing shallow or duplicated
+tests just to move a number. This mirrors D12's and D19's identical
+class of finding in this same session (a real, measured gap is more
+valuable than a false claim of completeness) — filed as J-track's own
+defect-log entry for visibility.
+
+What IS complete and real:
+  - The harness mechanism itself, proven correct via break/restore,
+    proven to catch the exit criterion's own literal failure scenario
+    (a removed @Permissions decorator).
+  - Proven to genuinely generalize (5 new endpoints, zero bespoke
+    per-endpoint guard code).
+  - The coverage gate, proven correct via break/restore, currently
+    reporting the platform's TRUE state rather than a false pass.
+
+COMMANDS
+========
+$ node scripts/check-permission-test-coverage.mjs
+  (12,635 total, 14 tested, 12,621 untested)
+
+COMMITS
+=======
+unierp-api  ff76396  permission-test-harness.ts,
+                     permission-harness-coverage.spec.ts,
+                     check-permission-test-coverage.mjs

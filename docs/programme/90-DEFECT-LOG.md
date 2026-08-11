@@ -1707,3 +1707,35 @@ long-lived secrets. This defect was found only because D20's own exit criterion 
 credentials specifically; a platform-wide grep for services with a `secret`/`token`/`apiKey`/`credential`
 field returned unfiltered from a `findFirst`/`findMany` read path would be a reasonable, high-value
 follow-up given how serious this specific instance was.
+
+### D062 · 🟠 HIGH · 12,621 of 12,635 `@Permissions`-decorated endpoints have no runtime permission test
+
+Found and measured during J04. `check-platform-permissions.mjs` (a static gate) already proves every
+mounted `/platform/v1` endpoint carries a `@Permissions` decorator and a guard chain that CAN enforce it —
+but that is a source-text check, not a proof of runtime behavior. `rbac-regression-sweep.spec.ts` already
+proved the runtime half correctly — real `Reflector` + real `@Permissions` metadata + real `RbacGuard`,
+producing an actual HTTP 403 for an unauthorized caller — but only for 5 hand-picked controllers out of
+571 controller files across the whole platform. The new `scripts/check-permission-test-coverage.mjs`
+(built for J04's own exit criterion, "every endpoint has a permission test") enumerates every
+`@Permissions`-decorated handler platform-wide and cross-references it against the RBAC test files: 12,635
+total, only 14 covered (the 5 pre-existing plus 5 new ones J04 itself added, cross-checked at 9 before
+this phase). The other 12,621 endpoints have a static guarantee that a permission decorator EXISTS, but no
+proof that `RbacGuard` actually refuses an unauthorized caller with a 403 (rather than, say, an
+unregistered permission code silently resolving to "no restriction," or a guard mis-ordering allowing a
+request through) for any of them.
+
+**How it was caught:** running `check-permission-test-coverage.mjs` against the real codebase, which is
+the intended, correct behavior of the gate — it is SUPPOSED to fail loudly here, not silently pass.
+
+**Not fixed — deliberately not attempted at scale.** J04 built the reusable mechanism
+(`expectPermissionEnforced()`, a one-line-per-endpoint call requiring zero new guard-wiring code) and
+proved it generalizes to endpoints it was never written for. Writing 12,621 more calls is now mechanical
+but still a large, multi-session effort — fabricating shallow coverage just to move the number would be
+worse than an honest, measured gap, per this session's own D12/D19 precedent for the identical class of
+finding.
+
+**Not fully investigated:** whether any of the 12,621 untested endpoints have a REAL enforcement bug (as
+opposed to merely lacking a test) — this defect only measures test coverage, not correctness. A
+higher-leverage follow-up than blanket coverage might be triaging by risk (destructive operations,
+cross-tenant-capable endpoints, endpoints outside the `platform/v1` namespace that a tenant `["*"]`
+wildcard could reach) rather than working through all 12,621 in file order.

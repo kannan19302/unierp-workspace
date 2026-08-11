@@ -2691,3 +2691,76 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M03 · FINISH · 2026-08-11T04:30:07Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M03 — Provider registry, credentials and discovery
+EXIT CRITERION (verbatim):
+  "Two providers are registered for one capability and both report their
+   discovered capability set. No credential value is persisted in the
+   database - asserted by a test that scans the table and by
+   check-secret-scan. A credential past its expiry disables its provider
+   rather than failing a request."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/provider-registry.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 09:59:29
+[2m   Duration [22m 597ms[2m (transform 62ms, setup 24ms, collect 271ms, tests 10ms, environment 0ms, prepare 114ms)[22m
+
+(typecheck: exit 0, output above if any)
+
+==================== 2. OBSERVED FAILING (expiry disable side-effect removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/provider-registry/provider-registry.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 20[2mms[22m[39m
+[31m   [31m×[31m M03 · provider registry, credentials and discovery[2m > [22ma credential past its expiry disables its provider rather than the caller finding out via a failed request[90m 9[2mms[22m[31m[39m
+[31m     → expected 'ACTIVE' to be 'DISABLED_EXPIRED_CREDENTIAL' // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/provider-registry.service.spec.ts[2m > [22mM03 · provider registry, credentials and discovery[2m > [22ma credential past its expiry disables its provider rather than the caller finding out via a failed request
+[31m[1mAssertionError[22m: expected 'ACTIVE' to be 'DISABLED_EXPIRED_CREDENTIAL' // Object.is equality[39m
+
+Expected: [32m"DISABLED_EXPIRED_CREDENTIAL"[39m
+Received: [31m"ACTIVE"[39m
+
+[36m [2m❯[22m src/platform/provider-registry/provider-registry.service.spec.ts:[2m199:38[22m[39m
+    [90m197| [39m      where[33m:[39m { id[33m:[39m p[33m.[39mid }[33m,[39m
+    [90m198| [39m    })[33m;[39m
+    [90m199| [39m    [34mexpect[39m((reloaded [35mas[39m any)[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"DISABLED_EXPIRED_CREDENTIAL[39m…
+    [90m   | [39m                                     [31m^[39m
+    [90m200| [39m  })[33m;[39m
+    [90m201| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 09:59:57
+[2m   Duration [22m 834ms[2m (transform 86ms, setup 30ms, collect 426ms, tests 20ms, environment 0ms, prepare 143ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/provider-registry.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 10:00:00
+[2m   Duration [22m 625ms[2m (transform 63ms, setup 26ms, collect 259ms, tests 14ms, environment 0ms, prepare 118ms)[22m
+```
+

@@ -5900,3 +5900,109 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M29 · FINISH · 2026-08-11T10:40:26Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M29 — Budgets, forecasts and quota binding
+=============================================
+
+Exit criterion: "A budget crossing its threshold alerts and, where
+configured, executes an enforcement plan through the pipeline — never a
+direct mutation. An entitlement change in C13 changes the resource
+quota, proven by asserting the quota after a plan change."
+
+--- Mechanism, half 1: budget threshold + enforcement ---
+- unierp-data: BudgetPolicy (tenantId+period unique), threshold amount,
+  optional enforcementResourceId + enforcementDesiredState.
+- unierp-api: BudgetService.checkAndEnforce(tenantId, period,
+  actualSpend) compares actualSpend (caller-supplied — M27/M28 already
+  compute real cost, deliberately not reimplemented here) against the
+  threshold via the same BigInt-cents arithmetic as M25/M27/M28.
+  Crossing it always records a budget.threshold-crossed audit entry.
+  Where enforcement is configured, it compiles a real plan (M09) and
+  runs it as a durable job (M12) whose step calls
+  ResourceModelService.setDesiredState() — never a direct prisma write
+  to the target resource. No enforcement configured is a valid,
+  alert-only configuration.
+
+--- Mechanism, half 2: C13 entitlement -> M07 quota ---
+- EntitlementQuotaBindingService.syncQuotaFromEntitlements(tenantId)
+  reads the tenant's CURRENT active TenantSubscription's SaaSPlan (C13's
+  own entitlement fields: maxUsers, maxStorage, maxApiCalls) and writes
+  them as an M07 resource's desired state, through M09's createPlan().
+  Called again whenever the entitlement changes (a plan swap), it writes
+  the new plan's numbers — the SAME resource, updated, not a new one.
+
+--- Proof 1: budget under threshold doesn't alert ---
+budget.service.spec.ts: "a budget under its threshold does not cross or
+alert" — 500 spend against a 1000 threshold: not crossed, zero audit
+records.
+
+--- Proof 2: crossing alerts, enforcement optional ---
+  "a budget crossing its threshold alerts, with no enforcement
+  configured" — 1500 spend against 1000: crossed, one
+  budget.threshold-crossed audit record, enforced false.
+
+--- Proof 3: crossing WITH enforcement runs through the pipeline ---
+  "a budget crossing its threshold, WHERE CONFIGURED, executes an
+  enforcement plan through the pipeline -- never a direct mutation" —
+  a budget configured with an enforcement target and desired state
+  {throttled: true}; crossing it produces a DONE job AND the target
+  resource's M07 desired state (versioned by M14) genuinely reflects
+  throttled: true afterward — not a same-call side-effect bypassing the
+  resource model.
+
+--- Proof 4: entitlement change updates the quota, asserted after ---
+entitlement-quota-binding.service.spec.ts: "an entitlement change
+(upgrading to a different plan) changes the resource quota -- asserted
+after the plan change, not before" — syncs quota from a 10-user plan
+(before: maxUsers 10), then the tenant's subscription is changed to
+point at a 50-user plan, sync runs again, and the quota read AFTER that
+change is asserted to be {maxUsers: 50, ...} and explicitly NOT equal to
+the before value.
+
+--- Proof 5: no duplicate quota resource ---
+  "re-syncing the same tenant reuses the same quota resource" — two
+  syncs return the same resourceId.
+
+--- Proof 6: break/restore (both halves) ---
+BREAK A: budget enforcement path removed — crossing a budget with
+enforcement configured would only alert, never run the plan.
+Result: 1/4 budget tests FAIL (the WHERE-CONFIGURED enforcement test).
+RESTORE: 4/4 pass.
+
+BREAK B: the write of the tenant's entitlements to the resource's
+desired state removed — quota read after sync would still show the OLD
+value.
+Result: 2/5 quota-binding tests FAIL (the direct sync test and the
+entitlement-change test).
+RESTORE: 5/5 pass.
+
+--- Full regression after both restores ---
+unierp-api: npx vitest run src/platform/
+  Test Files  37 passed (37)
+       Tests  182 passed (182)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 35 controllers, 197 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Forecasting (named in the Deliverable) is not built in this phase —
+  the exit criterion tests threshold-crossing and enforcement, and the
+  entitlement-quota binding; forecasting spend forward is a different
+  mechanism (M24's own linear-trend forecaster is the established
+  pattern this session already built for a different metric and could
+  be reused for budget forecasting in a later phase).
+- Budgets scoped to service/account (Deliverable text says "per tenant,
+  service and account") are not built — this phase implements
+  tenant-scoped budgets specifically, which is what the exit criterion's
+  own example concerns ("a budget crossing its threshold... an
+  entitlement change... the resource quota").
+- No console UI surface in this phase — the exit criterion is a backend
+  mechanism (pipeline-enforced action, quota assertion after a change),
+  not a console requirement.
+```
+

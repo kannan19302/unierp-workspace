@@ -10984,3 +10984,133 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E03 · FINISH · 2026-08-11T19:06:01Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E03 — Tier assignment and depth targets
+Exit criterion: "Every module has a target score and a stated reason.
+No module is silently exempt."
+
+BEFORE
+======
+$ node -e "console.log(!!require('./docs/module-tier-manifest.json').depthTargets)"
+false
+(no target-score/reason concept existed on any module; the manifest
+only carried architecture tiers, Tier A/B, with no rubric-depth target
+and no stated reason field at all)
+
+Also discovered while reconciling: the existing manifest had already
+drifted from the real module list —
+  $ for m in builder connect onboarding settings; do ls unierp-api/src/modules/$m; done
+  (all 4: "No such file or directory")
+4 ghost entries with no matching directory, and 3 real directories
+(extension-registry, marketplace, org-structure) present in neither
+Tier A nor Tier B. Filed as D065.
+
+MECHANISM
+=========
+New scripts/reconcile-module-tiers.mjs reads the real module
+directories under unierp-api/src/modules (46, same set E02 scored)
+and the existing manifest's Tier A/B lists, then writes a new
+`depthTargets` object into docs/module-tier-manifest.json: one entry
+per REAL module with `tier`, `targetScore`, and `reason`:
+
+  - Tier-4-exempt: the 6 platform/plane-2 infrastructure directories
+    (outbox, admin, devops, ext-gateway, extension-registry* [see
+    below], api-platform) that Track E's own "Plane 3 — the 45
+    business modules" definition excludes. Reason stated explicitly,
+    not a bare "N/A".
+    (* extension-registry was ALSO one of the 3 reconciliation-gap
+    modules below — see the actual output for how the two rules
+    interact: PLATFORM_INFRA is checked first, so it correctly lands
+    as Tier-4-exempt rather than the generic reconciliation-gap
+    default.)
+  - Tier-1: the 15 modules already in the manifest's Tier A (Clean
+    Architecture / money-handling / >15 KLoc) — target ">=2 every
+    row, >=3 on rows 1,2,3,7,14" (E01's "next level" bar), reason:
+    highest-stakes modules get no partial credit on data model,
+    lifecycle, authorisation, events, or tests.
+  - Tier-3: the pre-existing Tier B modules, PLUS the 2 remaining
+    reconciliation-gap modules (marketplace, org-structure) — target
+    ">=2 every row, >=2 on rows 1,2,3,7,14", reason stated per case
+    (existing Tier B modules get the standard Tier-3 reason;
+    reconciliation-gap modules get an explicit note that they need a
+    deliberate Tier A/B call, not a considered assignment).
+
+The manifest's own `reconciliation` field records `staleManifestEntries`
+(the 4 ghosts) and `unlistedRealModulesFoundAtReconciliation` (the 3
+gaps) so the drift is visible in the artifact itself, not just this
+evidence file.
+
+RESULT
+======
+$ node scripts/reconcile-module-tiers.mjs
+Reconciled 46 real modules into depthTargets.
+Stale manifest entries (no matching directory, flagged not dropped): builder, connect, onboarding, settings
+Real modules missing from the pre-existing A/B lists (defaulted to Tier-3, flagged): extension-registry, marketplace, org-structure
+
+$ node scripts/reconcile-module-tiers.mjs --check
+OK    all 46 real modules have a target score and a stated reason.
+NOTE  4 stale manifest entries (no matching directory): builder, connect, onboarding, settings
+
+DETERMINISM
+============
+$ sha1sum docs/module-tier-manifest.json
+c20171e748edb771fcdd09b8ad2e1e799fe82d33
+$ node scripts/reconcile-module-tiers.mjs; sha1sum docs/module-tier-manifest.json
+c20171e748edb771fcdd09b8ad2e1e799fe82d33
+(byte-identical across reruns)
+
+BREAK/RESTORE
+=============
+Broke the real script (backed up first): skipped the last module in
+the assignment loop (`realModules.slice(0, -1)`), simulating a module
+silently missing a target score/reason.
+
+  $ node scripts/reconcile-module-tiers.mjs --check
+  FAIL  1 module(s) with no target score/reason: workflow
+
+Exactly the intended failure — the exit criterion's own words ("no
+module is silently exempt") caught, naming the exact module. Restored
+from backup:
+
+  $ grep -c "BROKEN FOR PROOF" scripts/reconcile-module-tiers.mjs
+  0
+  $ node scripts/reconcile-module-tiers.mjs --check
+  OK    all 46 real modules have a target score and a stated reason.
+  $ sha1sum docs/module-tier-manifest.json
+  c20171e748edb771fcdd09b8ad2e1e799fe82d33
+  (identical to the original correct hash)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- The 3 reconciliation-gap modules (extension-registry defaults to
+  Tier-4-exempt via the platform-infra rule; marketplace and
+  org-structure default to Tier-3) were NOT given a deliberate
+  architecture review — they were defaulted and flagged as needing
+  one, per D065. A human or a dedicated follow-up phase should decide
+  their real Tier A/B/exempt status rather than trust this script's
+  default.
+- The 4 ghost manifest entries were not investigated for what they
+  were renamed to or merged into (git history was not searched in this
+  pass) — named as an open question in D065.
+- This phase assigns TARGETS; it does not attempt to move any module
+  toward its target — that is E05-E28's job, using E02's baseline and
+  this phase's targets together.
+
+COMMANDS
+========
+$ node scripts/reconcile-module-tiers.mjs
+$ node scripts/reconcile-module-tiers.mjs --check
+$ sha1sum docs/module-tier-manifest.json
+
+COMMITS
+=======
+unierp-workspace  (this phase)  scripts/reconcile-module-tiers.mjs (new),
+                                 docs/module-tier-manifest.json (reconciled,
+                                 depthTargets + reconciliation added),
+                                 docs/programme/90-DEFECT-LOG.md D065
+```
+

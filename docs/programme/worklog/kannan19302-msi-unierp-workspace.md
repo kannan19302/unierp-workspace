@@ -4291,3 +4291,78 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M14 · FINISH · 2026-08-11T08:55:34Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M14 — Versioning, rollback and immutable audit
+================================================
+
+Exit criterion: "Every desired-state change is versioned. Any resource is
+rolled back to any prior version by selecting it, and the rollback is
+itself a versioned plan. No pipeline stage can execute without an audit
+record."
+
+--- Mechanism ---
+- Prisma model DesiredStateVersion (unierp-data/prisma/schema/resource-model.prisma):
+  full append-only history, @@unique([resourceId, version]).
+- ResourceModelService.setDesiredState() now writes a DesiredStateVersion row
+  on every call, in addition to the DesiredState upsert.
+- ResourceModelService.getDesiredStateVersion()/listDesiredStateVersions() added.
+- PlanningService.rollback(resourceId, targetVersion, cost?) reads the
+  historical DesiredStateVersion row and delegates to the existing
+  createPlan() — rollback is not a separate code path, it is a plan whose
+  proposed state happens to equal a prior desired state.
+- DurableExecutorCore gained an AuditWriter, called and awaited immediately
+  before each step's run(), inside the same try block — a throwing audit
+  writer prevents the step from running at all, handled via the existing
+  compensateAndFinish failure path.
+- DurableExecutorService wires a real audit writer into ControlPlaneAuditService
+  (action: pipeline.step.<stepName>, actorId: "system:pipeline").
+
+--- Proof 1: audit gate (BEFORE fix / gap) ---
+Not applicable in isolation — gate was built new; proof is via break/restore below.
+
+--- Proof 2: break/restore — audit gate ---
+BREAK A: replaced the auditWriter call in durable-executor-core.ts::run()
+with a no-op comment, leaving def.run() to execute unaudited.
+
+Result: durable-executor.audit-gate.spec.ts — 3/3 tests FAIL:
+  x removing the audit writer (making it always fail) halts the job before the step ever runs
+  x a healthy audit writer lets the step run normally
+  x the audit write happens for EVERY step, not only the first
+
+RESTORE: durable-executor-core.ts restored from backup.
+Result: durable-executor.audit-gate.spec.ts — 3/3 tests PASS.
+
+--- Proof 3: break/restore — rollback ---
+BREAK B: PlanningService.rollback() changed to call
+createPlan(resourceId, {}, cost) instead of reading the historical
+DesiredStateVersion and using its state.
+
+Result: rollback.spec.ts — 3/3 relevant tests FAIL:
+  x any resource is rolled back to ANY prior version by selecting it
+  x the rollback is ITSELF a versioned plan
+  x rolling back to a version that was never recorded is refused explicitly
+
+RESTORE: planning.service.ts restored from backup.
+Result: rollback.spec.ts — 4/4 tests PASS.
+
+--- Full regression after both restores ---
+npx vitest run src/platform/ src/modules/admin/tests/tenant-lifecycle.service.spec.ts
+  src/modules/admin/tests/permissions-drift.spec.ts src/modules/admin/tests/rbac-regression-sweep.spec.ts
+  src/common/guards/tests/two-person-control-separation.spec.ts src/common/guards/tests/control-plane-audit.spec.ts
+
+Test Files  27 passed (27)
+     Tests  160 passed (160)
+
+--- Static checks ---
+npx tsc --noEmit -p tsconfig.json        -> clean, no errors
+node scripts/check-platform-permissions.mjs -> OK, 23 controllers, 161 endpoints, all guarded
+node scripts/check-layer.mjs             -> OK, L3 layer rule holds
+
+--- Verification that no break markers remain live ---
+grep -c "BROKEN FOR PROOF" durable-executor-core.ts planning.service.ts -> 0, 0
+```
+

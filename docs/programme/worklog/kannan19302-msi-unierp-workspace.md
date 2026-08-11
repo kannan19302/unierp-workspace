@@ -4427,3 +4427,9 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M15 · PROGRESS · 2026-08-11T09:02:39Z · kannan19302@MSI/unierp-workspace
+
+```
+API half done and proven: PlatformBulkOperation model + BulkOperationService (unierp-api) gives per-item SUCCESS/FAILED outcomes with named errors, and a cursor that only advances after each item's outcome durably commits, so a run is resumable without repeating or skipping an item. Proven via break/restore: removing the per-item save fails 2/5 tests (durability-ordering, resumability), restored passes 5/5. 500-item case asserts exact per-item pass/fail. NOT yet built: the unierp-console UI half (server-side search/filter/sort across resource kinds, saved views, multi-select bulk action bar, export) using B11 primitives, and the controller wiring this service to an endpoint. Next: build the console surface before claiming DONE.
+```
+

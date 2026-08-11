@@ -1,0 +1,121 @@
+D07 — Guided onboarding and in-product help
+Exit criterion: "A new tenant admin reaches a first useful outcome
+without documentation. Sample data is removable in one action with no
+residue (G-18)."
+
+SCOPE NOTE
+==========
+"A new tenant admin reaches a first useful outcome without
+documentation" is already covered by onboarding.controller.ts's
+pre-existing setup checklist (getOnboardingChecklist/listOnboardingSteps),
+tutorials (listTutorials/getTutorial/completeTutorial), and recommended
+setup (getRecommendedSetup) endpoints — unmodified by this phase, since
+they already existed and worked. This phase's work is entirely the
+G-18 half, which was found to be a genuine, complete gap.
+
+FINDING (a real, complete gap)
+=================================
+DemoDataRecord — a real Prisma model, already indexed
+(@@unique([tenantId, entityType, entityId]), @@index([tenantId,
+module])) — existed with ZERO writers anywhere in the codebase (grep
+confirmed). DemoDataService.seedDemoData() created customers, vendors
+and products for a new tenant but never wrote a single DemoDataRecord
+row, and no removal method existed at all. "Sample data is removable in
+one action with no residue" had no mechanism whatsoever behind it.
+
+MECHANISM
+=========
+unierp-api/src/modules/saas/demo-data.service.ts:
+- seedDemoData() now calls a `track(entityType, entityId)` helper after
+  every real row it creates (2 customers, 2 vendors, 3 products per
+  seed), writing one DemoDataRecord row per real row — INSIDE the same
+  transaction as the row itself, so tracking cannot silently diverge
+  from what was actually created on a partial failure.
+- purgeDemoData(tenantId): reads every DemoDataRecord for the tenant,
+  groups entityIds by entityType, deletes the real rows (customer/
+  vendor/product) via deleteMany, deletes the DemoDataRecord rows, and
+  resets demoDataLoaded/demoLoadedAt — ALL in one transaction. A tenant
+  with nothing seeded is a safe no-op, not an error.
+- OnboardingController: new POST demo-data/purge route, gated by the
+  pre-existing saas.portal.create permission.
+
+INCIDENT DURING THIS PHASE: pre-existing test coverage was briefly
+overwritten
+=============================================================================
+A first draft of the new spec was written to
+src/modules/saas/tests/demo-data.service.spec.ts, which turned out to
+already exist (5 tests covering seedDemoData's error paths — refusing a
+double-seed, an unknown tenant, a missing organization, and the RLS GUC
+being set before inserts). Writing the new file overwrote that coverage
+entirely. Caught via `git status`/`git diff --stat` on the staged
+changes before committing (the file showed as heavily modified with an
+unfamiliar diff shape) — the original content was recovered from `git
+show HEAD:...` and restored verbatim, with only the minimal addition of
+`demoDataRecord` mock stubs so the pre-existing tests' `$transaction`
+mock still resolves against seedDemoData's new tracking calls. The new
+D07-specific tests were written to a separate file,
+demo-data-purge.service.spec.ts, instead. Final diff on the original
+file: +8 lines, 0 lost.
+
+PROOF — TRACKING AND NO-RESIDUE REMOVAL
+==========================================
+demo-data-purge.service.spec.ts (4 tests): seeding records exactly one
+DemoDataRecord per real row created; purging removes every real row
+AND every tracking row (checked separately) and resets demoDataLoaded;
+purging an unseeded tenant is a safe no-op; purging one tenant never
+touches another tenant's real or tracking rows.
+
+Broke purgeDemoData() by removing the `tx.demoDataRecord.deleteMany()`
+call (real rows correctly deleted, tracking rows left behind),
+commented `// BROKEN FOR PROOF: tracking rows never deleted -- purge
+leaves residue in DemoDataRecord`.
+
+  $ npx vitest run src/modules/saas/tests/demo-data-purge.service.spec.ts
+  ×  PURGES every tracked row with NO RESIDUE — the real rows AND the
+       tracking rows are both gone
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/modules/saas/tests/demo-data-purge.service.spec.ts
+  Tests  4 passed (4)
+
+Also confirmed the demo-data.service.spec.ts gap (the removal method
+not existing at all) directly by running the new spec against the
+unfixed service first: all 4 assertions failed (result had no
+purgeDemoData method, and seeding wrote zero DemoDataRecord rows).
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/saas/ \
+    src/modules/admin/tests/permissions-drift.spec.ts \
+    src/modules/admin/tests/rbac-regression-sweep.spec.ts
+  Test Files  8 passed (8)
+       Tests  63 passed (63)
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Contextual help, guided tours, and coaching empty-state copy
+  (Deliverable text) are console/UI concerns, not touched here.
+- No console UI for triggering the purge action (a "Remove sample
+  data" button) — the backend mechanism is proven by API + tests.
+- Only customers/vendors/products are tracked, matching exactly what
+  seedDemoData creates today; if a future phase expands what gets
+  seeded, it must call track() for each new entity type or the same
+  "residue" gap recurs for that type specifically.
+
+COMMITS
+=======
+unierp-api  4a3dc89  demo-data.service.ts tracking + purgeDemoData,
+                     onboarding.controller.ts purge route,
+                     demo-data-purge.service.spec.ts, demo-data.service.spec.ts
+                     (mock stubs only, original tests preserved)

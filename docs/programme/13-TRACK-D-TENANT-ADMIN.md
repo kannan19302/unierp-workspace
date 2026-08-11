@@ -49,7 +49,7 @@ view can be reconciled against it). **Blocks:** all of Track E via D13–D22.
 | **D04** | Organisation structure | D03 | Legal entities, business units, branches, teams, cost centres, approval hierarchies — the structure the whole ERP hangs off | An approval routes correctly through a three-level hierarchy with a vacant position handled by escalation, not by silence | DONE |
 | **D05** | Tenant audit trail as a product surface | D01, C03 | Searchable, filterable, exportable audit trail scoped to the tenant, with retention per `DATA_RETENTION_MATRIX.md` | A tenant admin answers "who changed this and when" for any record without contacting support, and exports evidence for an auditor (**G-9**) | DONE |
 | **D06** | Notification preference centre | A21, D02 | Per-user and per-tenant channel preferences, digests, quiet hours, escalation paths, and unsubscribe honoured across all 45 modules | Setting a preference suppresses delivery from every module. Verified by asserting no module sends directly (**G-5**) | DONE |
-| **D07** | Guided onboarding and in-product help | D01, B12 | Setup checklist, sample data that is clearly marked and removable, contextual help, tours, and empty states that coach rather than apologise | A new tenant admin reaches a first useful outcome without documentation. Sample data is removable in one action with no residue (**G-18**) | WIP |
+| **D07** | Guided onboarding and in-product help | D01, B12 | Setup checklist, sample data that is clearly marked and removable, contextual help, tours, and empty states that coach rather than apologise | A new tenant admin reaches a first useful outcome without documentation. Sample data is removable in one action with no residue (**G-18**) | DONE |
 
 ---
 

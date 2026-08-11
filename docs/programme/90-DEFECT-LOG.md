@@ -1217,3 +1217,74 @@ bug above.
 assertion it makes about *allowing* access is unsound by construction, because a later guard can
 still deny. Only its *denial* assertions are trustworthy. A phase should either drive the full chain
 or restrict itself to denials — filed for Track J.
+
+### D048 · 🔴 CRITICAL · The tamper-evident plane-1 audit log was never called — C03 marked DONE, zero mutations audited
+
+**Found:** 2026-08-11, sweeping C01–C05 for real evidence before starting Track M's kernel.
+**Fixed by:** ControlPlaneAuditInterceptor, `unierp-api/src/common/interceptors/control-plane-audit.interceptor.ts`, registered globally in `app.module.ts`, in this change.
+
+`ControlPlaneAuditService` — a correct, unit-tested, hash-chained tamper-evident audit log — existed
+in `unierp-api/src/platform/v1/control-plane-audit.service.ts` and was called by **zero of the 22**
+mounted plane-1 controllers, and was not registered as a global interceptor. It was registered as an
+ordinary provider in `platform.module.ts` and exported; nothing consumed the export.
+
+`@TrackChanges(...)` — applied on **28 handlers across 10 plane-1 controllers**, including
+`tenant-lifecycle.controller.ts`, the file this session's M47 work treated as the reference pattern
+for the guard chain — is a bare `SetMetadata` call. It is only acted on by `ChangeHistoryInterceptor`
+via a per-handler `@UseInterceptors(ChangeHistoryInterceptor)`, which none of the 10 carried. The
+decorator was inert metadata nothing read.
+
+The one mechanism that DID run on every mutating request, `AuditInterceptor` (global
+`APP_INTERCEPTOR`), writes to the plain `audit_logs` table — no `previousHash`/`contentHash`
+columns, not tamper-evident — and **silently returns without recording** when
+`user.tenantId`/`user.userId` is absent (`audit.interceptor.ts:66-68`). Every control-plane session
+satisfies that condition in the direction that matters: `jwt-auth.guard.ts:99` sets
+`request.user = decoded`, and a provider-staff session's `tenantId` claim is the reserved seeding
+tenant (`seed-platform.ts` `PLATFORM_TENANT_ID = "platform"`) — present, but not a real customer
+tenant, so `AuditInterceptor` records it under the actor's own reserved tenant rather than the
+target tenant named in the URL, when it records at all.
+
+**Net effect:** `POST /platform/v1/offboarding/:tenantId/offboard` — the same handler M47 closed for
+authorisation — succeeded, mutated the tenant, and produced **no tamper-evident record of any kind**.
+This directly falsifies C03's own exit criterion: *"No console mutation is possible without an audit
+record… Audit records are append-only and tamper-evident."* C03 is marked `DONE`.
+
+**Reproduction** (`src/platform/v1/control-plane-audit-wiring.spec.ts`, written before the fix):
+
+```bash
+cd unierp-api
+npx vitest run src/platform/v1/control-plane-audit-wiring.spec.ts
+# 3/3 failed:
+#   ControlPlaneAuditService.record() is called by at least one mounted plane-1 controller
+#     -> expected [] not to equal [] (zero callers found)
+#   ControlPlaneAuditService IS registered as a global APP_INTERCEPTOR
+#     -> expected false to be true
+#   every @TrackChanges(...) use on a mounted plane-1 controller is paired with the interceptor
+#     -> 10 controllers with the decorator and nothing consuming it
+```
+
+**Why wiring `ChangeHistoryInterceptor` onto plane-1 was rejected, not just left undone.** It keys
+every record on `user.tenantId` (`change-history.interceptor.ts:43`) — the ACTOR's tenant. For a
+plane-1 request the tenant being changed is a URL param naming a different, real customer tenant.
+Wiring it as-is would not have no-opped; it would have silently misfiled every plane-1 change record
+under the reserved `"platform"` tenant, leaving the actual affected tenant's history blind to what a
+provider operator changed — confidently wrong data, worse than the inert decorator it would replace.
+The 28 `@TrackChanges(...)` call sites were removed rather than paired with a mismatched interceptor.
+
+**The fix, and its stated limit.** `ControlPlaneAuditInterceptor` runs globally, gated on the same
+`SKIP_TENANT_SCOPE_KEY` marker `ControlPlaneGuard` already uses, and calls
+`ControlPlaneAuditService.record()` for every mutating request on a plane-1 handler — so a new
+controller is covered automatically by opting into `@SkipTenantScope()`, with nothing per-service to
+remember. A failed write is logged at `error`, not `warn` — `AuditInterceptor`'s failure mode is not
+repeated. **This is still a post-hoc write**, same architecture as `AuditInterceptor`: by the time the
+interceptor's `tap()` runs, the mutating handler's own Prisma call has already committed, so this
+guarantees an audit-write *attempt* for every successful mutation, not a shared transaction between
+the mutation and its audit record. True same-transaction atomicity requires threading a shared `tx`
+through all 22 controllers' services — judged too large and too risky to attempt un-integration-
+tested against a live Postgres+RLS stack in this session. Filed as a narrower follow-up under Track M
+(M14, "versioning, rollback and immutable audit") rather than claimed here.
+
+**Relationship to D046/D047.** Same root cause as both: a phase's exit criterion was never re-run
+after the code that would satisfy it was written. `ControlPlaneAuditService` and its test predate this
+session; nobody connected it to a request until the C01–C05 evidence sweep asked "is C03 actually
+true" instead of trusting its `DONE` status.

@@ -2049,3 +2049,219 @@ Work has NOT started. This block exists so no other agent takes this phase.
 M47: gate scripts/check-platform-permissions.mjs written and PROVEN failing (126 -> corrected parser -> 104). Added 40 system.* plane-1 codes + planeOne() helper to unierp-shared PERMISSION_REGISTRY (no dupes introduced). Guarded 7 controllers: tenant-export-offboarding, security-operations, release-control, broadcast-maintenance, customer-import, dunning, invoicing. Spec src/platform/v1/control-plane-authz.spec.ts written, currently RED (proves gap). Remaining: 7 controllers with no @Permissions (live-tenant-upgrade, metering, plans, quota-admin, subscription-management, support-workspace, tenant-migration) + 6 needing ControlPlaneGuard/re-namespace (cluster-routing, reseller-channel, white-label, enterprise-scale, feature-flags-metering, operations admin.*->system.*). Then seed provider roles, extend permissions-drift to src/platform, wire gate into CI.
 ```
 
+### M47 · FINISH · 2026-08-11T03:26:58Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M47 — Close D046: authorise every plane-1 endpoint
+EXIT CRITERION (verbatim):
+  "node scripts/check-platform-permissions.mjs reports 0 mounted endpoints without an
+   explicit control-plane permission, and HAS BEEN OBSERVED FAILING AT 54. A tenant-realm
+   token receives 403 - not 404, not 500 - from POST /platform/v1/offboarding/:tenantId/
+   offboard and from every other endpoint in D046 list, asserted per endpoint rather than
+   per controller. C02 exit criterion is then re-run and passes for the first time"
+
+==================== 1. PASSING ====================
+$ node scripts/check-platform-permissions.mjs
+check-platform-permissions: 22 mounted controllers, 156 endpoints.
+OK    every mounted /platform/v1 endpoint carries an explicit control-plane permission and a guard chain that enforces it.
+
+$ npx vitest run <the four plane-1 authz suites>
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+
+==================== 2. OBSERVED FAILING (the pre-M47 tree) ====================
+$ git checkout 63ccba4c4c78d1af37f6fea99dbc830ba84113e9 -- src/platform/v1/   # the tree as it shipped
+$ node scripts/check-platform-permissions.mjs
+check-platform-permissions: 22 mounted controllers, 156 endpoints.
+
+126 plane-1 endpoint(s) are not authorised.
+
+Every /platform/v1 route acts across tenant boundaries. It needs an explicit
+@Permissions(...) from the control-plane registry AND a guard chain that enforces
+it — see src/platform/v1/tenant-lifecycle.controller.ts, which does this correctly.
+
+FAIL  GET    /platform/v1/broadcasts/windows                      no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/broadcast-maintenance.controller.ts)
+FAIL  POST   /platform/v1/broadcasts/windows                      no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/broadcast-maintenance.controller.ts)
+FAIL  PUT    /platform/v1/broadcasts/windows/:id/cancel           no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/broadcast-maintenance.controller.ts)
+FAIL  POST   /platform/v1/broadcasts/message                      no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/broadcast-maintenance.controller.ts)
+FAIL  GET    /platform/v1/cluster-routing-deep/clusters           missing ControlPlaneGuard   (src/platform/v1/cluster-routing.controller.ts)
+FAIL  POST   /platform/v1/cluster-routing-deep/clusters           missing ControlPlaneGuard   (src/platform/v1/cluster-routing.controller.ts)
+FAIL  GET    /platform/v1/cluster-routing-deep/routing            missing ControlPlaneGuard   (src/platform/v1/cluster-routing.controller.ts)
+FAIL  POST   /platform/v1/cluster-routing-deep/routing            missing ControlPlaneGuard   (src/platform/v1/cluster-routing.controller.ts)
+FAIL  GET    /platform/v1/imports/:tenantId                       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/customer-import.controller.ts)
+FAIL  POST   /platform/v1/imports/:tenantId/validate              no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/customer-import.controller.ts)
+FAIL  POST   /platform/v1/imports/jobs/:jobId/execute             no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/customer-import.controller.ts)
+FAIL  GET    /platform/v1/dunning/status/:tenantId                no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/dunning.controller.ts)
+FAIL  POST   /platform/v1/dunning/:tenantId/execute               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/dunning.controller.ts)
+FAIL  POST   /platform/v1/dunning/:tenantId/recover               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/dunning.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/sla-uptimes            missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/sla-uptimes            missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/sla-uptimes/:id        missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  PATCH  /platform/v1/enterprise-scale/sla-uptimes/:id        missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  DELETE /platform/v1/enterprise-scale/sla-uptimes/:id        missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/sla-uptimes/:id/recalculate missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/sla-uptimes/:id/certify missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/sla-uptimes/metrics/monthly missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/sla-uptimes/batch-audit missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/sla-uptimes/export/pdf missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/isolation-policies     missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/isolation-policies     missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/billing-automations    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/billing-automations    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/domain-routings        missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/domain-routings        missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/key-rotations          missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/key-rotations          missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/backup-retentions      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/backup-retentions      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/residency-governances  missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/residency-governances  missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/oauth-credentials      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/oauth-credentials      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/tier-overrides         missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/tier-overrides         missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/support-escalations    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/support-escalations    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/federation-mappings    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/federation-mappings    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/audit-streams          missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/audit-streams          missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/rate-limit-policies    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/rate-limit-policies    missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/addon-catalogs         missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/addon-catalogs         missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  GET    /platform/v1/enterprise-scale/offboarding-seals      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/enterprise-scale/offboarding-seals      missing ControlPlaneGuard   (src/platform/v1/enterprise-scale.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/feature-flags/rules      missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/feature-flags/rules      missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/feature-flags/rules/:id  missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  PATCH  /platform/v1/flags-metering/feature-flags/rules/:id  missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  DELETE /platform/v1/flags-metering/feature-flags/rules/:id  missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/feature-flags/evaluate/:flagKey missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/feature-flags/bulk-evaluate missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/feature-flags/audit-logs/:flagKey missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/feature-flags/overrides  missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  DELETE /platform/v1/flags-metering/feature-flags/overrides/:flagKey/:targetTenantId missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/feature-flags/overrides/:targetTenantId missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/feature-flags/export     missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/feature-flags/import     missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/metering/record          missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/metering/batch-record    missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/metering/usage-summary   missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/metering/quota-breach/:meterKey missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/metering/quota-limits    missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/metering/quota-limits    missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  POST   /platform/v1/flags-metering/metering/reset/:meterKey missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/metering/billing-breakdown/:billingCycleId missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/flags-metering/metering/export-report   missing ControlPlaneGuard   (src/platform/v1/feature-flags-metering.controller.ts)
+FAIL  GET    /platform/v1/invoices                                no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/invoicing.controller.ts)
+FAIL  GET    /platform/v1/invoices/:id                            no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/invoicing.controller.ts)
+FAIL  POST   /platform/v1/invoices/credit-notes                   no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/invoicing.controller.ts)
+FAIL  POST   /platform/v1/invoices/:id/adjust                     no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/invoicing.controller.ts)
+FAIL  GET    /platform/v1/tenant-upgrades/:tenantId/status        no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/live-tenant-upgrade.controller.ts)
+FAIL  POST   /platform/v1/tenant-upgrades/:tenantId/compatibility no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/live-tenant-upgrade.controller.ts)
+FAIL  POST   /platform/v1/tenant-upgrades/:tenantId/upgrade       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/live-tenant-upgrade.controller.ts)
+FAIL  POST   /platform/v1/tenant-upgrades/:tenantId/rollback      no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/live-tenant-upgrade.controller.ts)
+FAIL  GET    /platform/v1/metering/:tenantId/usage                no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/metering.controller.ts)
+FAIL  GET    /platform/v1/metering/:tenantId/events/:metric       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/metering.controller.ts)
+FAIL  POST   /platform/v1/metering/:tenantId/events               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/metering.controller.ts)
+FAIL  POST   /platform/v1/metering/:tenantId/reconcile/:metric    no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/metering.controller.ts)
+FAIL  GET    /platform/v1/plans                                   no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/plans.controller.ts)
+FAIL  GET    /platform/v1/plans/:id                               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/plans.controller.ts)
+FAIL  POST   /platform/v1/plans                                   no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/plans.controller.ts)
+FAIL  PUT    /platform/v1/plans/:id                               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/plans.controller.ts)
+FAIL  POST   /platform/v1/plans/:id/prices                        no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/plans.controller.ts)
+FAIL  GET    /platform/v1/quotas/rules                            no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/quota-admin.controller.ts)
+FAIL  POST   /platform/v1/quotas/rules                            no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/quota-admin.controller.ts)
+FAIL  GET    /platform/v1/quotas/:tenantId/usage                  no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/quota-admin.controller.ts)
+FAIL  POST   /platform/v1/quotas/:tenantId/alert                  no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/quota-admin.controller.ts)
+FAIL  GET    /platform/v1/releases/manifest                       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/release-control.controller.ts)
+FAIL  POST   /platform/v1/releases/rollback                       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/release-control.controller.ts)
+FAIL  GET    /platform/v1/reseller-channel-deep/resellers         missing ControlPlaneGuard   (src/platform/v1/reseller-channel.controller.ts)
+FAIL  POST   /platform/v1/reseller-channel-deep/resellers         missing ControlPlaneGuard   (src/platform/v1/reseller-channel.controller.ts)
+FAIL  GET    /platform/v1/reseller-channel-deep/commissions       missing ControlPlaneGuard   (src/platform/v1/reseller-channel.controller.ts)
+FAIL  POST   /platform/v1/reseller-channel-deep/commissions       missing ControlPlaneGuard   (src/platform/v1/reseller-channel.controller.ts)
+FAIL  POST   /platform/v1/soc/:tenantId/revoke-sessions           no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/security-operations.controller.ts)
+FAIL  POST   /platform/v1/soc/:tenantId/quarantine                no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/security-operations.controller.ts)
+FAIL  POST   /platform/v1/soc/breach-response                     no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/security-operations.controller.ts)
+FAIL  GET    /platform/v1/subscriptions/:tenantId                 no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  POST   /platform/v1/subscriptions/:tenantId                 no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  PUT    /platform/v1/subscriptions/:tenantId/transition      no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  POST   /platform/v1/subscriptions/:tenantId/pause           no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  POST   /platform/v1/subscriptions/:tenantId/resume          no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  POST   /platform/v1/subscriptions/:tenantId/cancel          no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/subscription-management.controller.ts)
+FAIL  GET    /platform/v1/support/:tenantId/health                no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/support-workspace.controller.ts)
+FAIL  GET    /platform/v1/support/:tenantId/tickets               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/support-workspace.controller.ts)
+FAIL  POST   /platform/v1/support/tickets/:ticketId/resolve       no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/support-workspace.controller.ts)
+FAIL  GET    /platform/v1/support/:tenantId/session-replay        no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/support-workspace.controller.ts)
+FAIL  GET    /platform/v1/offboarding/:tenantId/exports           no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-export-offboarding.controller.ts)
+FAIL  POST   /platform/v1/offboarding/:tenantId/export            no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-export-offboarding.controller.ts)
+FAIL  POST   /platform/v1/offboarding/:tenantId/offboard          no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-export-offboarding.controller.ts)
+FAIL  GET    /platform/v1/migrations/:tenantId/jobs               no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-migration.controller.ts)
+FAIL  POST   /platform/v1/migrations/:tenantId/rehearse           no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-migration.controller.ts)
+FAIL  POST   /platform/v1/migrations/:tenantId/start              no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-migration.controller.ts)
+FAIL  POST   /platform/v1/migrations/jobs/:jobId/complete         no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-migration.controller.ts)
+FAIL  POST   /platform/v1/migrations/jobs/:jobId/rollback         no @Permissions; missing JwtAuthGuard+RbacGuard+ControlPlaneGuard   (src/platform/v1/tenant-migration.controller.ts)
+FAIL  GET    /platform/v1/white-label-deep/domains                missing ControlPlaneGuard   (src/platform/v1/white-label.controller.ts)
+FAIL  POST   /platform/v1/white-label-deep/domains                missing ControlPlaneGuard   (src/platform/v1/white-label.controller.ts)
+FAIL  PUT    /platform/v1/white-label-deep/domains/:id/verify     missing ControlPlaneGuard   (src/platform/v1/white-label.controller.ts)
+FAIL  POST   /platform/v1/white-label-deep/domains/:id/ssl        missing ControlPlaneGuard   (src/platform/v1/white-label.controller.ts)
+
+See docs/programme/90-DEFECT-LOG.md D046.
+
+   -> 126 unauthorised, of which 54 carry NO @Permissions at all.
+      The 54 match the count hand-verified two independent ways in D046.
+
+==================== 3. OBSERVED FAILING (deliberate breaks on the FIXED tree) ====================
+
+--- BREAK A: remove @Permissions from POST /platform/v1/releases/rollback ---
+check-platform-permissions: 22 mounted controllers, 156 endpoints.
+
+1 plane-1 endpoint(s) are not authorised.
+
+Every /platform/v1 route acts across tenant boundaries. It needs an explicit
+@Permissions(...) from the control-plane registry AND a guard chain that enforces
+it — see src/platform/v1/tenant-lifecycle.controller.ts, which does this correctly.
+
+FAIL  POST   /platform/v1/releases/rollback                       no @Permissions   (src/platform/v1/release-control.controller.ts)
+
+See docs/programme/90-DEFECT-LOG.md D046.
+
+--- BREAK B: remove ControlPlaneGuard from the chain ---
+check-platform-permissions: 22 mounted controllers, 156 endpoints.
+
+2 plane-1 endpoint(s) are not authorised.
+
+Every /platform/v1 route acts across tenant boundaries. It needs an explicit
+@Permissions(...) from the control-plane registry AND a guard chain that enforces
+it — see src/platform/v1/tenant-lifecycle.controller.ts, which does this correctly.
+
+FAIL  GET    /platform/v1/releases/manifest                       missing ControlPlaneGuard   (src/platform/v1/release-control.controller.ts)
+FAIL  POST   /platform/v1/releases/rollback                       missing ControlPlaneGuard   (src/platform/v1/release-control.controller.ts)
+
+See docs/programme/90-DEFECT-LOG.md D046.
+
+--- BREAK C: remove @SkipTenantScope(), leaving the full guard chain in place ---
+    (ControlPlaneGuard returns true on its first line without it — the no-op that reads as a fix)
+[32m[Nest] 46608  - [39m11/08/2026, 8:55:10 am [32m    LOG[39m [38;5;3m[ControlPlaneGuard] [39m[32m{"event":"control_plane_access","outcome":"granted","userId":"platform-owner","tenantId":null,"required":["system.offboarding.read"],"path":"/test"}[39m
+[32m[Nest] 46608  - [39m11/08/2026, 8:55:10 am [32m    LOG[39m [38;5;3m[ControlPlaneGuard] [39m[32m{"event":"control_plane_access","outcome":"granted","userId":"platform-owner","tenantId":null,"required":["system.offboarding.write"],"path":"/test"}[39m
+[32m[Nest] 46608  - [39m11/08/2026, 8:55:10 am [32m    LOG[39m [38;5;3m[ControlPlaneGuard] [39m[32m{"event":"control_plane_access","outcome":"granted","userId":"platform-owner","tenantId":null,"required":["system.tenant.offboard"],"path":"/test"}[39m
+[32m[Nest] 46608  - [39m11/08/2026, 8:55:10 am [32m    LOG[39m [38;5;3m[ControlPlaneGuard] [39m[32m{"event":"control_plane_access","outcome":"granted","userId":"platform-owner","tenantId":null,"required":["system.tenant.offboard"],"path":"/test"}[39m
+[31m     → 3 plane-1 endpoint(s) admitted a tenant Super Admin holding ["*"]:
+GET /platform/v1/offboarding/:tenantId/exports (TenantExportOffboardingController.listExportJobs)
+POST /platform/v1/offboarding/:tenantId/export (TenantExportOffboardingController.startExport)
+POST /platform/v1/offboarding/:tenantId/offboard (TenantExportOffboardingController.offboardTenant): expected [ …(3) ] to deeply equal [][39m
+
+--- BREAK D: revert one code to the shared saas.* namespace ---
+[31m     → A tenant-scoped ["*"] grant satisfied 1 control-plane permission(s). '*' means everything in MY tenant, never everything on the platform. Offending codes: saas.clusters.read: expected [ 'saas.clusters.read' ] to deeply equal [][39m
+[31m     → Namespace(s) saas guard cross-tenant routes but are not in CONTROL_PLANE_NAMESPACES (system, platform), so hasPermission treats them as tenant-scoped and a wildcard satisfies them.: expected [ 'saas' ] to deeply equal [][39m
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[31m[1mAssertionError[22m: A tenant-scoped ["*"] grant satisfied 1 control-plane permission(s). '*' means everything in MY tenant, never everything on the platform. Offending codes: saas.clusters.read: expected [ 'saas.clusters.read' ] to deeply equal [][39m
+[31m[1mAssertionError[22m: Namespace(s) saas guard cross-tenant routes but are not in CONTROL_PLANE_NAMESPACES (system, platform), so hasPermission treats them as tenant-scoped and a wildcard satisfies them.: expected [ 'saas' ] to deeply equal [][39m
+
+==================== 4. RESTORED ====================
+check-platform-permissions: 22 mounted controllers, 156 endpoints.
+OK    every mounted /platform/v1 endpoint carries an explicit control-plane permission and a guard chain that enforces it.
+```
+

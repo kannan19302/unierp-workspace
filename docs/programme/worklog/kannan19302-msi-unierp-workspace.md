@@ -5696,3 +5696,98 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M27 · FINISH · 2026-08-11T10:29:30Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M27 — Cost allocation (tenant, service, resource)
+====================================================
+
+Exit criterion: "100% of ingested cost is either allocated or in the
+unallocated bucket — the two sum to the ingested total, asserted to the
+cent. The unallocated share is displayed, never hidden. Allocation
+arithmetic is at 100% unit coverage per the DoD."
+
+--- Mechanism ---
+- unierp-data: CostLineItem gains resourceId (a single-resource
+  reference) and sharedResourceIds (a JSON list, for costs billed once
+  across several resources — a shared load balancer, say).
+- unierp-api: allocateLineItems() in cost-allocation.ts is PURE
+  arithmetic — no prisma import, no database call at all — specifically
+  so 100% coverage is achievable and meaningful, not incidentally
+  reached. Every line item's cents land in exactly one of `allocated`
+  or `unallocated`:
+    - resourceId + complete M18 attribution -> fully allocated.
+    - resourceId + no/incomplete attribution -> unallocated, reason
+      "incomplete-attribution".
+    - sharedResourceIds -> split evenly in whole cents (remainder
+      distributed one cent at a time to the first N resources so the
+      split always sums back exactly), each share independently
+      allocated or unallocated per that resource's own attribution.
+    - neither -> unallocated, reason "no-resource-reference".
+  CostAllocationService is a thin DB wrapper with NO allocation logic of
+  its own — it fetches an M25 batch and the M18 attribution table and
+  hands them, unmodified, to the pure function.
+- CostAllocationController: GET :providerId/:period returns allocated
+  and unallocated TOGETHER in one response — "never hidden" as an actual
+  API shape, not a documented promise.
+
+--- Proof 1: 100% unit coverage on the arithmetic ---
+  npx vitest run src/platform/v1/cost-allocation.spec.ts --coverage
+    --coverage.include="src/platform/v1/cost-allocation.ts"
+  Result:
+    File               | % Stmts | % Branch | % Funcs | % Lines
+    cost-allocation.ts |     100 |      100 |     100 |     100
+  The exit criterion's own DoD line, met and machine-verified, not
+  merely claimed.
+
+--- Proof 2: allocated + unallocated = ingested, to the cent ---
+cost-allocation.spec.ts, "100% OF INGESTED COST is either allocated or
+unallocated — the two sum to the ingested total, to the cent, across a
+mixed batch": 4 line items (fully allocated / unattributed /
+no-resource-reference / partially-attributed 3-way split) — the sum of
+allocated + unallocated cents, computed INDEPENDENTLY of the service's
+own reported totals, equals the ingested total exactly.
+
+--- Proof 3: uneven shared splits still sum exactly ---
+  $100.01 split across 3 resources -> 33.34 + 33.34 + 33.33 = 100.01,
+  no cent lost or invented by the division remainder.
+
+--- Proof 4: DB wrapper reads real M25/M18 data correctly ---
+cost-allocation.service.spec.ts: a real ingested batch with a real M18
+ResourceAttribution row allocates correctly; a PARTIAL attribution row
+(missing owner) is treated as unattributed, matching M18's own
+completeness rule exactly (not a second, looser check reimplemented
+here).
+
+--- Proof 5: break/restore ---
+BREAK: splitEvenly() stopped distributing the remainder cent, silently
+dropping it (base-only division for every share).
+
+Result: cost-allocation.spec.ts — 2/11 tests FAIL:
+  x a shared-cost line item that does NOT divide evenly distributes the
+    remainder cent-by-cent, still summing exactly
+  x 100% OF INGESTED COST is either allocated or unallocated...
+
+RESTORE: cost-allocation.ts restored from backup.
+Result: 11/11 tests PASS, coverage still 100/100/100/100.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  34 passed (34)
+       Tests  169 passed (169)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 32 controllers, 192 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Weighted (as opposed to even) shared-cost splitting is not built —
+  splitEvenly() divides equally across resources; a real provider export
+  might want usage-weighted splits, which is a different input to the
+  same split function, not a different mechanism.
+- No console UI surface in this phase — the exit criterion is a backend
+  arithmetic/coverage requirement, not a console requirement.
+```
+

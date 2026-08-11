@@ -1,0 +1,164 @@
+J07 — Accessibility as a blocking gate
+Exit criterion: "axe in CI across every component and every route;
+keyboard-navigation assertions; the documented screen-reader script. A
+new axe violation fails CI. Zero violations across the component
+library and all routes (G-16)."
+
+WHAT ALREADY EXISTED
+=====================
+- vitest-axe is a real dependency in unierp-design-system, already
+  wired into CI via .github/workflows/ci.yml -> reusable-ci.yml's
+  `pnpm run test` step (any vitest assertion, including axe, already
+  blocks CI wherever present).
+- 6 component test files existed; 4 already had real axe assertions
+  (button.test.tsx, combobox.test.tsx, date-picker.test.tsx) plus
+  overlays.test.tsx (currently broken — see below), leaving
+  modal.test.tsx and stage-b1.test.tsx with test coverage but no axe
+  assertion.
+- B23 (dependency of J07) is marked DONE in the plan and claims to
+  deliver `scripts/ci/check-axe-a11y.mjs` as the platform-wide gate.
+
+MECHANISM (this phase's own work)
+====================================
+1. Added a real vitest-axe assertion to modal.test.tsx:
+     it("has no axe violations when open", async () => {
+       const { container } = render(<Modal open .../>);
+       expect(await axe(container)).toHaveNoViolations();
+     });
+
+2. Added 4 real vitest-axe assertions to stage-b1.test.tsx, covering
+   Alert, Switch, RadioGroup, and PageHeader.
+
+3. The Switch assertion FAILED on first run against real, unmodified
+   component code:
+     "ARIA toggle fields must have an accessible name
+     (aria-toggle-field-name)"
+   `Switch` (unierp-design-system/src/components/extended-inputs.tsx)
+   rendered `<div role="switch">` wrapped in a `<label>`, but wrapping
+   a non-native ARIA widget in a <label> does not give it an
+   accessible name per the ARIA spec — axe correctly flagged it as a
+   genuine violation, not a false positive.
+
+4. Fixed the real component: gave the switch div an `id`, added
+   `aria-labelledby` pointing at a new `<span id={labelId}>{label}</span>`
+   wrapping the label text. Re-ran — passes.
+
+PROOF (break/restore, on the REAL mechanisms, not the test file)
+====================================================================
+First break attempt (adding an unlabeled `<img>` inside
+`aria-hidden="true"`) was NOT caught — correctly so, since
+aria-hidden legitimately removes content from the accessibility tree.
+Recognized as a weak/wrong break, discarded, restored from backup,
+verified zero "BROKEN FOR PROOF" markers remained.
+
+Real break: removed `aria-labelledby` from Switch's real source
+(extended-inputs.tsx), reproducing the original violation.
+
+  $ npx vitest run src/components/__tests__/stage-b1.test.tsx
+  ×  Switch has no axe violations
+     "ARIA toggle fields must have an accessible name (aria-toggle-field-name)"
+
+Exactly the intended violation reproduced against the shipped
+component, not the test. Restored via `git`-tracked backup/diff,
+confirmed 0 "BROKEN FOR PROOF" markers remained, re-ran:
+
+  $ npx vitest run src/components/__tests__/stage-b1.test.tsx src/components/__tests__/modal.test.tsx
+  Test Files  1 failed | 1 passed (2)
+       Tests  1 failed | 13 passed (14)
+  (the 1 failure is modal.test.tsx's pre-existing, unrelated
+  "does not have open attribute when closed" test, documented since D14)
+
+FULL REGRESSION
+================
+$ npx tsc --noEmit -p tsconfig.json
+  23 pre-existing errors, confirmed identical count via `git stash`
+  before/after this phase's changes — zero new type errors.
+
+$ npx vitest run
+  Test Files  2 failed | 8 passed (10)
+  Tests       1 failed | 54 passed (55)
+  Both failures pre-existing and unrelated to this phase:
+    - overlays.test.tsx: imports "jest-axe" (not installed; the repo
+      uses vitest-axe) — a pre-existing broken import, not touched
+      by this phase.
+    - modal.test.tsx: "does not have open attribute when closed" —
+      documented pre-existing failure since D14's regression sweep.
+
+MEASURED GAP — the honest, load-bearing finding
+==================================================
+"Zero violations across the component library and all routes" is NOT
+achieved. Measured directly:
+
+  Component library (unierp-design-system/src/components/*.tsx,
+  excluding .stories.tsx): 25 real component source files.
+  Files with ANY vitest-axe assertion: 4 direct
+  (button.tsx/combobox.tsx/date-picker.tsx/modal.tsx) + partial
+  coverage of 4 more via stage-b1.test.tsx (extended-inputs.tsx,
+  identity.tsx, six-states.tsx, structure.tsx) = at most 8 of 25 files
+  with any axe coverage, most of those only partially (one exported
+  component out of several per file). 17-21 of 25 files have ZERO axe
+  coverage.
+
+  Routes (unierp-web, unierp-console):
+    $ grep -rl "vitest-axe\|jest-axe" src/   (run in both repos)
+    0 matches in either repo.
+  "All routes" has NO accessibility test coverage whatsoever.
+
+CRITICAL FINDING — B23's gate is fabricated (filed as D063)
+===============================================================
+`unierp-workspace/scripts/ci/check-axe-a11y.mjs` (B23's claimed
+deliverable) does not run axe-core, does not invoke any test runner,
+and does not read any real test output. It only checks that
+`WCAG_CONFORMANCE.md` exists and contains a literal string, then
+unconditionally writes a hardcoded
+`{ testedComponents: 25, axeViolationsCount: 0, status: "PASSED" }`
+baseline file and exits 0 — regardless of whether any component was
+ever tested. It cannot fail no matter how many real axe violations
+exist. `WCAG_CONFORMANCE.md` itself makes a false claim ("Zero
+axe-core accessibility violations are enforced via automated CI
+testing on every pull request") that this gate does not back up.
+Filed in full detail as D063 in 90-DEFECT-LOG.md. This phase does NOT
+rely on or extend the fabricated gate; it reports the real, measured
+state above instead.
+
+WHAT THIS PHASE DOES
+=======================
+- 2 real, CI-blocking axe assertions added (modal.test.tsx,
+  4 assertions in stage-b1.test.tsx), all passing against real
+  component code.
+- 1 real accessibility bug found and fixed as a direct result
+  (Switch's missing accessible name), proven via break/restore
+  against the actual shipped component, not just the test.
+- The true remaining gap measured and reported honestly: at most 8 of
+  25 component files have any axe coverage; 0 of 2 route-level apps
+  have any axe coverage at all.
+- B23's fabricated gate identified, documented, and filed as D063
+  rather than trusted or built upon.
+- Zero new regressions (typecheck: 23 pre-existing errors unchanged;
+  tests: 2 pre-existing unrelated failures unchanged).
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+Full "zero violations across the component library and all routes" is
+a large, multi-session effort: ~17-21 component files need dedicated
+axe assertions, and unierp-web/unierp-console need axe test
+infrastructure built from scratch (currently none exists). Per this
+session's D12/D19/J04 precedent, fabricating shallow coverage to claim
+completeness would be worse than this honest, measured report. B23
+itself needs to be reopened and its gate rewritten to actually invoke
+the test runner rather than hardcode a pass.
+
+COMMANDS
+========
+$ npx vitest run src/components/__tests__/modal.test.tsx src/components/__tests__/stage-b1.test.tsx
+$ npx tsc --noEmit -p tsconfig.json
+$ npx vitest run
+$ grep -rl "vitest-axe\|jest-axe" src/   (unierp-web, unierp-console — both 0 matches)
+
+COMMITS
+=======
+unierp-design-system  50ace35  modal.test.tsx, stage-b1.test.tsx,
+                                extended-inputs.tsx (Switch a11y fix),
+                                enterprise-patterns.tsx (pre-existing
+                                uncommitted PageHeader/breadcrumb fix)
+unierp-workspace       (this phase) 90-DEFECT-LOG.md D063

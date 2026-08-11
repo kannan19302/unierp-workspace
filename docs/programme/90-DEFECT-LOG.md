@@ -1739,3 +1739,48 @@ opposed to merely lacking a test) — this defect only measures test coverage, n
 higher-leverage follow-up than blanket coverage might be triaging by risk (destructive operations,
 cross-tenant-capable endpoints, endpoints outside the `platform/v1` namespace that a tenant `["*"]`
 wildcard could reach) rather than working through all 12,621 in file order.
+
+### D063 · 🔴 CRITICAL · B23's accessibility CI gate is fabricated — hardcodes "0 violations, PASSED" without ever running axe
+
+Found while claiming and working J07 (Accessibility as a blocking gate, which depends on B23). B23's
+claimed deliverable, `unierp-workspace/scripts/ci/check-axe-a11y.mjs`, exists on disk (it is NOT missing,
+contrary to an earlier suspicion recorded mid-session) but does not run `axe-core`, does not import or
+invoke any test runner, and does not read any real test output. It only (1) checks that
+`unierp-design-system/WCAG_CONFORMANCE.md` exists and contains the literal string "WCAG 2.2 Level AA", and
+(2) unconditionally writes `scripts/ci/axe-a11y-baseline.json` with a hardcoded object —
+`{ testedComponents: 25, axeViolationsCount: 0, wcagLevel: "2.2 AA", status: "PASSED" }` — regardless of
+whether any component was ever tested. It then prints "✅ Accessibility blocking gate passed (0 axe
+violations...)" and exits 0. The number `25` matches the real count of component source files in
+`unierp-design-system/src/components/` (excluding `.stories.tsx`), suggesting it was hand-typed to look
+plausible rather than computed.
+
+Compounding this, `unierp-design-system/WCAG_CONFORMANCE.md` is a fully-written, professional-looking
+published conformance statement asserting "Zero axe-core accessibility violations are enforced via
+automated CI testing on every pull request" — a claim the CI gate does not actually enforce. This is a
+procurement-facing compliance document (G-16 cites WCAG 2.2 AA conformance as a public-sector procurement
+requirement) making a false claim backed by a gate that cannot fail.
+
+**Real state at time of discovery (measured directly, not estimated):** of 25 real component source files
+in `unierp-design-system/src/components/`, only 4 (`button.tsx`, `combobox.tsx`, `date-picker.tsx`,
+`modal.tsx`) plus partial coverage of `extended-inputs.tsx`/`identity.tsx`/`six-states.tsx`/`structure.tsx`
+via `stage-b1.test.tsx` have ANY `vitest-axe` assertion. Zero files in either `unierp-web` or
+`unierp-console` (`grep -rl "vitest-axe\|jest-axe" src/`) reference an axe library at all — "all routes"
+has no accessibility test coverage whatsoever. The real axe assertions that DO exist are genuine and
+CI-blocking (proven this session: a real `aria-toggle-field-name` violation in the `Switch` component,
+caught live by a newly-added `stage-b1.test.tsx` axe test, fixed in `extended-inputs.tsx` by adding
+`aria-labelledby`, then re-broken and re-caught via break/restore) — the defect is specifically that B23's
+platform-wide GATE script never runs any of this real machinery and cannot fail no matter how many
+violations exist elsewhere.
+
+**How it was caught:** reading `check-axe-a11y.mjs` end-to-end while scoping J07's dependency on B23,
+after noticing the script never imports `axe-core`, `vitest`, or any test-results file.
+
+**Not fixed — out of J07's own scope to rewrite B23's gate wholesale.** J07 proceeds by adding real,
+CI-blocking axe assertions where they were missing (2 files closed this session) and reporting the true,
+measured gap (21 of 25 component files still uncovered; 0 route coverage in `unierp-web`/`unierp-console`)
+rather than relying on or extending the fabricated gate. B23 itself should be reopened: `check-axe-a11y.mjs`
+needs to actually invoke `vitest run` (or equivalent) across every `*.test.tsx` file containing an axe
+assertion, parse real pass/fail results, and compute `testedComponents`/`axeViolationsCount` from that
+output — plus, separately, the same real mechanism needs to exist for `unierp-web`/`unierp-console` routes,
+which currently have none at all. The `WCAG_CONFORMANCE.md` statement's CI-enforcement claim is false as
+written and should not be treated as evidence of actual conformance until the gate is real.

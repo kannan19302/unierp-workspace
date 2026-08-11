@@ -2773,3 +2773,97 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M04 · FINISH · 2026-08-11T04:36:38Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M04 — Provider health, limits, quotas and pricing
+EXIT CRITERION (verbatim):
+  "A provider whose probe fails is marked unhealthy within its declared
+   interval and is excluded from routing. Its recorded price and limits
+   are the ones M06 routes on and M25 costs against - not a second copy."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/provider-health-pricing.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 10:06:26
+[2m   Duration [22m 537ms[2m (transform 57ms, setup 24ms, collect 234ms, tests 4ms, environment 0ms, prepare 102ms)[22m
+
+
+==================== 2. OBSERVED FAILING (health computation stubbed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/provider-registry/provider-health-pricing.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m M04 · provider health, limits, quotas and pricing[2m > [22ma provider whose probe fails is marked unhealthy and excluded from routing[90m 7[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [31m×[31m M04 · provider health, limits, quotas and pricing[2m > [22ma provider not probed within (2x) its declared interval is treated as unhealthy — staleness, not only explicit failure[90m 1[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/provider-health-pricing.spec.ts[2m > [22mM04 · provider health, limits, quotas and pricing[2m > [22ma provider whose probe fails is marked unhealthy and excluded from routing
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/provider-registry/provider-health-pricing.spec.ts:[2m155:43[22m[39m
+    [90m153| [39m
+    [90m154| [39m    [35mawait[39m service[33m.[39m[34mrecordHealthCheck[39m(p[33m.[39mid[33m,[39m { healthy[33m:[39m [35mfalse[39m[33m,[39m error[33m:[39m [32m"co[39m…
+    [90m155| [39m    [34mexpect[39m([35mawait[39m service[33m.[39m[34misHealthy[39m(p[33m.[39mid))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                                          [31m^[39m
+    [90m156| [39m    [34mexpect[39m([35mawait[39m service[33m.[39m[34misExcludedFromRouting[39m(p[33m.[39mid))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m157| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/provider-health-pricing.spec.ts[2m > [22mM04 · provider health, limits, quotas and pricing[2m > [22ma provider not probed within (2x) its declared interval is treated as unhealthy — staleness, not only explicit failure
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/provider-registry/provider-health-pricing.spec.ts:[2m169:43[22m[39m
+    [90m167| [39m    check[33m.[39mcheckedAt [33m=[39m [35mnew[39m [33mDate[39m([33mDate[39m[33m.[39m[34mnow[39m() [33m-[39m [34m3000[39m)[33m;[39m
+    [90m168| [39m
+    [90m169| [39m    [34mexpect[39m([35mawait[39m service[33m.[39m[34misHealthy[39m(p[33m.[39mid))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                                          [31m^[39m
+    [90m170| [39m    [34mexpect[39m([35mawait[39m service[33m.[39m[34misExcludedFromRouting[39m(p[33m.[39mid))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m171| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 10:06:28
+[2m   Duration [22m 543ms[2m (transform 61ms, setup 23ms, collect 242ms, tests 10ms, environment 0ms, prepare 98ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/provider-health-pricing.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 10:06:31
+[2m   Duration [22m 538ms[2m (transform 55ms, setup 23ms, collect 239ms, tests 5ms, environment 0ms, prepare 98ms)[22m
+```
+

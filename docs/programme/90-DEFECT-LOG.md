@@ -1674,3 +1674,36 @@ by tenantId/scope/key, replacing the ad-hoc `Setting`/`AppSettings`/`EcommerceSt
 once, versus each module needing its own. Designing that shared store is likely the highest-leverage next
 step before attempting any of the 107 individual page retrofits, since building it once unblocks all of
 them simultaneously.
+
+### D061 · 🔴 CRITICAL · `WebhooksService` leaked the plaintext webhook signing secret on every read after creation
+
+Found and fixed during D20. Two real, mounted, guarded HTTP endpoints — `GET saas/webhooks/endpoints`
+(`saas.webhook.read`) and `GET saas/webhooks/endpoints/:id` (`saas.webhook.read`) — returned the RAW
+`TenantWebhookEndpoint` Prisma row, including the full, plaintext `secret` field (the HMAC signing secret
+a tenant uses to verify inbound webhook payloads), on every view, not only at creation. `updateEndpoint()`
+leaked the same way. `getEndpointSecret()` — the endpoint apparently INTENDED to be the safe, masked
+accessor — still returned the first 10 real characters of the actual secret
+(`endpoint.secret.substring(0, 10) + "****"`), a partial plaintext leak rather than a true mask. Anyone
+holding `saas.webhook.read` (a read-only permission, not an elevated one) could recover a tenant's full
+webhook signing secret at will, at any time after the endpoint was created — a genuine credential-exposure
+vulnerability, not a hypothetical one.
+
+**How it was caught:** writing `webhooks-secret-exposure.spec.ts` as the FAIL-first proof for D20's exit
+criterion ("credentials never rendered after save") — 5 of 7 assertions failed against the pre-existing
+code on the very first run, confirming the leak across `listEndpoints()`, `getEndpoint()`,
+`updateEndpoint()`, `getEndpointSecret()`, and a post-rotation `getEndpoint()` call.
+
+**Fixed:** added a `sanitize()` helper stripping `secret` entirely, applied to `listEndpoints()`,
+`getEndpoint()`, and `updateEndpoint()`'s return values; `getEndpointSecret()` now returns
+`{ id, hasSecret: boolean }` with zero real secret characters. `createEndpoint()`/`rotateSecret()`
+correctly continue returning the real secret — the deliberate one-time reveal at the moment it is
+generated. Proven via break/restore (removing `sanitize()` from `getEndpoint()` reproduces the leak
+exactly, caught by 2 dedicated tests).
+
+**Not fully investigated:** whether the same shape of bug (a service returning a raw Prisma row that
+includes a secret/token/credential-shaped field on a read path, not only at creation) exists elsewhere in
+the codebase — `ApiKeysService`, connector/OAuth-credential services, or any other module holding
+long-lived secrets. This defect was found only because D20's own exit criterion happened to name webhook
+credentials specifically; a platform-wide grep for services with a `secret`/`token`/`apiKey`/`credential`
+field returned unfiltered from a `findFirst`/`findMany` read path would be a reasonable, high-value
+follow-up given how serious this specific instance was.

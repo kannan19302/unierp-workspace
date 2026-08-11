@@ -4056,3 +4056,110 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M12 · FINISH · 2026-08-11T08:33:32Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M12 — Durable execution, jobs and provisioning
+EXIT CRITERION (verbatim):
+  "An executor killed mid-plan resumes without repeating a completed
+   step, proven by killing it. A failed step compensates or halts -
+   never leaves a half-provisioned resource unrecorded. C07 tenant
+   transitions run on this pipeline."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/durable-executor.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/modules/admin/tests/tenant-lifecycle.service.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m src/platform/operation-pipeline/durable-executor.kill-and-resume.spec.ts [2m([22m[2m1 test[22m[2m)[22m[33m 5265[2mms[22m[39m
+   [33m[2m✓[22m[39m M12 · durable execution — proven by killing a real process[2m > [22mkilling the process mid-step-2 leaves step 1 durably DONE; resuming in a new process does not re-run it [33m5264[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 14:03:10
+[2m   Duration [22m 6.06s[2m (transform 113ms, setup 52ms, collect 326ms, tests 5.28s, environment 0ms, prepare 285ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (stepIndex advancement removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/durable-executor.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 9[2mms[22m[39m
+[31m   [31m×[31m M12 · durable execution — compensation and halt[2m > [22ma job with no failures completes DONE with every step DONE[90m 7[2mms[22m[31m[39m
+[31m     → expected +0 to be 2 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/durable-executor.service.spec.ts[2m > [22mM12 · durable execution — compensation and halt[2m > [22ma job with no failures completes DONE with every step DONE
+[31m[1mAssertionError[22m: expected +0 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/durable-executor.service.spec.ts:[2m53:27[22m[39m
+    [90m 51| [39m    [34mexpect[39m(job[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m"DONE"[39m)[33m;[39m
+    [90m 52| [39m    [34mexpect[39m(job[33m.[39msteps[33m.[39m[34mmap[39m((s) [33m=>[39m s[33m.[39mstatus))[33m.[39m[34mtoEqual[39m([[32m"DONE"[39m[33m,[39m [32m"DONE"[39m])[33m;[39m
+    [90m 53| [39m    [34mexpect[39m(job[33m.[39mstepIndex)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 54| [39m  })[33m;[39m
+    [90m 55| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 14:03:18
+[2m   Duration [22m 326ms[2m (transform 40ms, setup 22ms, collect 23ms, tests 9ms, environment 0ms, prepare 112ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (suspendTenant body fully reverted, executor bypassed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/modules/admin/tests/tenant-lifecycle.service.spec.ts [2m([22m[2m18 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 15[2mms[22m[39m
+[31m   [31m×[31m TenantLifecycleService[2m > [22msuspendTenant[2m > [22mshould set tenant status to SUSPENDED and revoke sessions[90m 6[2mms[22m[31m[39m
+[31m     → expected "spy" to be called at least once[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/modules/admin/tests/tenant-lifecycle.service.spec.ts[2m > [22mTenantLifecycleService[2m > [22msuspendTenant[2m > [22mshould set tenant status to SUSPENDED and revoke sessions
+[31m[1mAssertionError[22m: expected "spy" to be called at least once[39m
+[36m [2m❯[22m src/modules/admin/tests/tenant-lifecycle.service.spec.ts:[2m223:33[22m[39m
+    [90m221| [39m      [90m// row is the observable proof of that, distinct from the tenant[39m
+    [90m222| [39m      [90m// status change itself.[39m
+    [90m223| [39m      [34mexpect[39m(prisma[33m.[39mjob[33m.[39mcreate)[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m   | [39m                                [31m^[39m
+    [90m224| [39m      [34mexpect[39m(result[33m.[39mjobId)[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m225| [39m      [34mexpect[39m(result[33m.[39mjobId)[33m.[39m[34mtoBe[39m((prisma[33m.[39mjob[33m.[39mcreate [35mas[39m any)[33m.[39mmock[33m.[39mcalls[…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m17 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 14:03:20
+[2m   Duration [22m 570ms[2m (transform 77ms, setup 23ms, collect 267ms, tests 15ms, environment 0ms, prepare 102ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/durable-executor.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m src/modules/admin/tests/tenant-lifecycle.service.spec.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m23 passed[39m[22m[90m (23)[39m
+[2m   Start at [22m 14:03:23
+[2m   Duration [22m 605ms[2m (transform 110ms, setup 44ms, collect 316ms, tests 15ms, environment 0ms, prepare 230ms)[22m
+```
+

@@ -2361,3 +2361,100 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M49 · FINISH · 2026-08-11T03:56:19Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M49 — Close D049: make two-person control actually two-person
+EXIT CRITERION (as recorded in Track M):
+  "two-person-control-separation.spec.ts proves self-approval and no-approver are
+   refused, a genuinely distinct approver succeeds, and break-glass still creates a
+   reviewable task - HAS BEEN OBSERVED FAILING on the first two before the fix. Time
+   delay remains unimplemented, stated as residual rather than claimed."
+
+==================== 1. PASSING (current tree) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/common/guards/tests/two-person-control-separation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 09:25:11
+[2m   Duration [22m 806ms[2m (transform 72ms, setup 26ms, collect 485ms, tests 7ms, environment 0ms, prepare 108ms)[22m
+
+check-platform-permissions: 23 mounted controllers, 161 endpoints.
+OK    every mounted /platform/v1 endpoint carries an explicit control-plane permission and a guard chain that enforces it.
+
+==================== 2. OBSERVED FAILING (separation check removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/common/guards/tests/two-person-control-separation.spec.ts [2m([22m[2m4 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m TwoPersonControlGuard (C04 / D049)[2m > [22man approval self-requested and self-approved by the SAME actor is refused[90m 8[2mms[22m[31m[39m
+[31m     → promise resolved "true" instead of rejecting[39m
+[31m   [31m×[31m TwoPersonControlGuard (C04 / D049)[2m > [22man approval with no approvedBy at all (never actually approved by anyone) is refused[90m 1[2mms[22m[31m[39m
+[31m     → promise resolved "true" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/common/guards/tests/two-person-control-separation.spec.ts[2m > [22mTwoPersonControlGuard (C04 / D049)[2m > [22man approval self-requested and self-approved by the SAME actor is refused
+[31m[1mAssertionError[22m: promise resolved "true" instead of rejecting[39m
+
+[32m- Expected:[39m 
+[Error: rejected promise]
+
+[31m+ Received:[39m 
+true
+
+[36m [2m❯[22m src/common/guards/tests/two-person-control-separation.spec.ts:[2m98:5[22m[39m
+    [90m 96| [39m        [34mctx[39m({ userId[33m:[39m [32m"actor-1"[39m }[33m,[39m { [32m"x-approval-token"[39m[33m:[39m [32m"tok-1"[39m })[33m,[39m
+    [90m 97| [39m      )[33m,[39m
+    [90m 98| [39m    )[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mForbiddenException[39m)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m 99| [39m  })[33m;[39m
+    [90m100| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/common/guards/tests/two-person-control-separation.spec.ts[2m > [22mTwoPersonControlGuard (C04 / D049)[2m > [22man approval with no approvedBy at all (never actually approved by anyone) is refused
+[31m[1mAssertionError[22m: promise resolved "true" instead of rejecting[39m
+
+[32m- Expected:[39m 
+[Error: rejected promise]
+
+[31m+ Received:[39m 
+true
+
+[36m [2m❯[22m src/common/guards/tests/two-person-control-separation.spec.ts:[2m113:5[22m[39m
+    [90m111| [39m        [34mctx[39m({ userId[33m:[39m [32m"actor-1"[39m }[33m,[39m { [32m"x-approval-token"[39m[33m:[39m [32m"tok-2"[39m })[33m,[39m
+    [90m112| [39m      )[33m,[39m
+    [90m113| [39m    )[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mForbiddenException[39m)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m114| [39m  })[33m;[39m
+    [90m115| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 09:25:20
+[2m   Duration [22m 819ms[2m (transform 72ms, setup 27ms, collect 474ms, tests 13ms, environment 0ms, prepare 119ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/common/guards/tests/two-person-control-separation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 09:25:23
+[2m   Duration [22m 794ms[2m (transform 71ms, setup 25ms, collect 471ms, tests 8ms, environment 0ms, prepare 110ms)[22m
+```
+

@@ -2581,3 +2581,104 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M02 · FINISH · 2026-08-11T04:07:30Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M02 — Capability registry: the catalogue of what we do
+EXIT CRITERION (verbatim):
+  "Every capability declares its contract in one place. A capability with
+   no registered provider is reported as unsatisfied rather than failing
+   at call time. A test enumerates all capabilities and asserts each has
+   a contract, an owner and at least one provider or an explicit
+   UNSATISFIED reason."
+
+==================== 1. PASSING ====================
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-shared[39m
+
+ [32m✓[39m src/capability-registry/registry.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 09:37:08
+[2m   Duration [22m 866ms[2m (transform 101ms, setup 0ms, collect 79ms, tests 4ms, environment 0ms, prepare 353ms)[22m
+
+
+==================== 2. OBSERVED FAILING (UNSATISFIED branch removed) ====================
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-shared[39m
+
+ [31m❯[39m src/capability-registry/registry.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 11[2mms[22m[39m
+[31m   [31m×[31m M02 · capability registry[2m > [22mevery registered capability resolves to READY (with a provider) or UNSATISFIED (with a stated reason) — never throws, never returns something untyped[90m 4[2mms[22m[31m[39m
+[31m     → expected 0 to be greater than 0[39m
+[31m   [31m×[31m M02 · capability registry[2m > [22mtoday, honestly: the four real capabilities have zero bound providers (M03 doesn't exist yet) — all UNSATISFIED[90m 3[2mms[22m[31m[39m
+[31m     → email.send should be UNSATISFIED until M03 binds a provider: expected 'READY' to be 'UNSATISFIED' // Object.is equality[39m
+[31m   [31m×[31m M02 · capability registry[2m > [22mbinding a provider changes UNSATISFIED to READY, and unbinding reverses it[2m > [22mregistering with zero providers is UNSATISFIED; binding one makes it READY; unbinding the last one reverts to UNSATISFIED[90m 1[2mms[22m[31m[39m
+[31m     → expected 'READY' to be 'UNSATISFIED' // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/capability-registry/registry.test.ts[2m > [22mM02 · capability registry[2m > [22mevery registered capability resolves to READY (with a provider) or UNSATISFIED (with a stated reason) — never throws, never returns something untyped
+[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
+[36m [2m❯[22m src/capability-registry/registry.test.ts:[2m35:43[22m[39m
+    [90m 33| [39m      [35mconst[39m status [33m=[39m [34mresolve[39m(cap[33m.[39mid)[33m;[39m
+    [90m 34| [39m      [35mif[39m (status[33m.[39mstate [33m===[39m [32m"READY"[39m) {
+    [90m 35| [39m        [34mexpect[39m(status[33m.[39mproviderIds[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                                          [31m^[39m
+    [90m 36| [39m      } [35melse[39m {
+    [90m 37| [39m        [34mexpect[39m(status[33m.[39mstate)[33m.[39m[34mtoBe[39m([32m"UNSATISFIED"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/capability-registry/registry.test.ts[2m > [22mM02 · capability registry[2m > [22mtoday, honestly: the four real capabilities have zero bound providers (M03 doesn't exist yet) — all UNSATISFIED
+[31m[1mAssertionError[22m: email.send should be UNSATISFIED until M03 binds a provider: expected 'READY' to be 'UNSATISFIED' // Object.is equality[39m
+
+Expected: [32m"UNSATISFIED"[39m
+Received: [31m"READY"[39m
+
+[36m [2m❯[22m src/capability-registry/registry.test.ts:[2m46:86[22m[39m
+    [90m 44| [39m    [35mfor[39m ([35mconst[39m id [35mof[39m [[32m"email.send"[39m[33m,[39m [32m"object.store"[39m[33m,[39m [32m"dns.manage"[39m[33m,[39m [32m"llm[39m…
+    [90m 45| [39m      [35mconst[39m status [33m=[39m [34mresolve[39m(id)[33m;[39m
+    [90m 46| [39m      [34mexpect[39m(status[33m.[39mstate[33m,[39m [32m`[39m[36m${[39mid[36m}[39m[32m should be UNSATISFIED until M03 bind[39m…
+    [90m   | [39m                                                                                     [31m^[39m
+    [90m 47| [39m        [32m"UNSATISFIED"[39m[33m,[39m
+    [90m 48| [39m      )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/capability-registry/registry.test.ts[2m > [22mM02 · capability registry[2m > [22mbinding a provider changes UNSATISFIED to READY, and unbinding reverses it[2m > [22mregistering with zero providers is UNSATISFIED; binding one makes it READY; unbinding the last one reverts to UNSATISFIED
+[31m[1mAssertionError[22m: expected 'READY' to be 'UNSATISFIED' // Object.is equality[39m
+
+Expected: [32m"UNSATISFIED"[39m
+Received: [31m"READY"[39m
+
+[36m [2m❯[22m src/capability-registry/registry.test.ts:[2m76:40[22m[39m
+    [90m 74| [39m        requiredCredentials[33m:[39m [][33m,[39m
+    [90m 75| [39m      })[33m;[39m
+    [90m 76| [39m      [34mexpect[39m([34mresolve[39m([33mTHROWAWAY[39m)[33m.[39mstate)[33m.[39m[34mtoBe[39m([32m"UNSATISFIED"[39m)[33m;[39m
+    [90m   | [39m                                       [31m^[39m
+    [90m 77| [39m
+    [90m 78| [39m      [34mbindProvider[39m([33mTHROWAWAY[39m[33m,[39m [32m"provider-a"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 09:37:11
+[2m   Duration [22m 781ms[2m (transform 79ms, setup 0ms, collect 71ms, tests 11ms, environment 0ms, prepare 344ms)[22m
+
+
+==================== 3. RESTORED ====================
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-shared[39m
+
+ [32m✓[39m src/capability-registry/registry.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 09:37:14
+[2m   Duration [22m 833ms[2m (transform 72ms, setup 0ms, collect 70ms, tests 5ms, environment 1ms, prepare 398ms)[22m
+```
+

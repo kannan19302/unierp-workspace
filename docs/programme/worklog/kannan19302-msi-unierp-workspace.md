@@ -9901,3 +9901,119 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### D21 · FINISH · 2026-08-11T18:26:06Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+D21 — Tenant subscription and billing self-service
+Exit criterion: "A tenant sees the same usage figure the invoice was
+computed from. A discrepancy is a failing test, not a support ticket."
+
+FINDING (a real reconciliation gap)
+======================================
+SaasPortalUsageMetricsPortalService.getUsageDashboard() (the
+tenant-facing usage dashboard, mounted at
+GET saas-portal/usage-metrics/dashboard) read from a completely
+SEPARATE Prisma model, `saasPortalUsageDashboard`, disconnected from
+`UsageRecord` — the table `BillingService.getUsageSummary()`/
+`computeCurrentCycleCost()` actually read to determine overage cost on
+a real invoice. `saasPortalUsageDashboard` was only ever populated by
+a SECOND, tenant-callable endpoint (`POST .../dashboard` ->
+`updateUsageMetric()`), meaning the number a tenant saw on their
+dashboard had no structural relationship to the number their invoice
+was computed from — a discrepancy was inevitable and, per the exit
+criterion's own framing, would only ever surface as a support ticket,
+never a test failure.
+
+MECHANISM
+=========
+Rewrote `getUsageDashboard()` to read `UsageRecord` directly — the
+IDENTICAL table `BillingService` reads — computing `percentUsed` and
+`isOverLimit` from the same `currentValue`/`limitValue` fields, never
+a second dataset. Removed the `POST .../dashboard` route and its
+`updateUsageMetric()` method entirely: it was the divergence-prone
+write path into the now-abandoned disconnected table. Usage now flows
+one way — into `UsageRecord`, written by the platform's real metering
+pipeline — never by this portal route, so there is no second path to
+diverge from again.
+
+PROOF
+=====
+usage-dashboard-reconciliation.spec.ts (4 tests) run FIRST against the
+pre-existing code:
+
+  $ npx vitest run src/modules/saas-portal/tests/usage-dashboard-reconciliation.spec.ts
+  ×  shows the EXACT SAME currentValue/limitValue the invoice engine
+       reads from UsageRecord — TypeError: Cannot read properties of
+       undefined (reading 'findMany')
+  ×  a metric OVER its limit is visible to the tenant
+  ×  is strictly tenant-scoped
+  ×  a tenant with NO usage records sees an empty dashboard
+
+All 4 failed — the mock only stubbed `UsageRecord` (the real table),
+which the pre-existing code never queried at all, confirming the
+disconnect directly. Applied the fix, then:
+
+  $ npx vitest run src/modules/saas-portal/tests/usage-dashboard-reconciliation.spec.ts
+  Tests  4 passed (4)
+
+Break/restore: reverted `getUsageDashboard()` to read the old,
+disconnected `saasPortalUsageDashboard` table again, commented
+`// BROKEN FOR PROOF: reads a disconnected mock table again -- diverges
+from what invoicing actually computed from`.
+
+  $ npx vitest run src/modules/saas-portal/tests/usage-dashboard-reconciliation.spec.ts
+  ×  (all 4 tests failed again)
+
+Exactly the original gap reproduced. Restored, then:
+
+  $ npx vitest run src/modules/saas-portal/tests/usage-dashboard-reconciliation.spec.ts src/modules/saas-portal/tests/saas-portal-usage-metrics-portal.service.spec.ts
+  Test Files  2 passed (2)
+       Tests  6 passed (6)
+
+The pre-existing coverage spec (which exercised the now-removed
+`updateUsageMetric()`) was rewritten to test the real
+`getUsageDashboard()` behavior instead — the same class of edit as M42
+and D08's rewrites this session, replacing tests for a removed
+mechanism with tests for its real replacement, not silently deleting
+coverage.
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/saas-portal/
+  Test Files  11 passed (11)
+       Tests  39 passed (39)
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- "Plan, invoices, payment methods, billing contacts, and upgrade"
+  (Deliverable text) beyond the usage-figure reconciliation specifically
+  named by the exit criterion — the pre-existing SaasPortalBillingService
+  already provides invoices/payment methods/etc. and was not modified
+  here (it already reads the real UsageRecord table for its own
+  purposes, confirming it was never the source of the divergence).
+- No period-scoped usage history — UsageRecord is a live, current-cycle
+  snapshot per (tenantId, metric), not a per-billing-period series; the
+  dashboard reflects "usage right now," matching what the overage
+  calculation itself reads (also current-snapshot-based), so this is a
+  faithful reconciliation, not an incomplete one — but it does mean no
+  historical "usage in March" view exists from this table alone.
+- No console UI changes — a backend fix proven by API + tests.
+
+COMMITS
+=======
+unierp-api  21b487b  saas-portal-usage-metrics-portal.service.ts rewrite,
+                     controller route removal, spec rewrite + new reconciliation spec
+```
+

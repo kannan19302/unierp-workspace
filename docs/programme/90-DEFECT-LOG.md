@@ -1814,3 +1814,33 @@ of the 45 modules' own document/report-generation code. This defect was found on
 happened to audit this exact service; a platform-wide grep for `documentUrl`/`fileUrl`/`reportUrl`
 fields accepted directly from a request DTO without being derived server-side would be a
 reasonable follow-up.
+
+### D065 · 🟢 LOW · module-tier-manifest.json had drifted from the real module list — 4 ghost entries, 3 unlisted real modules
+
+Found while claiming and building E03 (Tier assignment and depth targets). `docs/module-tier-manifest.json`
+(the pre-existing Track A/L architecture-tier manifest, Tier A = full Clean Architecture, Tier B =
+controller/service/dto/tests) named four modules — `builder`, `connect`, `onboarding`, `settings` — that
+do not exist as directories under `unierp-api/src/modules` (confirmed: `ls` on each returns "No such file
+or directory"). Conversely, three real module directories — `extension-registry`, `marketplace`,
+`org-structure` — appeared in neither Tier A nor Tier B, meaning they carried no stated architecture tier
+at all. Low severity (this manifest governs code-structure enforcement, not runtime behavior, so it is a
+documentation-accuracy gap rather than a live defect), but exactly the kind of silent drift E03's own exit
+criterion ("no module is silently exempt") exists to catch.
+
+**How it was caught:** `scripts/reconcile-module-tiers.mjs` (built for E03) diffs the manifest's Tier A/B
+module lists against `readdirSync(unierp-api/src/modules)` directly, rather than trusting the manifest's
+own list as ground truth.
+
+**Fixed:** the reconciliation script does not silently drop the four ghost entries (they likely represent
+modules that were renamed or merged since the manifest was last hand-edited) — it names them explicitly in
+the manifest's new `reconciliation.staleManifestEntries` field. The three unlisted real modules were
+defaulted to Tier-3 and flagged in `reconciliation.unlistedRealModulesFoundAtReconciliation`, with each
+one's `depthTargets` entry stating outright that it is a reconciliation gap needing a deliberate Tier A/B
+call, not a considered assignment.
+
+**Not fully investigated:** what `builder`, `connect`, `onboarding`, and `settings` were renamed to (if
+anything) — a `git log --follow` on the manifest file, or on `unierp-api/src/modules`, in a session with
+more budget would likely resolve this quickly. Whether `extension-registry`, `marketplace`, and
+`org-structure` belong in Tier A or Tier B (rather than the Tier-3 default this phase assigned) was not
+decided here — that is an architecture judgment call, not something a reconciliation script should default
+without a human or a dedicated phase reviewing each module's actual money/regulatory/complexity profile.

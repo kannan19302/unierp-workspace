@@ -1877,3 +1877,36 @@ replacement mechanism; migrating `crm.controller.ts`'s approval endpoints onto
 `ApprovalChainEngineService` instead of `CrmConfigService`'s own approval methods (and then deleting the
 vulnerable originals) is follow-up work explicitly out of E05's stated scope, and should be prioritised
 given the severity — this is a live, exploitable gap in shipped code until that migration happens.
+
+### D067 · 🔴 CRITICAL · Closing a financial period was cosmetic — no service ever checked FinancialPeriod.status before posting or reversing a journal
+
+Found while claiming and building E06 (Reversal, correction and period close).
+`CloseOpsService.closeFinancialPeriod()` only flipped `FinancialPeriod.status` to `CLOSED`. A grep across
+`GlAccountingService` (`unierp-api/src/modules/advanced-finance/services/gl-accounting.service.ts`) — the
+service owning `postJournal()`, `reverseJournal()`, and every other ledger-mutating operation — for any
+reference to `FinancialPeriod` or `CLOSED` returned zero matches. Nothing in the codebase enforced that a
+"closed" period's documents were actually immutable: a journal dated any time in a closed period could
+still be posted, and a reversal could still be booked into one. The status flag existed, was displayed in
+close-management UI, and meant nothing operationally — exactly the "looks finished, isn't" pattern this
+session's Track E briefing exists to catch, and a genuine compliance risk (period-close immutability is a
+basic control most audit frameworks assume exists).
+
+Compounding this, `CloseOpsService.reopenFinancialPeriod()` had zero approval gate — any caller could
+reopen a closed period unilaterally, silently undoing whatever immutability guarantee closing was supposed
+to provide.
+
+**How it was caught:** writing the FAIL-first tests for E06's own exit criterion ("closing a period makes
+its documents immutable, provably, and reopening requires an approver") and confirming both failed against
+the pre-existing code before any fix was written.
+
+**Fixed (E06's own scope):** new `PeriodCloseGuardService.assertPeriodOpen()` is now consulted by both
+`postJournal()` and `reverseJournal()` before any mutation, refusing (naming the period) when the target
+date falls inside a `CLOSED` period. `reopenFinancialPeriod()` now requires a real `APPROVED`
+`ApprovalRequest` (reusing E05's `[[e05-approval-chain-engine]]` tables directly) before flipping status
+back to `OPEN`. Both proven via break/restore.
+
+**Not fully investigated:** whether any OTHER ledger-mutating path exists outside `GlAccountingService`
+(e.g. direct `prisma.journal.update` calls elsewhere in the codebase, or period-adjacent operations in
+`advanced-hr`/`fixed-assets`/other modules that also care about period immutability) that still bypasses
+`PeriodCloseGuardService` entirely, since it was wired into exactly the two call sites this phase touched
+and no platform-wide sweep for unguarded `journal`/`financialPeriod` writes was performed.

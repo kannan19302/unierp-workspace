@@ -1578,3 +1578,33 @@ codebase follow the same pattern (a plausible-looking hardcoded fixture standing
 Worth a platform-wide audit of services returning a literal object/array with no parameter actually
 consulted, as a follow-up — this session found this one only because D05's own exit criterion happened
 to require exercising it.
+
+### D058 · 🟠 HIGH · GDPR erasure's own audit-log entry wrote the subject's email in plaintext, recreating the exact PII the erasure had just removed
+
+Found and fixed during D11. `SaasPortalGdprComplianceService.executeErasure()` already had a real
+PII-registry-driven erase/anonymize/retain-legal-hold mechanism for the subject's tenant business data
+(unierp-workspace/scripts/pii-registry.json) — but its own closing step, writing a `GDPR_ERASURE` entry
+to the immutable `AuditLog` table to record that the erasure happened, included `email` (the subject's
+own address) in the `changes` JSON in plaintext. Every erasure therefore permanently re-embedded the
+subject's PII into an append-only table in the same call that was supposed to remove it — a direct
+contradiction of the erasure it was recording. Separately, `AuditLog`/`ChangeHistory` are not registered
+in `pii-registry.json` at all, so the audit trail was never a *target* of erasure treatments (arguably
+correct, since it must stay append-only) — but nothing anywhere documented that choice or its rationale,
+which is exactly what D11's exit criterion ("the resolution is written down, not implicit") names.
+
+**How it was caught:** while implementing D11's crypto-shredding fix, reading `executeErasure()`'s full
+body (rather than only its erase/anonymize loop) to understand what needed to change turned up the
+plaintext `email` field going into `prisma.auditLog.create()` after the erasure loop had already run.
+
+**Fixed:** added `GdprCryptoShredService` (new `SubjectErasureKey` model, unierp-data) and had
+`executeErasure()` encrypt the subject's email under a per-subject key before writing it into the audit
+log (`subjectEmailRef`, not `email`), then destroy that key (crypto-shredding) immediately after. The
+audit log row itself is never touched by the shred — its integrity is preserved by construction, and the
+resolution is now documented in three places: the `SubjectErasureKey` schema comment, the
+`GdprCryptoShredService` file header, and the D11 evidence file.
+
+**Not fully investigated:** whether any OTHER call site in the codebase writes raw subject PII (email,
+name, or another field) into `AuditLog`/`ChangeHistory` outside the GDPR erasure flow — this defect was
+found because D11's exit criterion happened to require reading `executeErasure()`'s full body closely; a
+platform-wide grep for PII-shaped literals passed into `auditLog.create`/`changeHistory.create` calls
+would be a reasonable follow-up.

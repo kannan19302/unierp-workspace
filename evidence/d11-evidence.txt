@@ -1,0 +1,122 @@
+D11 — GDPR data-subject rights
+Exit criterion: "An erasure request removes personal data while
+preserving the audit trail's integrity, by a documented mechanism
+(crypto-shredding or tokenised redaction). The resolution is written
+down, not implicit (G-3)."
+
+FINDING
+=======
+A real, substantial GDPR erasure mechanism already existed
+(SaasPortalGdprComplianceService.executeErasure(), driven by
+unierp-workspace/scripts/pii-registry.json's per-model
+erase/anonymize/retain-legal-hold treatments — anonymize IS tokenised
+redaction, one of G-3's two named acceptable mechanisms). But the
+erasure-vs-immutable-audit conflict itself was resolved only
+IMPLICITLY: AuditLog/ChangeHistory are not registered in
+pii-registry.json at all, so the audit trail is simply never targeted
+by an erasure — safe by omission, but undocumented, and the erasure's
+OWN closing act (writing a GDPR_ERASURE audit-log entry) wrote the
+subject's email in PLAINTEXT into that same immutable table,
+permanently recreating the exact PII the erasure had just removed.
+
+MECHANISM
+=========
+unierp-data: SubjectErasureKey model — a per-(tenant, subject-email-
+hash) AES-256-GCM key. Its own schema comment states the resolution in
+full: the audit trail is never mutated or deleted by an erasure (its
+integrity is preserved by never touching it); any personal-data
+reference an erasure-triggering action must write INTO the audit trail
+is encrypted under this key first; deleting the key (crypto-shredding)
+makes every ciphertext encrypted under it permanently unrecoverable,
+without altering a single byte of the audit log row itself.
+
+unierp-api/src/modules/saas-portal/services/gdpr-crypto-shred.service.ts
+(GdprCryptoShredService) — its own file header restates the same
+resolution (the WRITTEN-DOWN documentation the exit criterion
+requires):
+- encryptForAudit(tenantId, email, plaintext): gets-or-creates the
+  subject's key, AES-256-GCM encrypts, returns ciphertext.
+- decryptForAudit(tenantId, email, ciphertext): decrypts using the
+  CURRENT key row; throws once the key has been shredded.
+- shred(tenantId, email): deletes the key row. The ciphertext already
+  written into an audit-trail entry is untouched — proven directly by
+  attempting to decrypt the EXACT SAME bytes again after shredding.
+
+gdpr-compliance.service.ts's executeErasure() now: encrypts the
+subject's email via encryptForAudit() BEFORE writing its GDPR_ERASURE
+audit-log entry (storing `subjectEmailRef`, not a plaintext email),
+then calls shred() immediately after — the same operation that erases
+the subject's business data also permanently destroys the key needed
+to ever recover their email from that log entry.
+
+PROOF
+=====
+gdpr-crypto-shred.service.spec.ts (5 tests): encrypt/decrypt round-trip
+while the key exists; shredding makes the SAME already-written
+ciphertext permanently unrecoverable (proving the audit-trail entry
+itself is never touched — the identical bytes are re-decrypted, not
+regenerated); shredding one subject's key never affects a different
+subject's; one key is reused across multiple encryptions for the same
+subject (not minted per-call); shredding one tenant's key for an email
+never affects a different tenant's key for the SAME email (tenant
+isolation on the crypto-shred mechanism itself).
+
+Broke shred() by removing its deleteMany() call entirely (a true no-op
+— the key survives), commented `// BROKEN FOR PROOF: deleteMany call
+removed -- the key survives, so nothing is ever actually shredded`.
+
+  $ npx vitest run src/modules/saas-portal/tests/gdpr-crypto-shred.service.spec.ts
+  ×  SHREDDING makes the SAME ciphertext PERMANENTLY unrecoverable
+  ×  shredding one subject's key never affects a DIFFERENT subject's key
+  ×  shredding a tenant's key never affects a DIFFERENT tenant's key for
+       the same email
+
+Exactly the three tests depending on an actual shred failed (the
+encrypt/decrypt round-trip and key-reuse tests, which never call
+shred(), were correctly unaffected). Restored, then:
+
+  $ npx vitest run src/modules/saas-portal/tests/gdpr-crypto-shred.service.spec.ts
+  Tests  5 passed (5)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/saas-portal/
+  Test Files  8 passed (8)
+       Tests  22 passed (22)
+
+Zero pre-existing tests required changes — no test previously covered
+executeErasure() or constructed SaasPortalGdprComplianceService
+directly, so its constructor gaining a dependency broke nothing.
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Subject access request, rectification, and portability (Deliverable
+  text) — exportSubjectData() (right of access) already existed
+  before this phase, unmodified. Rectification and a dedicated
+  portability export format are not built here — the exit criterion
+  is scoped to the erasure-vs-audit conflict specifically.
+- Only the ONE plaintext-PII-into-audit-trail site this session found
+  (executeErasure()'s own closing audit-log write) was fixed. A
+  platform-wide audit for other call sites that might write raw PII
+  into AuditLog/ChangeHistory (outside the erasure flow) was not
+  performed — filed as a defect-log finding for follow-up.
+- No key-rotation or key-backup mechanism for SubjectErasureKey rows
+  themselves — by design, that key existing in exactly one place (this
+  table) is what makes crypto-shredding work; a backup would defeat
+  the mechanism's own guarantee.
+
+COMMITS
+=======
+unierp-data  a29c44e  SubjectErasureKey model
+unierp-api   84ea409  gdpr-crypto-shred.service.ts, spec,
+                      gdpr-compliance.service.ts integration, module wiring

@@ -1946,3 +1946,33 @@ because E07 happened to audit this specific, shared file; a platform-wide grep f
 wrapping a `for`/`.map` loop over a caller-supplied array (rather than a small, fixed number of related
 writes) would be a reasonable, high-value follow-up given how directly this shape of bug violates a
 platform invariant (no long-held cross-tenant lock, no unbounded transaction).
+
+### D069 · 🔴 CRITICAL · SavedViewsDeepService.applyViewConfig() returned any saved view's filters/columns to any caller who knew its id — no ownership or share check at all
+
+Found while claiming and building E08 (Saved views, filters and personalisation). `applyViewConfig()` in
+`unierp-api/src/modules/saved-views/saved-views-deep.service.ts` fetched a view's `savedViewLayout`,
+`savedViewFilter`, and `savedViewColumnConfig` records by `viewId` and returned them directly, without ever
+checking whether the calling `userId` owned the view or held a `savedViewSharing` grant for it. Any
+authenticated caller who could guess or discover another user's (or another team's) saved-view id — ids are
+opaque `cuid()` strings, not secrets, and are routinely exposed in URLs, API responses, and share dialogs —
+could retrieve the full filter/column configuration of a saved view they had no relationship to at all. This
+is the exit criterion's own literal words inverted: not "respects the viewer's permissions, not the
+author's," but "respects no one's permissions."
+
+**How it was caught:** writing the FAIL-first test for E08's own exit criterion and confirming a random,
+never-shared-with user could successfully call `applyViewConfig()` against the FIRST test module author's
+view before any fix was written.
+
+**Fixed:** new `assertViewAccessible()` requires the caller to be the view's author OR hold a real
+`savedViewSharing` grant (`sharedWithUserId === userId`) before `applyViewConfig()` returns anything — a
+`NotFoundException` if the view itself doesn't exist, a `ForbiddenException` otherwise. Proven via
+break/restore.
+
+**Not fully investigated:** several OTHER methods in the same service — `getFilters(tenantId, viewId)` (no
+`userId` parameter at all), `getColumnConfigs` (userId-scoped to the CALLER's own column config, so this one
+is likely safe by construction), and `getSharedWithMe` (correctly scoped to `sharedWithUserId`) — were not
+individually audited for the identical gap. `getFilters()` in particular takes no `userId` and returns every
+active filter for a `viewId` unconditionally, which on its face has the same shape of bug as
+`applyViewConfig()` had. This defect was found and fixed for the one method the exit criterion's own
+scenario names ("apply a shared view"); a full audit of every saved-view accessor for the same missing-check
+pattern is stated as necessary follow-up, not silently assumed complete.

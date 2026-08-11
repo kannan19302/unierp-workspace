@@ -10544,3 +10544,133 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E01 · FINISH · 2026-08-11T18:52:01Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E01 — Rubric scoring harness
+Exit criterion: "node scripts/score-module.mjs <module> emits a 16-row
+score with evidence per row. Re-running it produces the same score."
+
+BEFORE
+======
+$ node scripts/score-module.mjs finance
+Error: Cannot find module '...\scripts\score-module.mjs'
+(exit 1 — the script did not exist)
+
+MECHANISM
+=========
+New scripts/score-module.mjs walks unierp-api/src/modules/<module>,
+unierp-web/app/(dashboard)/<module>, and unierp-mobile (files matching
+/<module>/i), then scores all 16 rows of the 02-EXECUTION-GUIDELINES §5
+rubric with evidence per row:
+
+  1  Data model      - prisma.<model> reference count, ChangeHistory +
+                        soft-delete field presence
+  2  Lifecycle        - status field, guarded-transition helper,
+                        reversal/correction path
+  3  Authorisation    - @Permissions(...) density vs @Get/@Post/@Put/
+                        @Patch/@Delete handler count (missing handlers
+                        named explicitly), record-level tenantId scoping,
+                        field masking
+  4  Approvals        - approval keyword, chain shape, delegation/
+                        escalation/SLA
+  5  CRUD depth       - list/create/edit-detail-delete/bulk-duplicate-
+                        merge-import-export handler presence
+  6  Validation       - server Zod, shared @kannan19302/contracts import,
+                        dry-run/cross-entity rule keywords
+  7  Events           - emit/publish count, outbox reference,
+                        consumer/replay/dead-letter handling
+  8  Reporting        - export endpoint, standard report set, ad-hoc/
+                        scheduled/drill-through
+  9  Documents        - HTML print, templated PDF, e-sign/localisation/
+                        attachment-lifecycle
+  10 Integrations     - CSV, @ApiTags/@ApiOperation, connector/webhook/
+                        idempotent-replay
+  11 Settings         - config presence, D13-D22 settings-contract
+                        import (settings-resolution/SettingsPage),
+                        scoped/versioned/audited evidence
+  12 UI states        - page-by-page six-state component
+                        (LoadingState/EmptyState/FilteredEmptyState/
+                        ErrorState/ForbiddenState/PartialState)
+                        coverage ratio across every page.tsx
+  13 Accessibility    - keyboard handler presence, vitest-axe/jest-axe
+                        test existence under the module's route tree
+  14 Tests            - spec-file-to-source-file ratio (test ratio),
+                        integration/e2e labeling, property/mutation
+                        testing keywords
+  15 Performance      - NOT mechanically derivable from static source
+                        (p95 requires a real profiling run); reported as
+                        an explicit, stable "UNMEASURED" placeholder
+                        (always 0) unless a real score was recorded via
+                        `--record-perf=<0-3>`, persisted to
+                        evidence/module-perf-scores.json — this is the
+                        "prompts for the rest" half of the deliverable
+  16 Client parity    - web page count, mobile file references, mobile
+                        write-path presence, offline/syncQueue evidence
+
+Also computes the plan's own "next level" threshold (>=2 every row,
+>=3 on rows 1,2,3,7,14) and names which rows fall short.
+
+DETERMINISM PROOF
+====================
+$ node scripts/score-module.mjs finance > run1.txt
+$ node scripts/score-module.mjs finance > run2.txt
+$ diff run1.txt run2.txt
+(no output — byte-identical)
+
+Different modules score differently (not a hardcoded constant):
+$ node scripts/score-module.mjs finance   # row 3: [2] 270/270 decorated
+$ node scripts/score-module.mjs hr        # row 1: [2] (ChangeHistory=false)
+
+BREAK/RESTORE PROOF
+======================
+Broke a REAL file: removed all 16 @Permissions(...) decorators from
+unierp-api/src/modules/finance/finance.controller.ts (backed up first).
+
+  $ node scripts/score-module.mjs finance
+   3. Authorisation    [1]  254 @Permissions(...) decorators across 270
+      HTTP handlers; 16 handler(s) with no visible @Permissions decorator
+
+Score dropped exactly as expected (2 -> 1), naming the exact gap (16
+undecorated handlers). Restored from backup:
+
+  $ git status --short src/modules/finance/finance.controller.ts
+  (clean)
+  $ node scripts/score-module.mjs finance
+   3. Authorisation    [2]  270 @Permissions(...) decorators across 270
+      HTTP handlers; every handler decorated; ...
+
+Score returned to baseline exactly.
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+Rows 2, 4, 6, 8, 9, 10, 13 use keyword/pattern heuristics rather than
+deep semantic analysis (e.g. row 4's "approval chain" detection is a
+regex over identifier-shaped text, not a proof the chain is actually
+wired end-to-end). This is stated in the row evidence itself, not
+hidden: every row's evidence names exactly what was checked, so a human
+auditor can see the basis for a score without trusting a black box.
+Row 15 (Performance) is deliberately never guessed — it is the one
+dimension this session's own D12/D19/J04/J07 precedent says should be
+reported as a true gap rather than fabricated, since p95 needs a real
+load-test run this static tool cannot perform.
+
+The rubric SCORING mechanism is what E01 asks for; running it across
+all 45 modules and filing per-module Notes is the job of the 42
+individual Track E audit phases that depend on this tool, not E01
+itself.
+
+COMMANDS
+========
+$ node scripts/score-module.mjs finance
+$ node scripts/score-module.mjs hr
+$ node scripts/score-module.mjs not-a-real-module   (clean error, lists
+  available modules)
+
+COMMITS
+=======
+unierp-workspace  (this phase)  scripts/score-module.mjs
+```
+

@@ -4743,3 +4743,94 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M18 · FINISH · 2026-08-11T09:31:40Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M18 — Estate inventory, topology and tenant attribution
+==========================================================
+
+Exit criterion: "Every discovered resource is attributed or is listed in
+the unattributed bucket with an age. The bucket is never hidden. This
+attribution is the one M27 allocates cost against — not a second mapping."
+
+--- Mechanism ---
+- unierp-data: ResourceAttribution model — one row per resource
+  (resourceId unique), tenantId/service/environment/owner all optional
+  individually but a resource only counts as ATTRIBUTED when all four are
+  set. attributedBy is required (never optional) so every write, partial
+  or complete, names who made it.
+- unierp-api: ResourceModelService.attributeResource() upserts the single
+  row per resource — re-attribution updates it, never creates a second
+  mapping. getUnattributedBucket() scans every Resource, treats a
+  missing OR incomplete attribution identically (never a silent third
+  state), and returns each entry's age (from Resource.createdAt) and
+  exactly which of the four fields are missing.
+- EstateController: GET /platform/v1/estate/unattributed,
+  POST /platform/v1/estate/resources/:id/attribution.
+- unierp-console: the Estate page renders an "Unattributed" panel
+  unconditionally above the resource table whenever the bucket is
+  non-empty — not behind a filter toggle, which is what "never hidden"
+  means as UI rather than as a sentence in this evidence file.
+
+--- Proof 1: attributed vs. bucket vs. partial ---
+resource-model.service.spec.ts, "M18 · estate inventory, topology and
+tenant attribution":
+  "every discovered resource is attributed OR listed in the unattributed
+  bucket — never a third, silent state" — three resources: one fully
+  attributed (excluded from the bucket), one missing only `owner`
+  (INCLUDED — a partial row is not attributed), one never touched
+  (included). Bucket has exactly the 2 non-fully-attributed resources.
+
+--- Proof 2: age and missing fields named ---
+  "the bucket names an age... and the missing fields — never hidden" —
+  a freshly created, never-attributed resource's bucket entry has
+  ageMs >= 0 and missingFields === all four field names.
+
+--- Proof 3: one mapping, not two ---
+  "re-attributing a resource updates the same row, not a second mapping"
+  — attributing a resource twice (ownership transferred from team-a to
+  team-b) leaves exactly one ResourceAttribution row, with the latest
+  owner and attributedBy; the resource correctly leaves the bucket.
+
+--- Proof 4: break/restore ---
+BREAK: `isComplete()` weakened to `!!attribution` — any row at all,
+including a partial one, counted as attributed.
+
+Result: resource-model.service.spec.ts — 1/13 tests FAIL:
+  x every discovered resource is attributed OR listed in the unattributed
+    bucket — never a third, silent state
+  (the partially-attributed resource wrongly disappears from the bucket)
+
+RESTORE: resource-model.service.ts restored from backup.
+Result: 13/13 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  24 passed (24)
+       Tests  122 passed (122)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 25 controllers, 168 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-console: npx tsc --noEmit -> clean
+unierp-console: node scripts/check-layer.mjs -> OK, L4 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- The resource TOPOLOGY GRAPH (named in the Deliverable) is not built as
+  a distinct feature in this phase — M07's Dependency edges already model
+  the graph structurally; this phase did not add a dedicated
+  visualisation or traversal API beyond what M07 already exposes. The
+  exit criterion tests attribution and the bucket, not topology
+  rendering, so this is a scoped-down implementation of the Deliverable,
+  not the exit criterion.
+- "Continuous inventory across all accounts" (also in the Deliverable) —
+  M16's onboarding discovers inventory once, at onboarding time; there is
+  no scheduled re-discovery sweep in this phase. Recurring discovery
+  would be a scheduling concern (M11's ScheduledOperation) layered on top
+  of M16's existing discoverCapabilities(), not built here.
+- No e2e/axe sweep against the console panel in this session (no live
+  backend reachable to render against).
+```
+

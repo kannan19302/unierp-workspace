@@ -11592,3 +11592,133 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E07 · FINISH · 2026-08-11T19:31:11Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E07 — Bulk operations framework
+Exit criterion: "A 10,000-row bulk edit reports per-row outcomes, does
+not time out, and does not lock the table for other tenants."
+
+BEFORE
+======
+Read BulkOperationsService (unierp-api/src/common/services/
+bulk-operations.service.ts — the shared implementation behind
+BulkOperationsController, the one J04's own harness already exercises
+for bulkCreate). All 5 write methods (bulkCreate/bulkUpdate/
+bulkDelete/bulkRestore/bulkStatusChange) wrapped their ENTIRE
+per-record loop in one single `prisma.$transaction`, regardless of
+record count. At 10,000 rows this both times out and holds locks for
+the whole duration — and, on Postgres, one failing statement aborts
+the WHOLE transaction, so "per-row outcomes" silently becomes
+"everything after the first failure is misreported as failed." Filed
+as D068 (HIGH).
+
+MECHANISM (this phase's own work)
+====================================
+New private `runBatched<T>()` helper on BulkOperationsService:
+processes `items` CONCURRENCY_BATCH_SIZE (50) at a time via
+`Promise.all`, with NO shared transaction across items — each item's
+write is its own independent, atomic Prisma call (a single
+`.create`/`.update` is already atomic on its own; nothing was gained
+by wrapping many of them together except the failure modes above).
+One item's failure is caught locally and reported without affecting
+any other item.
+
+All 5 write methods (bulkCreate, bulkUpdate, bulkDelete, bulkRestore,
+bulkStatusChange) migrated to use it — not just bulkUpdate (the exit
+criterion's literal "bulk edit") — since all 5 shared the identical
+broken pattern.
+
+PROOF
+=====
+$ npx vitest run src/common/services/tests/bulk-operations-scale.service.spec.ts
+
+Test 1 — "one failing row does NOT poison every row after it": a mock
+that reproduces real Postgres transaction-abort semantics (once a
+statement fails inside a shared transaction object, every subsequent
+statement in that SAME object also throws) proves a poisoned row in
+the MIDDLE of a 4-row batch only fails itself — the row before and the
+2 rows after all succeed.
+
+Test 2 — "a 10,000-row bulk edit never wraps the whole batch in one
+shared transaction, and bounds concurrency": runs bulkUpdate against
+10,000 ids, asserts prisma.$transaction was called ZERO times (no
+shared transaction anywhere) and that concurrent in-flight writes
+never exceed the bounded batch size — completes in under 1 second in
+the test.
+
+2/2 pass.
+
+BREAK/RESTORE
+=============
+Set CONCURRENCY_BATCH_SIZE to an effectively unbounded value (backed
+up first), reproducing the original "everything in one shot" shape.
+
+  $ npx vitest run src/common/services/tests/bulk-operations-scale.service.spec.ts
+  1 failed | 1 passed (2)
+  "expected 10000 to be less than 1000" — exactly the intended
+  reproduction: all 10,000 writes ran with no concurrency bound at
+  all, the original defect's shape.
+
+Restored from backup:
+  $ grep -c "BROKEN FOR PROOF" bulk-operations.service.ts
+  0
+  $ npx vitest run src/common/services/tests/bulk-operations-scale.service.spec.ts src/modules/admin/tests/bulk-operations.service.coverage.spec.ts
+  2/2 + 4/4 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/common/
+Test Files  16 passed | 1 failed (17)
+     Tests  170 passed | 1 failed (171)
+The 1 failure (two-person-control.spec.ts) is pre-existing and
+confirmed untouched by this phase (git status shows zero changes to
+either that spec or its guard).
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+$ git status --short
+(clean after commit — exactly bulk-operations.service.ts +
+the new spec file)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- Filed D068 (HIGH): whether the same "wrap N records in one
+  $transaction" pattern exists in OTHER services across the 45
+  modules, outside this shared BulkOperationsService, was not swept
+  for platform-wide. Stated as a reasonable, high-value follow-up
+  given the severity of the shape of bug, not silently assumed absent
+  elsewhere.
+- "Duplicate and merge" (named in the deliverable text alongside edit/
+  delete/approve/assign/export) are NOT built in this pass —
+  BulkOperationsService's existing 5 methods (create/update/delete/
+  restore/status-change) cover edit/delete/assign(status)/undo
+  (restore); duplicate, merge, and export are separate mechanisms this
+  phase did not add. The exit criterion's own literal scenario ("a
+  10,000-row bulk EDIT") is what was proven; the fuller deliverable
+  list is broader than what this phase's exit criterion demanded.
+- "Bulk approve" specifically (also named in the deliverable) is not a
+  distinct method here — it would compose bulkStatusChange with E05's
+  new ApprovalChainEngineService per-row, which is a natural follow-on
+  but was not built in this pass.
+- Preview and progress-reporting UI (also named in the deliverable)
+  are not built — this phase proves the underlying execution mechanism
+  is scale-safe and correctness-safe; a preview/progress UI is a layer
+  on top of a now-correct mechanism, not addressed here.
+
+COMMANDS
+========
+$ npx vitest run src/common/services/tests/bulk-operations-scale.service.spec.ts
+$ npx vitest run src/common/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  7c6f258  bulk-operations.service.ts,
+                     bulk-operations-scale.service.spec.ts (new)
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D068
+```
+

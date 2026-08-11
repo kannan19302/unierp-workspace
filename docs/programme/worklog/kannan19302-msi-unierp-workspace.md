@@ -6793,3 +6793,136 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M37 · FINISH · 2026-08-11T14:01:01Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M37 — Data governance, privacy, retention, residency
+Exit criterion: "A retention schedule executes deletion on time and certifies
+it consistently with DELETION_POLICY.md and C24."
+
+MECHANISM
+=========
+1. unierp-workspace/scripts/retention-matrix.json (C24's own canonical
+   RT-class source, read by enforce-retention.mjs) gained one new entry:
+   dataClass "provider-telemetry-samples", model telemetrySample,
+   timestampField observedAt, retentionDays 90.
+
+2. unierp-data/prisma/schema/resource-model.prisma gained RetentionCertificate
+   — one row per retention run, written unconditionally (candidateCount and
+   deletedCount may both be zero), so "it ran" is provable independent of
+   whether it found anything.
+
+3. unierp-api/src/platform/v1/retention-schedule.service.ts:
+   - TRACK_M_RETENTION_CLASSES declares the identical
+     dataClass/model/timestampField/retentionDays as the matrix entry above.
+   - executeAndCertify(dataClass, now) computes cutoff = now - retentionDays,
+     counts and deletes only records with [timestampField] < cutoff, and
+     always writes a RetentionCertificate.
+
+4. retention-schedule.consistency.spec.ts reads
+   unierp-workspace/scripts/retention-matrix.json DIRECTLY (the same file
+   enforce-retention.mjs reads) from within an unierp-api spec, and asserts
+   field-for-field equality both directions:
+     a. every class in TRACK_M_RETENTION_CLASSES matches its canonical
+        declaration in the matrix, and
+     b. every matrix entry whose "basis" mentions "Track M" is represented
+        in TRACK_M_RETENTION_CLASSES.
+   This turns "the two declarations must never drift" from a convention into
+   a CI-catchable failure.
+
+5. RetentionScheduleController exposes GET platform/v1/retention-schedule/classes
+   (system.retention.read) and POST .../execute (system.retention.manage),
+   wired into PlatformModule.
+
+check-pii-registry.mjs (C24's other half) required zero changes — it
+already passes; none of Track M's ~25+ models this session matched the
+PII-field-name regex, verified by direct run before this phase began.
+
+PROOF — BREAK / RESTORE, HALF 1: "deletes only records past the window"
+=========================================================================
+Broke retention-schedule.service.ts's executeAndCertify by dropping the
+timestampField filter (where = {} instead of { [timestampField]: { lt:
+cutoff } }), commented `// BROKEN FOR PROOF: cutoff computed but never
+enforced -- deletes everything regardless of age`.
+
+  $ npx vitest run src/platform/v1/retention-schedule.service.spec.ts
+  ×  M37 · retention schedule executes deletion on time and certifies it
+       > deletes only records PAST the retention window — ON TIME, not
+         early and not late
+
+Exactly the intended assertion failed. Restored the two original lines
+(no other change), then:
+
+  $ npx vitest run src/platform/v1/retention-schedule.service.spec.ts
+  Tests  3 passed (3)
+
+PROOF — BREAK / RESTORE, HALF 2: "certifies consistently with C24"
+=====================================================================
+Broke TRACK_M_RETENTION_CLASSES by changing retentionDays from 90 to 30
+(diverging from retention-matrix.json's declared 90), commented
+`// BROKEN FOR PROOF: retentionDays diverges from retention-matrix.json's
+declared value (90)`.
+
+  $ npx vitest run src/platform/v1/retention-schedule.consistency.spec.ts
+  ×  M37 · retention schedule is consistent with C24's retention-matrix.json
+       > every Track M retention class matches its declaration in
+         unierp-workspace/scripts/retention-matrix.json exactly
+
+Exactly the intended assertion failed. Restored retentionDays to 90, then:
+
+  $ npx vitest run src/platform/v1/retention-schedule.service.spec.ts \
+      src/platform/v1/retention-schedule.consistency.spec.ts
+  Test Files  2 passed (2)
+       Tests  5 passed (5)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 43 mounted controllers, 215 endpoints.
+  OK    every mounted /platform/v1 endpoint carries an explicit
+        control-plane permission and a guard chain that enforces it.
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3): all @kannan19302/*
+  dependencies are strictly lower-layer.
+
+$ npx vitest run src/platform/ src/modules/admin/tests/tenant-lifecycle.service.spec.ts \
+    src/modules/admin/tests/permissions-drift.spec.ts \
+    src/modules/admin/tests/rbac-regression-sweep.spec.ts \
+    src/common/guards/tests/two-person-control-separation.spec.ts \
+    src/common/guards/tests/control-plane-audit.spec.ts \
+    src/common/guards/tests/step-up-mfa.guard.spec.ts \
+    src/common/guards/tests/estate-abac.guard.spec.ts
+  Test Files  55 passed (55)
+       Tests  296 passed (296)
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Only one RT-class (provider-telemetry-samples) is wired to
+  RetentionScheduleService; the other five classes in retention-matrix.json
+  (notifications-read, audit-log, change-history, webhook-delivery-logs,
+  expired-sessions, terminal-background-jobs) predate Track M and are
+  enforced by enforce-retention.mjs directly against Postgres, not by this
+  service — no change needed, no drift introduced, but worth naming: Track
+  M's own mechanism only proves ITS OWN data's schedule, not a general
+  replacement for enforce-retention.mjs.
+- No scheduler/cron triggers execute() automatically; this phase proves the
+  mechanism is correct and certifiable, not that it currently runs on a
+  timer. Wiring a periodic trigger is a natural follow-up, not claimed here.
+- enforce-retention.mjs itself was not run (it requires a live Postgres,
+  unavailable in this dev environment, consistent with every prior phase's
+  constraint).
+
+COMMITS
+=======
+unierp-data      27ab098  RetentionCertificate model
+unierp-shared    d207797  system.retention.read/manage permissions (dist rebuilt)
+unierp-api       7f86cc9  service, spec, consistency spec, controller, module wiring
+unierp-workspace 13b324c  retention-matrix.json provider-telemetry-samples entry
+```
+

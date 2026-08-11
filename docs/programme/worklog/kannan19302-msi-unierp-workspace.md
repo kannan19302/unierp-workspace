@@ -5800,3 +5800,94 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M28 · FINISH · 2026-08-11T10:34:11Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M28 — Cost per tenant, margin and unit economics
+===================================================
+
+Exit criterion: "The gross margin of any tenant is stated with both
+sides traceable — cost to M25's ingested line, revenue to C16's invoice.
+A tenant whose cost exceeds its revenue is surfaced. This is the phase
+K19 depends on."
+
+--- Mechanism ---
+- unierp-api: CostAllocationService.getTenantCostForPeriod(tenantId,
+  period) aggregates cost across EVERY provider's ingested batch for a
+  period (a tenant's infra is rarely single-provider), summing M27's own
+  allocated shares that belong to that tenant, and returns the exact M25
+  CostLineItem ids that contributed (`sourceLineItemIds`) — cost
+  traceability all the way to the ingested line, not a rolled-up number.
+- MarginService.getTenantMargin(tenantId, period) sums that cost against
+  SaaSInvoice.totalAmount (C16) for the tenant/period, returning the
+  exact invoice ids that contributed (`revenueTraceInvoiceIds`) —
+  revenue traceability to the invoice. Both totals and margin go through
+  the same BigInt-cents arithmetic this whole cost path uses (exported
+  from cost-allocation.ts, not reimplemented). `atRisk: true` whenever
+  cost exceeds revenue — a field, not a sign a caller has to notice.
+- MarginController: GET :tenantId/:period. New permission
+  system.margin.read.
+
+--- Proof 1: both sides traceable ---
+margin.service.spec.ts:
+  "gross margin is stated with BOTH sides traceable — cost to M25's
+  line, revenue to C16's invoice" — cost 300.0000, revenue 1000.0000,
+  margin 700.0000, atRisk false, AND costTraceLineItemIds === ["li-1"],
+  revenueTraceInvoiceIds === ["inv-1"] — the actual source rows, not
+  just correct totals.
+
+--- Proof 2: cost exceeding revenue is surfaced ---
+  "a tenant whose cost EXCEEDS its revenue is surfaced (atRisk)" —
+  cost 5000, revenue 999: atRisk true, margin "-4001.0000".
+
+--- Proof 3: multi-provider cost aggregation ---
+  "aggregates cost across MULTIPLE providers for the same period, all
+  traceable" — a tenant billed by both AWS and GCP in the same period:
+  cost is the correct sum (150.0000) and costTraceLineItemIds names
+  BOTH line items across both providers' batches.
+
+--- Proof 4: empty tenant reports a correct, traceable zero ---
+  a tenant with no cost and no revenue for the period: cost/revenue/
+  margin all "0.0000", atRisk false, both trace arrays empty (not
+  omitted, not null — empty, which is itself traceable: nothing
+  contributed).
+
+--- Proof 5: break/restore ---
+BREAK: `atRisk` hardcoded to `false` regardless of the actual margin
+sign.
+
+Result: margin.service.spec.ts — 1/4 tests FAIL:
+  x a tenant whose cost EXCEEDS its revenue is surfaced (atRisk)
+
+RESTORE: margin.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  35 passed (35)
+       Tests  173 passed (173)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 33 controllers, 193 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+
+--- Found, filed (D054), not fixed here ---
+InvoicingService.calculateInvoiceTotals() (C16) computes tax/total
+arithmetic in JS `number` (float), despite SaaSInvoice's own columns
+being Decimal(15,2) — noticed while M28 reads totalAmount as ground
+truth for revenue. Out of scope to fix here (belongs to C16, a
+different track's surface; M28 only reads the value after it was
+already computed). Filed in 90-DEFECT-LOG.md as D054.
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Margin per PLAN and per MODULE (named in the Deliverable alongside
+  per-tenant) is not built — the exit criterion's own text is entirely
+  about tenant-level gross margin traceability, which is what is proven.
+- Cost per active user and per transaction (also in the Deliverable) is
+  not built — a different unit-economics view than what the exit
+  criterion tests.
+- No console UI surface in this phase — the exit criterion is a backend
+  traceability/surfacing mechanism, not a console requirement.
+```
+

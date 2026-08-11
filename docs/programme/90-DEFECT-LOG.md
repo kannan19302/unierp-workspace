@@ -1385,3 +1385,38 @@ cmd /c "mklink /J shared D:\UniERP\unierp-shared"   # from inside .../@kannan193
 ```
 
 **Not fixed:** the same defect in `unierp-idp`, `unierp-auth`, `unierp-console`, `unierp-web`, and not audited for other `@kannan19302/*` packages (`@kannan19302/database` itself, `@kannan19302/config`, etc.) or other repos in the family. The durable fix is a postinstall or CI check asserting every `.pnpm`-store entry for a `@kannan19302/*` package is a symlink to the workspace source, not a registry-fetched copy — filed for Track A or L, not built here.
+
+### D051 · 🟡 Medium · `tenant-lifecycle.service.spec.ts` constructed its subject with zero arguments against a one-argument constructor — 6 of 18 tests silently broken
+
+**Found:** 2026-08-11, wiring M12 onto C07's tenant transitions. **Fixed by:** M12, in the same change.
+
+`src/modules/admin/tests/tenant-lifecycle.service.spec.ts`'s `beforeEach` called
+`new TenantLifecycleService()` with no arguments, against a constructor requiring one
+(`consoleGateway: ConsoleGateway`). `consoleGateway` was therefore `undefined` for the lifetime of
+every test in the file. Three transitions call `this.consoleGateway.emitTenantUpdate(...)` on
+success — `offboardTenant`, `cancelOffboarding`, `purgeTenant` — and all three failed with
+`TypeError: Cannot read properties of undefined (reading 'emitTenantUpdate')` on every test that
+reached that line.
+
+**Confirmed pre-existing, not introduced by this session:**
+
+```bash
+git stash   # remove all of this session's changes
+npx vitest run src/modules/admin/tests/tenant-lifecycle.service.spec.ts
+#   Test Files  1 failed (1)
+#        Tests  6 failed | 12 passed (18)
+git stash pop
+```
+
+Identical failure count and identical failing test names on the untouched tree.
+
+**Fixed** as part of wiring `TenantLifecycleService` onto M12's `DurableExecutorService` (which
+also gained a required constructor parameter, so this exact line needed editing regardless): the
+`beforeEach` now constructs a working `{ emitTenantUpdate: vi.fn() }` stub and a real
+`DurableExecutorService(new PrismaJobStateStore())`. All 18 tests pass.
+
+**Not investigated:** how long this had been broken, or whether `purgeTenant`'s test — which
+exercises the platform's actual tenant-data-deletion path — had been silently unverified for a
+meaningful period. Worth a Track L phase auditing test files for constructors called with the
+wrong arity generally, since this is easy to miss (the test file still runs, still reports
+"1 failed" clearly, but 6 dead assertions sat in a green-looking suite until someone read the count).

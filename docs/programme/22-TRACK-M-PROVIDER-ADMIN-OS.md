@@ -85,6 +85,24 @@ below needs one of them, it **extends** the named phase's surface; it does not r
 
 ---
 
+## 2a. Stage M-0 · Wave 0 remediation — do this before M01
+
+`90-DEFECT-LOG § 1` states that a Critical defect *"stops the current phase and becomes a Wave-0
+phase."* **D046** is that defect, and this is that phase. It is the only Track M phase that is not
+new capability: it closes a hole that is open right now, using a mechanism the codebase already
+has and eight of its twenty-two control-plane controllers already apply correctly.
+
+Track M cannot honestly begin before it. M01–M08 build a provider registry holding cloud
+credentials, and M33 layers ABAC over the estate — both on top of a control plane where 54
+endpoints currently authorise nobody. Building least-privilege scoping above an unguarded surface
+is the exact shape of `00-BASELINE § 6`.
+
+| ID      | Phase                                        | Depends | Deliverable                                                                                                                                                                                                                          | Exit                                                                                                                                                                                                                                                                                                             | Status |
+| :------ | :------------------------------------------- | :------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----- |
+| **M47** | Close D046 — authorise every plane-1 endpoint | —       | `@Permissions` from the existing registry on all 54 unguarded endpoints, composed with `JwtAuthGuard`, `RbacGuard` and `ControlPlaneGuard` exactly as `tenant-lifecycle.controller.ts` already does; `@TwoPersonControl` on the destructive ones; and `scripts/check-platform-permissions.mjs` as a blocking CI gate so the class cannot return | `node scripts/check-platform-permissions.mjs` reports **0** mounted endpoints without an explicit control-plane permission, and **has been observed failing at 54**. A tenant-realm token receives **403** — not 404, not 500 — from `POST /platform/v1/offboarding/:tenantId/offboard` and from every other endpoint in D046's list, asserted per endpoint rather than per controller. C02's exit criterion is then re-run and passes for the first time | OPEN   |
+
+---
+
 ## 3. Stage M-I · The OS kernel (Wave 2)
 
 The eight phases that make the remaining thirty-eight cheap. Every one of them is a *mechanism*

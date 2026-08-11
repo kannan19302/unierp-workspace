@@ -1069,3 +1069,72 @@ naming a track rather than a phase (the J26 / `"all J"` case). It cannot disting
 "a phase ID whose track letter this regex predates". A well-formed ID outside `[A-L]` is
 indistinguishable from a comment. The durable fix is to derive the class from
 `Object.keys(TRACK_FILES)` rather than to widen it again at track N.
+
+### D046 · 🔴 CRITICAL · 54 of 156 mounted control-plane endpoints have no authorization guard of any kind
+
+**Found:** 2026-08-11, verifying Track C's foundations before starting Track M.
+**Fixed by:** [M47](22-TRACK-M-PROVIDER-ADMIN-OS.md) — Wave 0, per § 1's severity rule.
+
+`unierp-api/src/platform/platform.module.ts` mounts 22 controllers exposing 156 endpoints under
+`/platform/v1`. Fourteen of those controllers carry **no `@Permissions`, no `@UseGuards`, and no
+class-level decorator of any kind** — 54 endpoints. The only global `APP_GUARD` in `app.module.ts`
+is `TenantThrottlerGuard`, which rate-limits and does not authorize. Nothing else stands in front
+of them.
+
+Among the 54:
+
+```
+POST /platform/v1/offboarding/:tenantId/offboard      # terminates a tenant
+POST /platform/v1/soc/:tenantId/revoke-sessions       # revokes any tenant's sessions
+POST /platform/v1/soc/:tenantId/quarantine
+POST /platform/v1/releases/rollback                   # rolls back the platform
+POST /platform/v1/migrations/:tenantId/start
+GET  /platform/v1/invoices/                           # every invoice, every tenant
+POST /platform/v1/invoices/:id/adjust                 # mutates billed amounts
+POST /platform/v1/plans/                              # creates pricing
+POST /platform/v1/subscriptions/:tenantId/cancel
+GET  /platform/v1/support/:tenantId/session-replay
+```
+
+**This falsifies C02's exit criterion**, which reads: *"Every console endpoint carries an explicit
+control-plane permission."* It does not. C02 is marked `DONE`.
+
+**Reproduction:**
+
+```bash
+cd unierp-api/src/platform
+# 1. the mounted set — parsed from the controllers array, not guessed
+grep -A40 'controllers:' platform.module.ts | grep -o '\w*Controller' | sort -u | wc -l   # → 22
+# 2. mounted controllers with zero @Permissions
+for f in v1/*.controller.ts; do
+  cls=$(grep -o 'export class \w*Controller' "$f" | awk '{print $3}')
+  grep -q "$cls" platform.module.ts || continue
+  grep -q '@Permissions(' "$f" || echo "UNGUARDED $f"
+done          # → 14 files, 54 endpoints
+# 3. nothing covers them globally
+grep -n 'APP_GUARD' ../app.module.ts     # → only TenantThrottlerGuard
+```
+
+**Why this is Critical and not High.** The mechanism to fix it already exists and is already used
+correctly by the other eight controllers — `tenant-lifecycle.controller.ts:14-21` composes
+`JwtAuthGuard`, `RbacGuard`, `ControlPlaneGuard`, `@Permissions`, `TwoPersonControlGuard` and
+`@TrackChanges`, and its own comment records that an earlier `admin.tenant.*` grant was widened to
+`system.tenant.*` *precisely because a tenant admin could otherwise suspend another tenant*. The
+permission strings these 54 endpoints need are already in the registry and unused —
+`saas.offboarding.write`, `system.tenant.offboard`, `saas.billing.write`, `saas.security.write`.
+So this is not a missing capability. It is fourteen controllers that were written without applying
+a guard the codebase already had, and then marked DONE without the exit criterion being run.
+
+**Relationship to D041.** D041 reported the *console* failing to check `realm === 'provider'` on
+two pages. This is the same failure one layer down and far wider: the API behind those pages does
+not check either, so fixing the console alone leaves the endpoints reachable directly.
+
+**Relationship to D032.** D032 recorded 55 Track A/B phases marked finished with no ADP claim and
+no evidence. The same is true of Track C: `docs/programme/worklog/` contains a `CLAIMED` block for
+C01 and **nothing at all for C02–C29**, yet all 29 are `DONE`. D046 is what that costs — an exit
+criterion that says "every endpoint carries a permission" was never run, and 54 endpoints shipped
+without one.
+
+```bash
+node scripts/start.mjs --who      # C01 CLAIMED, never FINISHed; C02–C29 absent
+```

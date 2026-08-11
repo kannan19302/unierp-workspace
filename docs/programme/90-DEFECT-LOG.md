@@ -1517,3 +1517,34 @@ repos. Worth an explicit audit of `npm run build` freshness in `unierp-shared` a
 programme's own tooling (e.g. `check-platform-permissions.mjs` could diff source registry entries against
 the compiled `dist/index.js`'s exports, not just assert the source file contains the string), so this
 class of defect fails loudly next time instead of silently.
+
+### D056 · 🔴 CRITICAL · `AdminService.assertNoPlatformOnlyPermissions()` gated tenant custom roles on a manually-maintained `platformOnly` flag, not on the control-plane namespace — 18 of ~20 `system.*`/`platform.*` permission codes were silently assignable to a tenant role
+
+Found and fixed during D03. `AdminService.createRole`/`updateRole`/`createAccessPackage`/
+`updateAccessPackage` (`unierp-api/src/modules/admin/admin.service.ts`) all refused a permission list
+via a private `assertNoPlatformOnlyPermissions()` check — but that check only rejected a code whose
+`PERMISSION_REGISTRY` entry carried `platformOnly: true`, a flag that has to be set BY HAND on each
+individual permission definition. At the time this was found, only 2 of the ~20 registered `system.*`/
+`platform.*` (control-plane) codes carried the flag (`saas.analytics.read` and `platform.overview.read`
+— note the first of those isn't even in the control-plane namespace). Every other control-plane code —
+including every `system.*` code Track M added across M37, M41, M44 and M45 this session
+(`system.retention.*`, `system.integrations.*`, `system.catalogue.*`, `system.runbook.*`) — had no flag
+and was therefore assignable to a tenant-defined custom role with zero code change, purely because
+nobody had remembered to flag it. This directly contradicts D03's own exit criterion ("No tenant role
+can grant a `platform.*` permission") and the invariant `ControlPlaneGuard`/`hasPermission()` already
+enforce elsewhere: a tenant's own `["*"]` wildcard can never satisfy a `CONTROL_PLANE_NAMESPACES` code,
+but nothing stopped a tenant admin from explicitly listing that code on a role they define themselves.
+
+**How it was caught:** writing `tenant-role-control-plane-gate.spec.ts` as the FAIL-first proof for
+D03's exit criterion — `service.createRole("tenant-a", { permissions: ["system.retention.manage"] })`
+resolved successfully instead of throwing, on the very first run against the pre-existing code.
+
+**Fixed:** `assertNoPlatformOnlyPermissions()` now rejects a code if EITHER it is flagged `platformOnly`
+OR its namespace is inside `CONTROL_PLANE_NAMESPACES` (imported from `@kannan19302/shared` — the same
+constant `hasPermission()`/`ControlPlaneGuard` already use), unioning rather than replacing the original
+check. Proven via break/restore (removing the namespace check reproduces the exact original gap).
+
+**Not fully investigated:** whether an equivalent tenant-role/access-package creation path exists
+elsewhere in the codebase (a second implementation this session did not search for) that performs its
+own, possibly-also-incomplete platform-permission check independently of `AdminService`'s. Worth a
+platform-wide grep for `platformOnly` call sites as a follow-up.

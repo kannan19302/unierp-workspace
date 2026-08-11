@@ -1784,3 +1784,33 @@ assertion, parse real pass/fail results, and compute `testedComponents`/`axeViol
 output — plus, separately, the same real mechanism needs to exist for `unierp-web`/`unierp-console` routes,
 which currently have none at all. The `WCAG_CONFORMANCE.md` statement's CI-enforcement claim is false as
 written and should not be treated as evidence of actual conformance until the gate is real.
+
+### D064 · 🟡 MEDIUM · SalesDocumentsDeepService.generateDocument() never rendered anything — accepted a caller-supplied documentUrl as if it were the output
+
+Found while claiming and building E29 (Document template engine). `SalesDocumentTemplate` and
+`SalesDocumentGeneration` looked like a real templating feature — a template has `content` and
+`variables`, generation has a `documentUrl` and a lifecycle (`DRAFT`/`SENT`/`VIEWED`/`SIGNED`/
+`REJECTED`/`VOIDED`) — but `generateDocument()` in `unierp-api/src/modules/sales/
+sales-documents-deep.service.ts` never read the template's `content` at all. It looked up the
+template only to confirm it existed, then wrote whatever `documentUrl` string the CALLER passed
+in `dto.documentUrl` straight into the generation row. Editing a template's content had zero
+effect on any previously- or subsequently-generated document — the exact class of "looks finished,
+isn't" gap this session's Track E briefing calls out by name (pages that render, fetch, and save
+without being judged against what the feature actually claims to do).
+
+**How it was caught:** reading the service end-to-end while scoping E29's exit criterion ("an
+invoice template edited by a tenant produces a correct PDF for any invoice with no code"), which
+this mechanism could not satisfy no matter what a tenant edited.
+
+**Fixed (E29's own scope, not a separate cleanup):** `generateDocument()` now renders a real PDF
+via the new `DocumentTemplateEngineService.renderInvoicePdf()` for `INVOICE`-category templates
+with an `invoiceId`, substituting the template's own `content` against the real `Invoice` row.
+Every other category still accepts a caller-supplied `documentUrl` (proposals/MSAs generated
+externally are out of E29's scope) — stated, not hidden.
+
+**Not fully investigated:** whether the same shape of bug — a "generate from template" endpoint
+that stores caller-supplied output instead of deriving it from the template — exists in any other
+of the 45 modules' own document/report-generation code. This defect was found only because E29
+happened to audit this exact service; a platform-wide grep for `documentUrl`/`fileUrl`/`reportUrl`
+fields accepted directly from a request DTO without being derived server-side would be a
+reasonable follow-up.

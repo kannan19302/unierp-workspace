@@ -1,0 +1,132 @@
+E29 — Document template engine
+Exit criterion: "An invoice template edited by a tenant produces a
+correct PDF for any invoice with no code (G-8)."
+
+BEFORE
+======
+Reading unierp-api/src/modules/sales/sales-documents-deep.service.ts's
+existing generateDocument() end-to-end: it loads the template only to
+confirm it exists, then writes whatever `dto.documentUrl` the CALLER
+passed straight into the SalesDocumentGeneration row. The template's
+own `content` column is never read by generation at all. Editing a
+template has zero effect on any generated document — the exit
+criterion fails by construction, not by a missing test. Filed as D064.
+
+MECHANISM (this phase's own work)
+====================================
+New unierp-api/src/modules/sales/document-template-engine.service.ts:
+
+  renderTemplate(content, data) -> { output, unresolvedTokens }
+    Replaces every {{a.b.c}} token with the value at that nested path
+    in `data`. An unresolved token is left verbatim and named in
+    `unresolvedTokens` rather than silently blanked or thrown.
+
+  editTemplateContent(tenantId, templateId, newContent)
+    Appends the template's CURRENT content into `variables.
+    versionHistory` (a Json column — SalesDocumentTemplate has no
+    dedicated version table, and this checkout has no
+    unierp-database source repo to add one via migration) before
+    overwriting `content`, bumping `variables.version`. No edit
+    silently discards a prior version.
+
+  renderInvoicePdf(tenantId, templateId, invoiceId) -> Buffer
+    Loads the tenant's active INVOICE-category template AND the real
+    Invoice (with customer + line items), substitutes the template's
+    tokens against that real data, and renders the result through
+    pdfkit into a real PDF buffer (verified via the %PDF- magic-byte
+    header, not just "no exception thrown").
+
+sales-documents-deep.service.ts's generateDocument() now calls
+renderInvoicePdf() for INVOICE-category templates with an invoiceId,
+storing the real rendered PDF (base64 data URI — no blob-storage
+integration exists in this checkout, stated not hidden) instead of a
+caller-supplied placeholder. New PUT
+sales/documents-deep/templates/:id/content endpoint lets a tenant edit
+a template's content directly, with no code deploy.
+
+PROOF
+=====
+$ npx vitest run src/modules/sales/tests/document-template-engine.service.spec.ts
+  6/6 pass, including:
+   - "a template edit changes the rendered output with zero code
+     changes — the exit criterion's own words": renders the SAME
+     invoice data through two different template contents and asserts
+     the two outputs differ.
+   - "renderInvoicePdf ... produces a non-empty PDF buffer": asserts
+     Buffer.isBuffer, non-zero length, AND the %PDF- magic bytes — a
+     real PDF, not a stub string.
+
+BREAK/RESTORE
+=============
+Broke the real substitution logic in renderTemplate() (backed up
+first): replaced the token-lookup branch with `return match;`
+unconditionally, so every {{token}} would pass through unresolved
+regardless of a template edit — reproducing exactly D064's original
+bug (editing content has no effect on output).
+
+  $ npx vitest run src/modules/sales/tests/document-template-engine.service.spec.ts
+  3 failed | 3 passed (6)
+  (the 3 failures are exactly the substitution-exercising tests,
+  including the exit-criterion-scenario test named above)
+
+Restored from backup:
+
+  $ grep -c "BROKEN FOR PROOF" src/modules/sales/document-template-engine.service.ts
+  0
+  $ npx vitest run src/modules/sales/tests/document-template-engine.service.spec.ts src/modules/sales/tests/sales-documents-deep.service.spec.ts
+  9/9 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/sales/
+  Test Files  25 passed (25)
+       Tests  209 passed (209)
+  (zero pre-existing tests required changes beyond wiring the new
+  DocumentTemplateEngineService provider into the existing
+  sales-documents-deep.service.spec.ts's TestingModule, since the
+  service's constructor now takes a dependency)
+
+$ git stash; npx tsc --noEmit -p tsconfig.json | wc -l   -> 0
+$ git stash pop; npx tsc --noEmit -p tsconfig.json | wc -l -> 0
+(zero typecheck errors before and after this phase's changes)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- No visual template editor UI was built — the exit criterion says "a
+  tenant edits a template" and produces a correct PDF; this phase
+  proves the EDITING -> RENDERING pipeline is real and correct, not
+  that a drag-and-drop editor exists. A plain-text {{token}} editor
+  (even a <textarea> against the new PUT .../templates/:id/content
+  endpoint) is a thin, mechanical UI layer on top of a now-real
+  mechanism, not a separate engineering problem.
+- No branded/logo/letterhead rendering — pdfkit renders plain text
+  only in this pass; branding would be a follow-on visual layer on the
+  same renderInvoicePdf() pipeline.
+- No blob storage integration — the rendered PDF is returned/stored as
+  a base64 data URI rather than uploaded to a document store with a
+  stable URL.
+- Version history is stored inside the `variables` Json column rather
+  than a dedicated version table, because no database-schema source
+  repo is present in this checkout to add one via migration (the
+  schema lives in the @unerp/database npm package). Noted, not hidden.
+- Filed D064: the pre-existing generateDocument() never actually
+  rendered anything before this phase — a caller-supplied documentUrl
+  was accepted as the "generated" output. Not investigated: whether
+  the same pattern exists in other modules' own document-generation
+  code.
+
+COMMANDS
+========
+$ npx vitest run src/modules/sales/tests/document-template-engine.service.spec.ts
+$ npx vitest run src/modules/sales/
+$ npx tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  d104710  document-template-engine.service.ts (new),
+                      document-template-engine.service.spec.ts (new),
+                      sales-documents-deep.service.ts,
+                      sales-documents-deep.controller.ts,
+                      sales.module.ts,
+                      sales-documents-deep.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D064

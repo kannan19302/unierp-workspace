@@ -4433,3 +4433,106 @@ Work has NOT started. This block exists so no other agent takes this phase.
 API half done and proven: PlatformBulkOperation model + BulkOperationService (unierp-api) gives per-item SUCCESS/FAILED outcomes with named errors, and a cursor that only advances after each item's outcome durably commits, so a run is resumable without repeating or skipping an item. Proven via break/restore: removing the per-item save fails 2/5 tests (durability-ordering, resumability), restored passes 5/5. 500-item case asserts exact per-item pass/fail. NOT yet built: the unierp-console UI half (server-side search/filter/sort across resource kinds, saved views, multi-select bulk action bar, export) using B11 primitives, and the controller wiring this service to an endpoint. Next: build the console surface before claiming DONE.
 ```
 
+### M15 · FINISH · 2026-08-11T09:15:33Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M15 — Bulk operations, estate search and saved views
+======================================================
+
+Exit criterion: "A bulk operation over 500 resources reports per-item
+success and failure and is resumable, with no limit > 100 page. A
+partially failed bulk operation names exactly which items failed and
+why. Zero hand-rolled <table> elements in the diff."
+
+--- Mechanism ---
+- unierp-data: PlatformBulkOperation model (per-item outcomes + cursor).
+  Named Platform-prefixed after prisma validate caught a name collision
+  with the pre-existing tenant-scoped BulkOperation model in
+  core-part-5.prisma -- a real duplicate-entity near-miss, caught before
+  push, not after.
+- unierp-api: BulkOperationService.start()/resume() applies one action
+  across many resourceIds, one item at a time, committing each item's
+  SUCCESS/FAILED outcome (with the error message) before the cursor
+  advances and before the next item starts. Deliberately not built on
+  M12's DurableExecutorCore, which halts and compensates the whole job on
+  the first step failure -- correct for one resource's multi-step plan,
+  wrong here, where one resource failing must not abort the other 499.
+- unierp-api: ResourceModelService.searchResources() adds server-side
+  filter (kind, name substring), sort and pagination, with limit
+  hard-capped at 100 regardless of what is requested.
+- unierp-api: EstateController -- the FIRST controller exposing any of
+  the Track M kernel (M02-M14) over HTTP. GET /platform/v1/estate/resources
+  (search), POST /platform/v1/estate/bulk (bulk desired-state change via
+  BulkOperationService), POST /platform/v1/estate/bulk/:id/resume.
+  New permissions: system.estate.read, system.estate.bulk.
+- unierp-console: Infrastructure > Estate page. Server-side search/sort/
+  pagination, multi-select bulk archive, per-item failure toast. Composed
+  from B11 primitives only (DomainShell, FilterBar, SavedViewSwitcher,
+  DataTable's built-in sort/selection/bulk-action toolbar, Pagination,
+  ConfirmDialog) -- zero hand-rolled <table> elements in the diff.
+
+--- Proof 1: 500-resource case, per-item success and failure named ---
+bulk-operation.service.spec.ts:
+  "a bulk operation over 500 resources reports per-item success and failure"
+  -> 498 SUCCESS, 2 FAILED (res-3, res-499), each with its own error message
+     naming the resourceId and reason. Overall status FAILED (not silently
+     collapsed to a single pass/fail).
+
+--- Proof 2: break/restore -- per-item durability (resumability) ---
+BREAK: removed the per-item `await this.save(state)` call after each
+item's outcome is computed, leaving only the final save.
+
+Result: bulk-operation.service.spec.ts -- 2/5 tests FAIL:
+  x every item's outcome is durably persisted BEFORE the next item starts
+  x is resumable: a run interrupted mid-way continues from the first
+    unprocessed item, never repeating a settled one
+
+RESTORE: bulk-operation.service.ts restored from backup.
+Result: 5/5 tests PASS, including a real simulated crash (the 2nd
+`update` call throws mid-run) that proves resume() re-attempts only the
+item whose outcome was never committed and does not repeat the ones that
+were.
+
+--- Proof 3: break/restore -- limit cap (no limit > 100 page) ---
+BREAK: `Math.min(Math.max(limit, 1), 100)` replaced with `params.limit ?? 25`
+(cap removed).
+
+Result: resource-model.service.spec.ts -- 1/10 tests FAIL:
+  x a requested limit above 100 is capped at 100, never passed through
+
+RESTORE: resource-model.service.ts restored from backup.
+Result: 10/10 tests PASS.
+
+--- Full regression after all restores ---
+unierp-api: npx vitest run src/platform/
+  Test Files  23 passed (23)
+       Tests  113 passed (113)
+
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 24 controllers, 164 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-console: npx tsc --noEmit -> clean
+unierp-console: node scripts/check-layer.mjs -> OK, L4 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+  (caught and fixed a real BulkOperation name collision before this passed)
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- No dedicated e2e test (Playwright) for the estate page's user flows.
+- No axe accessibility sweep or 320px/200%-zoom check run against the new
+  page in this session -- no live backend was reachable to render it
+  against (no DATABASE_URL in this dev environment), so verification was
+  static (tsc, layer check) rather than a rendered browser check.
+- Unit coverage percentage not measured; the mechanism itself (bulk
+  durability, search pagination cap) is covered and break/restore-proven,
+  which is what the exit criterion asks for.
+- FOUND, filed to 90-DEFECT-LOG.md separately: before this phase, ZERO
+  controllers existed for any of the Track M kernel built across M02-M14
+  (provider registry, resource model, policy engine, operation pipeline)
+  -- every prior Track M phase built a real, tested mechanism with no
+  HTTP surface reaching it. This phase's EstateController is the first;
+  the rest of Track M's console-facing phases (M16+) inherit the same gap
+  for their own domains until each exposes its own controller.
+```
+

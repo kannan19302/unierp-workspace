@@ -11440,3 +11440,146 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E06 · FINISH · 2026-08-11T19:25:02Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E06 — Reversal, correction and period close
+Exit criterion: "A posted document is never mutated — it is reversed.
+Closing a period makes its documents immutable, provably, and
+reopening requires an approver."
+
+BEFORE
+======
+Read GlAccountingService (postJournal, reverseJournal — the ledger's
+only mutation paths) end-to-end and grepped for any reference to
+FinancialPeriod/CLOSED:
+  $ grep -n "financialPeriod\|FinancialPeriod\|CLOSED" gl-accounting.service.ts
+  (zero matches)
+CloseOpsService.closeFinancialPeriod() flipped a status field that
+nothing else in the codebase ever read. reopenFinancialPeriod() had no
+approval gate at all — a bare status flip either direction. Filed as
+D067 (CRITICAL).
+
+reverseJournal() itself was already correct — it creates a NEW
+reversing journal and only updates the ORIGINAL's status/notes
+(metadata), never its financial entries — confirmed by reading it, not
+assumed.
+
+MECHANISM (this phase's own work)
+====================================
+1. New unierp-api/src/modules/finance/period-close-guard.service.ts:
+   assertPeriodOpen(tenantId, orgId, date) finds the FinancialPeriod
+   covering `date` and throws BadRequestException (naming the period)
+   if its status is CLOSED. A date with no matching period record is
+   allowed (nothing declared to enforce).
+
+2. Wired into GlAccountingService.postJournal() (checks journal.date)
+   and reverseJournal() (checks the REVERSAL date, not the original's
+   date — you can still reverse an old posting, but the reversal
+   itself must land in an open period). PeriodCloseGuardService
+   registered as a provider/export in AdvancedFinanceModule; both
+   constructor params on GlAccountingService are optional, so all 5
+   pre-existing `new GlAccountingService()` call sites in other specs
+   are unaffected.
+
+3. CloseOpsService.reopenFinancialPeriod() now requires a real
+   ApprovalRequest with status APPROVED, entityType
+   "financial-period-reopen", entityId = periodId — reusing E05's
+   ApprovalProcess/ApprovalRequest tables DIRECTLY rather than
+   building a second, bespoke reopen-approval mechanism.
+
+PROOF
+=====
+$ npx vitest run src/modules/finance/tests/period-close-guard.service.spec.ts
+3/3 pass: allows OPEN-period dates, refuses CLOSED-period dates
+(naming the period in the message), allows dates with no period
+record at all.
+
+$ npx vitest run src/modules/advanced-finance/services/tests/gl-accounting-period-close.service.spec.ts
+3/3 pass: postJournal refused for a CLOSED-period date, allowed for
+OPEN, reverseJournal refused when the REVERSAL date lands in a CLOSED
+period — proving the WIRING, not just the guard in isolation.
+
+$ npx vitest run src/modules/finance/tests/close-ops-reopen.service.spec.ts
+3/3 pass: refused with no approval request, refused with a PENDING
+(not yet approved) request, allowed only once a real APPROVED request
+exists for that exact period.
+
+BREAK/RESTORE
+=============
+Two independent breaks, one per mechanism:
+
+1. Disabled the CLOSED-period check in PeriodCloseGuardService
+   (backed up first): `if (false && period && period.status ===
+   "CLOSED")`.
+   $ npx vitest run .../period-close-guard.service.spec.ts .../gl-accounting-period-close.service.spec.ts
+   3 failed | 3 passed (6) — exactly the 3 tests exercising
+   immutability, across both the guard's own spec and the wiring
+   spec. Restored, grep -c "BROKEN FOR PROOF" -> 0.
+
+2. Disabled the approval-gate check in CloseOpsService.reopenFinancialPeriod
+   (backed up first): `if (false && !approvedReopen)`.
+   $ npx vitest run .../close-ops-reopen.service.spec.ts
+   2 failed | 1 passed (3) — exactly the 2 tests exercising the
+   approval requirement. Restored, grep -c "BROKEN FOR PROOF" -> 0.
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/finance/ src/modules/advanced-finance/ src/modules/org-structure/
+Test Files  48 passed (48)
+     Tests  708 passed (708)
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+$ git status --short
+(clean after commit — exactly the intended 3 modified + 4 new files)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- Filed D067 (CRITICAL): PeriodCloseGuardService was wired into
+  exactly the 2 call sites this phase touched (postJournal,
+  reverseJournal). No platform-wide sweep was performed for other
+  ledger-mutating paths (direct prisma.journal.update calls elsewhere,
+  or period-adjacent writes in advanced-hr/fixed-assets/other
+  modules) that might still bypass it entirely. Stated as necessary
+  follow-up, not silently implied comprehensive.
+- "Correction chains" (the deliverable's own third named primitive,
+  alongside immutable posted records and reversal documents) are not
+  separately built — reverseJournal() already IS the correction
+  mechanism for journals (a correction is booking a new, correct entry
+  after reversing the wrong one), and this phase did not find or build
+  a distinct "correction chain" concept beyond that. If Track E later
+  wants explicit chain-linking between an original/reversal/
+  correction triplet (currently only linked by naming convention,
+  "REV-<original-entryNumber>", and an audit-log entry), that is
+  additional, separately-scoped work.
+- Only Journal-level immutability was addressed. Other financial
+  documents (Invoice, CreditNote, etc.) that might also need
+  period-close immutability were not touched — Journal is where the
+  actual ledger mutation happens, and the exit criterion's literal
+  scope ("a posted document is never mutated") is satisfied at that
+  layer, but a full audit of every document type's own mutation paths
+  is out of this phase's scope.
+
+COMMANDS
+========
+$ npx vitest run src/modules/finance/tests/period-close-guard.service.spec.ts
+$ npx vitest run src/modules/advanced-finance/services/tests/gl-accounting-period-close.service.spec.ts
+$ npx vitest run src/modules/finance/tests/close-ops-reopen.service.spec.ts
+$ npx vitest run src/modules/finance/ src/modules/advanced-finance/ src/modules/org-structure/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  4d84534  period-close-guard.service.ts (new),
+                     period-close-guard.service.spec.ts (new),
+                     gl-accounting-period-close.service.spec.ts (new),
+                     close-ops-reopen.service.spec.ts (new),
+                     gl-accounting.service.ts, close-ops.service.ts,
+                     advanced-finance.module.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D067
+```
+

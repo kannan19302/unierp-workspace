@@ -136,7 +136,7 @@ non-negotiables.
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **E29** | Document template engine | B07 | Templated, branded, versioned documents with a visual template editor, driven by entity data | An invoice template edited by a tenant produces a correct PDF for any invoice with no code (**G-8**) | OPEN |
+| **E29** | Document template engine | B07 | Templated, branded, versioned documents with a visual template editor, driven by entity data | An invoice template edited by a tenant produces a correct PDF for any invoice with no code (**G-8**) | WIP |
 | **E30** | Print and export fidelity | E29 | Locale- and currency-correct output; page breaks, multi-page tables, headers and totals; PDF/A where archival matters | An invoice in `hi-IN` with `₹` lakh grouping and a 200-line table renders correctly across page breaks | OPEN |
 | **E31** | E-signature and document workflow | E29, E05 | Signature request, routing, reminders, tamper-evident completion certificate | A signed document's integrity is verifiable after the fact, and the trail is admissible | OPEN |
 | **E32** | Attachment and media lifecycle | E27 | Attachments as first-class citizens of records: retention, redaction, access audit, and deletion consistent with D11–D12 | A GDPR erasure removes attachments too. Proven, not assumed | OPEN |

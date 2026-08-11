@@ -48,6 +48,14 @@
       "retentionDays": 90,
       "where": { "status": { "in": ["COMPLETED", "FAILED", "CANCELLED"] } },
       "basis": "job bookkeeping in terminal states only; PENDING/RUNNING never touched"
+    },
+    {
+      "dataClass": "provider-telemetry-samples",
+      "model": "telemetrySample",
+      "timestampField": "observedAt",
+      "retentionDays": 90,
+      "where": {},
+      "basis": "Track M (M26) — high-volume utilisation time-series, operational diagnostics only, same class as audit-log's own precedent for high-volume data; RetentionScheduleService (unierp-api) enforces the identical dataClass/model/timestampField/retentionDays declared here and certifies each run"
     }
   ]
 }

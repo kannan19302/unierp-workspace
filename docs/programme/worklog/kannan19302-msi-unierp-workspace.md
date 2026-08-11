@@ -6219,3 +6219,111 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M32 · FINISH · 2026-08-11T13:20:28Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M32 — Staff identity, SSO, MFA and session governance
+========================================================
+
+Exit criterion: "A second IdP is added without code change. Step-up MFA
+is unskippable on a destructive plan — asserted by attempting one
+without it and expecting 403. An elevated privilege expires
+automatically and is audited on both grant and expiry."
+
+--- Half 1: multi-provider staff IdP ---
+StaffIdpService.authenticateStaff() never imports a specific adapter
+class — resolves a provider via M06's routing and calls execute() on
+whichever adapter that resolves to, the same discipline M22's DnsService
+already established. Two structurally distinct reference adapters
+(SamlStaffIdpAdapter, OidcStaffIdpAdapter) prove staff.identity is
+genuinely plural.
+
+Proof: authenticating succeeds via SAML alone; the SAME authenticateStaff()
+call succeeds via OIDC when it is the only one registered instead (the
+literal "second IdP added without code change"); with both registered,
+priority + circuit-breaker failover moves auth to the other provider
+with zero code touched.
+
+--- Half 2: step-up MFA, unskippable ---
+StepUpMfaGuard refuses with 403 (ForbiddenException) unless the request
+carries a valid, unexpired, UNUSED x-step-up-mfa-token — consumed on
+first successful check so a single challenge cannot be replayed across
+two separate destructive calls. Applied via @RequireStepUpMfa() to
+EstateController's POST bulk endpoint (a genuinely destructive
+multi-resource desired-state change, M15).
+
+Proof: attempting a destructive plan without a token is refused with
+ForbiddenException (403); an unknown/expired token is refused; a valid
+token passes once and is then refused on replay; a token issued to a
+different user is refused; a route not marked @RequireStepUpMfa() is
+unaffected.
+
+--- Half 3: JIT privilege elevation, expiry + dual audit ---
+PrivilegeElevationService.grant() always writes a
+privilege.elevation-granted audit record immediately. isElevated()
+checks the grant's expiresAt against the caller-supplied `now` (testable
+deterministically) — an expired grant returns false AND, the FIRST time
+it is discovered expired, writes a privilege.elevation-expired audit
+record (idempotent via expiredAuditedAt, never re-audited on later
+checks of the same grant).
+
+Proof: granting audits immediately; an active grant reports elevated
+true with zero expiry audits; an expired grant reports elevated false
+AND produces exactly one expiry audit; three consecutive checks of the
+same expired grant still produce exactly one expiry audit, not three.
+
+--- Break/restore (three independent cycles, one per half) ---
+BREAK A (staff IdP): the adapter call ignored the caller-supplied nameId,
+hardcoding a broken value.
+Result: 2/3 staff-idp tests FAIL. RESTORE: 3/3 pass.
+
+BREAK B (step-up MFA): usedAt/expiry checks removed from consumeToken(),
+allowing token replay.
+Result: 1/5 guard tests FAIL (the replay test). RESTORE: 5/5 pass.
+
+BREAK C (privilege elevation): expiry check and audit removed from
+isElevated(), treating every grant as permanently active.
+Result: 2/5 elevation tests FAIL. RESTORE: 5/5 pass.
+
+--- D055, found and fixed in this phase (CRITICAL) ---
+unierp-shared's compiled dist/ was never rebuilt across M15-M32's ~30
+new permission codes -- check-platform-permissions.mjs reads source
+text directly and always reported OK, but permissions-drift.spec.ts
+(which imports the COMPILED @kannan19302/shared package) had silently
+been failing since M20 until this phase's full regression sweep ran it
+and caught system.release.promote missing. Fixed by running
+`npm run build` in unierp-shared; verified via direct require() that
+the new M20/M31/M32 codes are now present in the compiled package.
+Filed in 90-DEFECT-LOG.md as D055, with the open question of whether
+unierp-idp/auth/console/web have their own stale copies (D050's failure
+mode) flagged as not fully investigated.
+
+--- Full regression after all three restores + the D055 fix ---
+unierp-api: npx vitest run src/platform/ + admin tests + guard tests
+  Test Files  47 passed (47)
+       Tests  259 passed (259)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 38 controllers, 205 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- SCIM provisioning (named in the Deliverable alongside SAML/OIDC) is
+  not built — the exit criterion's own text concerns authentication
+  ("a second IdP") and MFA/elevation, not user provisioning.
+- Device and session policy (also in the Deliverable) is not built in
+  this phase — a distinct mechanism from IdP/MFA/elevation, not tested
+  by this exit criterion.
+- The step-up MFA guard is applied to exactly one destructive endpoint
+  (EstateController.bulk) as the proof target; extending
+  @RequireStepUpMfa() to other destructive plan-execution endpoints
+  (M19's routing-weight apply, M20's release promote, etc.) is a
+  one-line addition per endpoint using the same decorator, not new
+  mechanism, and was not done exhaustively here.
+- No console UI surface in this phase — the exit criterion is a backend
+  security-mechanism requirement (403 on missing MFA, audit on
+  grant/expiry, adapter plurality), not a console requirement.
+```
+

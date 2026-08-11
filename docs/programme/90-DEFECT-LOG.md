@@ -1485,3 +1485,35 @@ been written — fixing the read side cannot fix a value already computed wrong 
 dedicated phase or defect-fix pass: convert `calculateInvoiceTotals()` to decimal-string/BigInt
 arithmetic matching the pattern this session established in M25/M27, and audit whether any other
 `unierp-api/src/platform/v1/*.service.ts` file does money math in `number` the same way.
+
+### D055 · 🔴 CRITICAL · `unierp-shared`'s compiled `dist/` was never rebuilt across 16+ phases of new permission codes (M15-M32), silently stale in every consumer
+
+Every `system.*` permission code added to `unierp-shared/src/permissions/registry.ts` across M15 through
+M32 (roughly 30 new codes) was committed and pushed as TypeScript SOURCE only. `unierp-shared`'s `dist/`
+directory is git-ignored (a local build artifact), and nothing in this session's workflow ever ran
+`npm run build` inside `unierp-shared` after any of those edits — `check-platform-permissions.mjs`
+(run after every phase in this session) reads the registry file's TEXT directly via a source-level scan,
+so it reported "OK" every single time regardless of whether `dist/` matched. `unierp-api`'s
+`node_modules/@kannan19302/shared` is a symlink to `unierp-shared` itself (fixed for D050 earlier this
+session), so `require('@kannan19302/shared')` at runtime resolves to the STALE compiled `dist/` — meaning
+every one of those ~30 new permission codes was, until this defect's own fix, absent from
+`PERMISSION_REGISTRY` as far as any code path that imports the compiled package is concerned.
+
+**How it was caught:** `src/modules/admin/tests/permissions-drift.spec.ts` — which imports
+`PERMISSION_REGISTRY` from the compiled `@kannan19302/shared` package, not from source — was not included
+in this session's per-phase regression command until M32, when it failed on `system.release.promote`
+(added in M20, 12 phases earlier) with "no matching entry in PERMISSION_REGISTRY."
+
+**Fixed:** ran `npm run build` in `unierp-shared`, confirmed via a direct `require()` check that
+`system.release.promote`, `system.finops.execute`, and `system.staffidp.manage` are now present, then
+re-ran the full regression suite including `permissions-drift.spec.ts` (259/259 pass) plus
+`rbac-regression-sweep.spec.ts`.
+
+**Not fully investigated:** whether `unierp-idp`, `unierp-auth`, `unierp-console`, `unierp-web`, or any
+other consumer of `@kannan19302/shared` has its OWN separately-resolved `dist/` (via a real npm install
+rather than the workspace symlink) that is ALSO stale and would need its own rebuild — D050 found stale
+*npm-published* copies (a different failure mode: a real directory, not a symlink) in exactly those four
+repos. Worth an explicit audit of `npm run build` freshness in `unierp-shared` as a standing step in this
+programme's own tooling (e.g. `check-platform-permissions.mjs` could diff source registry entries against
+the compiled `dist/index.js`'s exports, not just assert the source file contains the string), so this
+class of defect fails loudly next time instead of silently.

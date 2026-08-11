@@ -1,0 +1,116 @@
+D08 — Import framework
+Exit criterion: "An import with 200 bad rows out of 10,000 reports
+every one actionably, imports nothing, and is re-runnable after
+correction."
+
+FINDING (a real, concrete gap)
+=================================
+ImportExportService.executeImport() (unierp-api/src/modules/admin/
+import-export.service.ts) committed rows one at a time with a
+try/catch PER ROW: a bad row was caught, recorded as an error, and the
+loop continued to the next row. A batch with 200 bad rows out of
+10,000 therefore imported the other 9,800 GOOD rows — the exact
+opposite of "imports nothing."
+
+MECHANISM
+=========
+Rewrote executeImport() as two sequential all-or-nothing gates:
+1. Upfront schema validation — the pre-existing validateImport()
+   (required-field checks per MODEL_FIELDS), now called BEFORE any
+   database write is attempted. Any error refuses the entire batch,
+   returning { created: 0, errors: validation.errors } — each error
+   carries row (1-indexed) + field + message, actionable per row.
+2. A single Prisma $transaction wraps every row's create() for the
+   whole batch. A database-level failure on any row (a case upfront
+   field validation cannot see, e.g. a unique-constraint violation)
+   throws out of the transaction callback, which rolls back every row
+   already inserted earlier in the SAME call.
+
+Because nothing commits when either gate fails, correcting the bad
+rows and re-submitting the identical batch is always clean — there is
+no partial commit to reconcile against before the retry.
+
+PROOF — THE GAP, THEN THE FIX
+================================
+import-export-atomic.spec.ts (4 tests) run FIRST against the
+pre-existing per-row-commit code:
+
+  $ npx vitest run src/modules/admin/tests/import-export-atomic.spec.ts
+  ×  SCHEMA-INVALID rows: every bad row is reported ACTIONABLY (row +
+       field + message), and NOTHING is imported — expected 0, got 8
+  ×  ALL-OR-NOTHING at the database level too: a duplicate-constraint
+       failure on ONE row rolls back every already-inserted row in the
+       same batch — expected 0, got 2
+  ×  RE-RUNNABLE: correcting the bad rows and re-submitting succeeds
+       cleanly, with no residue from the failed attempt — expected 0,
+       got 5
+  (1/4 passed: a fully clean batch imported every row correctly — that
+   half was never broken.)
+
+Confirmed the exact gap. Applied the fix, then:
+
+  $ npx vitest run src/modules/admin/tests/import-export-atomic.spec.ts
+  Tests  4 passed (4)
+
+Break/restore: removed the upfront validateImport() gate (leaving only
+the transactional rollback), commented `// BROKEN FOR PROOF: upfront
+schema-validation gate removed -- bad rows would only surface as
+per-row DB errors, not refuse the batch`.
+
+  $ npx vitest run src/modules/admin/tests/import-export-atomic.spec.ts
+  ×  SCHEMA-INVALID rows: every bad row is reported ACTIONABLY
+  ×  RE-RUNNABLE: correcting the bad rows and re-submitting succeeds
+       cleanly
+
+Exactly the two tests depending on schema-level detection failed (the
+test's own mock create() doesn't independently enforce the `name`
+required field, so without the upfront gate those rows would actually
+succeed at "DB" level — the correct failure mode to catch). Restored,
+then:
+
+  $ npx vitest run src/modules/admin/tests/import-export-atomic.spec.ts
+  Tests  4 passed (4)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/admin/
+  Test Files  26 passed (26)
+       Tests  237 passed (237)
+
+The pre-existing import-export.service.coverage.spec.ts's executeImport
+test (a tolerant try/catch pattern) is unaffected either way.
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Only 4 target models are supported (Customer/Vendor/Product/
+  Employee), matching what already existed — this phase did not extend
+  MODEL_FIELDS coverage, only fixed the commit atomicity.
+- No staged upload→map→dry-run UI flow (Deliverable text: "usable by
+  any module rather than reimplemented per module" describes a
+  broader, generic staged-import framework). This phase fixes the
+  concrete, testable exit criterion (all-or-nothing + actionable
+  errors + re-runnable) on the EXISTING import mechanism; a fully
+  generic staged pipeline reusable by every module is a larger,
+  separate architectural undertaking not attempted here.
+- No dry-run mode distinct from the real commit — executeImport()
+  itself is now safe to call speculatively (nothing commits on any
+  error), but there's no explicit "preview only" flag; validateImport()
+  alone already serves that purpose for schema-level issues.
+- Scale was not tested at literal 10,000-row volume; the mechanism's
+  correctness (all-or-nothing, actionable errors) is independent of
+  batch size and proven at a representative smaller scale (10 rows).
+
+COMMITS
+=======
+unierp-api  fa7ff9e  import-export.service.ts atomic rewrite,
+                     import-export-atomic.spec.ts

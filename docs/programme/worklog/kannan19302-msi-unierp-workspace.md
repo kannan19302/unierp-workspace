@@ -3782,3 +3782,119 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M10 · FINISH · 2026-08-11T08:08:34Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M10 — Validation and typed operational errors
+EXIT CRITERION (verbatim):
+  "A failing pre-flight names the field, the rule and the fix. No
+   provider SDK error reaches the UI unmapped - asserted by a test
+   that injects a raw provider error and expects a typed problem
+   document."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/validation-and-errors.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 13:38:20
+[2m   Duration [22m 685ms[2m (transform 64ms, setup 24ms, collect 345ms, tests 5ms, environment 0ms, prepare 123ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (validation rules skipped) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/validation-and-errors.spec.ts [2m([22m[2m9 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m M10 · validation and typed operational errors[2m > [22mpre-flight validation per resource kind[2m > [22ma failing pre-flight names the field, the rule and the fix[90m 6[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [31m×[31m M10 · validation and typed operational errors[2m > [22mpre-flight validation per resource kind[2m > [22ma proposed state failing multiple rules reports all of them[90m 1[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/validation-and-errors.spec.ts[2m > [22mM10 · validation and typed operational errors[2m > [22mpre-flight validation per resource kind[2m > [22ma failing pre-flight names the field, the rule and the fix
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/validation-and-errors.spec.ts:[2m42:28[22m[39m
+    [90m 40| [39m    [34mit[39m([32m"a failing pre-flight names the field, the rule and the fix"[39m[33m,[39m (…
+    [90m 41| [39m      [35mconst[39m result [33m=[39m validator[33m.[39m[34mvalidate[39m([32m"dns-zone"[39m[33m,[39m { ttl[33m:[39m [33m-[39m[34m5[39m[33m,[39m recordC…
+    [90m 42| [39m      [34mexpect[39m(result[33m.[39mvalid)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m 43| [39m      [35mif[39m ([33m![39mresult[33m.[39mvalid) {
+    [90m 44| [39m        [34mexpect[39m(result[33m.[39mfailures)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/validation-and-errors.spec.ts[2m > [22mM10 · validation and typed operational errors[2m > [22mpre-flight validation per resource kind[2m > [22ma proposed state failing multiple rules reports all of them
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/validation-and-errors.spec.ts:[2m55:28[22m[39m
+    [90m 53| [39m    [34mit[39m([32m"a proposed state failing multiple rules reports all of them"[39m[33m,[39m …
+    [90m 54| [39m      [35mconst[39m result [33m=[39m validator[33m.[39m[34mvalidate[39m([32m"dns-zone"[39m[33m,[39m { ttl[33m:[39m [34m0[39m[33m,[39m recordCo…
+    [90m 55| [39m      [34mexpect[39m(result[33m.[39mvalid)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m 56| [39m      [35mif[39m ([33m![39mresult[33m.[39mvalid) {
+    [90m 57| [39m        [34mexpect[39m(result[33m.[39mfailures[33m.[39m[34mmap[39m((f) [33m=>[39m f[33m.[39mfield)[33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m"r[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 13:38:22
+[2m   Duration [22m 524ms[2m (transform 46ms, setup 23ms, collect 219ms, tests 10ms, environment 0ms, prepare 94ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (catch-all mapping removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/validation-and-errors.spec.ts [2m([22m[2m9 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 5[2mms[22m[39m
+[31m   [31m×[31m M10 · validation and typed operational errors[2m > [22mno provider SDK error reaches the UI unmapped[2m > [22ma completely unrecognised error shape still produces a typed document — the function is total[90m 0[2mms[22m[31m[39m
+[31m     → null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/validation-and-errors.spec.ts[2m > [22mM10 · validation and typed operational errors[2m > [22mno provider SDK error reaches the UI unmapped[2m > [22ma completely unrecognised error shape still produces a typed document — the function is total
+[31m[1mUnknown Error[22m: null[39m
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 13:38:24
+[2m   Duration [22m 500ms[2m (transform 47ms, setup 23ms, collect 212ms, tests 5ms, environment 0ms, prepare 94ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/validation-and-errors.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 13:38:27
+[2m   Duration [22m 551ms[2m (transform 47ms, setup 23ms, collect 221ms, tests 5ms, environment 0ms, prepare 102ms)[22m
+```
+

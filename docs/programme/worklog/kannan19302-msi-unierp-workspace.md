@@ -4648,3 +4648,89 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M17 · FINISH · 2026-08-11T09:25:56Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M17 — Regions, residency and placement
+========================================
+
+Exit criterion: "A resource whose placement violates a tenant's residency
+constraint is refused at plan time by an M08 policy, not at execution.
+Verified against a tenant with a hard residency constraint from A26."
+
+--- Mechanism ---
+- unierp-api: PlanningService.createPlan() gains an optional tenantId
+  parameter. enforceResidency() is called BEFORE any Plan object is
+  constructed. When a tenantId is present and the proposed state carries
+  a `region` field, it looks up the tenant's residencyRegion (A26 field,
+  Tenant.residencyRegion in core-part-1.prisma) and evaluates a
+  "resource-placement-residency" M08 policy (registered lazily via
+  PolicyEngineService.registerPolicy — the same in-memory-rule pattern
+  M02/M03/M05 already use). A violation throws a BadRequestException
+  naming the region and the constraint, refusing the plan before
+  createPlan() returns anything.
+- Resources with no tenantId (the majority of what M02-M16 manages,
+  which is platform-owned with no tenantId/RLS by design) are never
+  subject to the check — it is a no-op unless both a tenantId and a
+  region are present on the proposed state.
+
+--- Proof 1: refusal at plan time ---
+planning.service.spec.ts, "M17 · regions, residency and placement":
+  "a resource placement violating a tenant's hard residency constraint is
+  refused AT PLAN TIME" — a tenant with residencyRegion "eu-west-1"
+  attempting to place a resource in "us-east-1" gets createPlan() itself
+  rejecting with a message naming both regions. No Plan object, no
+  reversal, nothing partially built.
+
+--- Proof 2: matching placement allowed ---
+  "a placement matching the tenant's residency constraint is allowed" —
+  the same tenant placing a resource in "eu-west-1" succeeds normally.
+
+--- Proof 3: platform-owned resources unaffected ---
+  "a resource with no tenantId (platform-owned) is never subject to the
+  residency check" — createPlan() called without a tenantId succeeds
+  regardless of region, proving the check is additive, not a universal
+  gate that would break every existing M09-M16 caller.
+
+--- Proof 4: break/restore ---
+BREAK: the policy evaluation still runs and computes its result, but the
+result is discarded (`void result;`) instead of being enforced.
+
+Result: planning.service.spec.ts — 1/8 M17 tests FAIL:
+  x a resource placement violating a tenant's hard residency constraint
+    is refused AT PLAN TIME
+
+RESTORE: planning.service.ts restored from backup.
+Result: 8/8 M17-suite tests pass (12 total across planning.service.spec.ts
++ rollback.spec.ts, since rollback.spec.ts's PlanningService constructor
+call also needed the new PolicyEngineService argument).
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  24 passed (24)
+       Tests  119 passed (119)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 25 controllers, 166 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- "Regions as resources" (the phase's Deliverable) is not built as a
+  first-class Resource kind with its own registry — this phase enforces
+  residency using the tenant's existing `residencyRegion` field and a
+  `region` string on the proposed state, which is what the exit criterion
+  itself requires and tests against. A dedicated Region resource kind
+  with its own placement-rule catalogue is a larger scope than the exit
+  criterion asks for and was not built.
+- No console UI surface for configuring or viewing residency policy in
+  this session — the exit criterion is a plan-time refusal mechanism,
+  verified at the service layer; it does not name a console requirement,
+  unlike M15/M16.
+- Tenant.residencyRegion has no separate "hard vs soft" flag in the
+  schema (checked: only one field exists, A26's own addition). This
+  phase treats every tenant's residencyRegion as a hard constraint for
+  the purpose of this check, which is the only reading consistent with
+  what A26 actually shipped.
+```
+

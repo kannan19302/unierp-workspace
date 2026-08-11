@@ -6569,3 +6569,108 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M35 · FINISH · 2026-08-11T13:44:50Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M35 — Incidents, SLO/SLA, error budgets and on-call
+======================================================
+
+Exit criterion: "A breached SLO opens an incident, notifies affected
+tenants through C21, and produces an SLA credit that reaches C16 as an
+adjustment. The credit arithmetic is at 100% coverage. A simulated
+breach runs the path end to end."
+
+--- Mechanism ---
+- unierp-data: SloDefinition (service/tenant/target%/monthlyFee
+  Decimal(19,4)) and Incident (severity/status/actualPercent/
+  creditAmount/invoiceAdjustmentId).
+- unierp-api: calculateSlaCredit() (sla-credit.ts) is pure arithmetic —
+  zero database dependency, same discipline as M27's cost-allocation.ts
+  — every money value is a decimal string via BigInt cents, never a
+  float; tiers checked strictly-below in order.
+  IncidentService.simulateBreach() runs the whole path in one call:
+    1. Opens an Incident row.
+    2. Emits "notification.send" — the EXACT event
+       NotificationDeliveryService (C21) already listens for via
+       @OnEvent — never a second delivery pipeline.
+    3. Computes the credit via the 100%-covered pure function.
+    4. Applies it as a REAL C16 invoice adjustment via
+       InvoicingService.applyAdjustment() — an actual credit line item
+       on the target invoice, not a separate ledger.
+- IncidentController: POST simulate-breach. New permissions
+  system.incident.read/manage.
+
+--- Proof 1: 100% coverage on the credit arithmetic ---
+  npx vitest run src/platform/v1/sla-credit.spec.ts --coverage
+    --coverage.include="src/platform/v1/sla-credit.ts"
+  Result: 100% statements, 100% branches, 100% functions, 100% lines —
+  the exit criterion's own DoD line, machine-verified.
+
+--- Proof 2: tier boundaries and rounding ---
+sla-credit.spec.ts (12 tests): meeting/exceeding target earns nothing;
+exactly at a tier boundary (99.90%) earns nothing (strictly-below, not
+at-or-below); minor/major/critical breaches earn 10%/25%/50%
+respectively; odd-fee rounding is exact to the cent (333.33 * 25% =
+83.33, not 83.3325 or a float artifact); custom tier schedules are
+honoured; an empty schedule and a zero fee both correctly resolve to
+zero credit; negative amounts and malformed input are both handled
+explicitly.
+
+--- Proof 3: the full path, end to end, in one call ---
+incident.service.spec.ts:
+  "a simulated breach runs the path END TO END: opens an incident,
+  notifies via C21, and applies an SLA credit to C16 as an adjustment" —
+  one call to simulateBreach(slo-1, inv-1, 97.0%, actor) produces: an
+  OPEN incident (severity MAJOR); exactly one notification.send event
+  with tenantId/type SLA_BREACH, captured by a real EventEmitter2
+  listener (not a spy on the service's own internals); a computed
+  credit of 250.0000 (25% of the SLO's real 1000.00 monthly fee); a
+  genuine -250 CREDIT line item written onto invoice inv-1 by C16's own
+  applyAdjustment(), with the incident's invoiceAdjustmentId set to
+  that invoice.
+
+--- Proof 4: zero-credit breach skips the invoice write ---
+  a breach that still clears 99.9% opens an incident (for history) but
+  produces zero credit and writes ZERO invoice line items — the
+  adjustment path is genuinely conditional, not always-fired.
+
+--- Proof 5: break/restore (two independent cycles) ---
+BREAK A (arithmetic): tier lookup hardcoded to always find nothing.
+Result: 8/12 sla-credit tests FAIL. RESTORE: 12/12 pass, coverage still
+100/100/100/100.
+
+BREAK B (end-to-end): the C21 notification.send emit removed entirely.
+Result: 1/3 incident tests FAIL (the end-to-end test). RESTORE: 3/3
+pass.
+
+--- Full regression after both restores ---
+unierp-api: npx vitest run src/platform/ + admin tests + guard tests
+  Test Files  52 passed (52)
+       Tests  287 passed (287)
+unierp-api: node --max-old-space-size=6144 tsc --noEmit -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 41 controllers, 209 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+unierp-shared: npm run build -> rebuilt proactively before the drift
+  check, per the D055 lesson.
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- On-call, escalation and postmortems (named in the Deliverable) are not
+  built — the exit criterion's own text concerns SLO breach -> incident
+  -> notify -> credit specifically, which is what is proven.
+- Error budgets as a standing, continuously-tracked balance (vs. a
+  per-breach credit calculation) are not built as a separate mechanism —
+  the exit criterion's worked example is a single breach's credit, which
+  this phase computes correctly and exhaustively.
+- No console UI surface in this phase — the exit criterion is an
+  end-to-end backend mechanism, not a console requirement.
+- Real Grafana/monitoring-driven automatic breach DETECTION is not
+  built — simulateBreach() accepts an already-measured actualPercent,
+  consistent with the "no live external monitoring system reachable in
+  this dev environment" constraint stated across every Track M phase
+  this session; a real detector would call this same method, not
+  duplicate it.
+```
+

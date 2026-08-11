@@ -6015,3 +6015,91 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M30 · FINISH · 2026-08-11T10:44:40Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M30 — Metering reconciliation, provider vs invoiced
+======================================================
+
+Exit criterion: "A deliberate divergence between provider consumption
+and metered quantity is detected and reported with both sources named.
+Extends C14's reconciliation view; does not fork it."
+
+--- Mechanism ---
+- unierp-data: ProviderConsumptionReport — a provider's own reported
+  consumption for a tenant/metric/period, independent of anything
+  UniERP itself counted.
+- unierp-api: ProviderMeteringReconciliationService.reconcile() reads
+  the SAME MeteringEvent table C14's own reconcile()/getEvents() already
+  read — no second event log — sums events for the tenant/metric/period,
+  and compares that sum against the provider's reported quantity. Both
+  are genuinely independent sources of truth for the same real-world
+  quantity, unlike C14's own reconcile() which checks UniERP's event sum
+  against UniERP's own usage-record SNAPSHOT (a self-consistency check
+  on one side only).
+- The variance report names both sources explicitly (meteredSource:
+  "C14 metering events", providerSource: <providerId>), with full
+  drill-down: meteredEventIds lists every contributing MeteringEvent id,
+  providerReportId names the exact ProviderConsumptionReport row.
+- MeteringController (C14's OWN controller file) gains two new routes —
+  POST provider-consumption, GET provider-reconcile — rather than a
+  separate controller. "Extends C14's reconciliation view; does not fork
+  it" is literal: one file, not two.
+
+--- Proof 1: deliberate divergence detected, both sources named ---
+provider-metering-reconciliation.service.spec.ts:
+  "a deliberate divergence between provider consumption and metered
+  quantity is detected, both sources named" — 2 metering events sum to
+  150; the provider reports 200 (a deliberate mismatch). Result:
+  diverged true, variance -50, meteredSource "C14 metering events",
+  meteredQuantity 150, meteredEventIds names both event ids,
+  providerSource "aws", providerQuantity 200, providerReportId present.
+
+--- Proof 2: matching quantities, no divergence ---
+  500 metered, 500 provider-reported: diverged false, variance 0.
+
+--- Proof 3: missing provider report treated as 0, not skipped ---
+  a metric with metering events but NO provider report at all:
+  providerQuantity 0, providerReportId null, diverged true (10 events
+  vs 0 reported) — never silently excluded from reconciliation.
+
+--- Proof 4: period filtering ---
+  events outside the requested period (one before, one after) are
+  excluded from the metered sum; only the in-period event counts.
+
+--- Proof 5: break/restore ---
+BREAK: `diverged` hardcoded to `false` regardless of the actual
+variance.
+
+Result: provider-metering-reconciliation.service.spec.ts — 2/4 tests
+FAIL:
+  x a deliberate divergence between provider consumption and metered
+    quantity is detected, both sources named
+  x a provider with no report at all is treated as reporting 0, not
+    silently skipped
+
+RESTORE: provider-metering-reconciliation.service.ts restored from
+backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  38 passed (38)
+       Tests  186 passed (186)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 35 controllers, 199 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- No console UI surface in this phase — the exit criterion is a backend
+  detection/reporting mechanism (divergence detected, both sources
+  named), not a console requirement.
+- No live provider consumption-reporting API — recordProviderConsumption()
+  accepts an already-known reported quantity, consistent with the
+  adapter precedent through this entire session (no external API is
+  reachable in this dev environment).
+```
+

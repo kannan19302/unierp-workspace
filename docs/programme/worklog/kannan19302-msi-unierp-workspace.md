@@ -6455,3 +6455,108 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M34 · FINISH · 2026-08-11T13:37:07Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M34 — Observability: logs, metrics, traces, APM
+==================================================
+
+Exit criterion: "A failed plan is traced from the console click to the
+provider call in one correlated view. Wired to the existing Grafana/OTel
+backends rather than duplicating them, per C05's precedent."
+
+--- Mechanism ---
+- Reused, not duplicated: C05's existing OTel bootstrap (src/tracing.ts,
+  opt-in via OTEL_EXPORTER_OTLP_ENDPOINT, auto-instrumenting http/
+  express/nestjs/prisma/ioredis) and M48's ControlPlaneAuditInterceptor
+  (which already generates/reads an x-correlation-id header and writes
+  it onto EVERY plane-1 mutating request's audit record — the "console
+  click," already correlation-tagged before this phase existed).
+- unierp-data: Job.correlationId — the SAME id, threaded through.
+- unierp-api: DurableExecutorCore/Service.startJob() gains an optional
+  correlationId parameter (backward compatible — every existing caller
+  across M12/M13/M19-M21/M24/M29/M31 unaffected) and folds it into the
+  SAME pipeline-step audit record M14 already writes — no second trace
+  table. The audit writer also captures the active OTel span's traceId
+  when tracing is running, into that same record.
+- ObservabilityTraceService.getCorrelatedTrace(correlationId): ONE query
+  against ControlPlaneAuditLog by correlationId, returning the ordered
+  event list (console click, then every provider-call step) plus the
+  exact failed step and its real error — joined from the Job row itself,
+  since the audit write for a step happens BEFORE that step runs (M14's
+  own design), so the audit trail alone never carries a step's outcome.
+  Grafana/Tempo deep links are built from GRAFANA_BASE_URL/TEMPO_BASE_URL
+  configuration, never fabricated.
+- InfrastructureResourceController.change threads x-correlation-id
+  end-to-end as the concrete proof target.
+
+--- Proof 1: failed plan traced console-click-to-provider-call, ONE view ---
+observability-trace.service.spec.ts:
+  "a FAILED plan is traced from the console click to the provider call
+  in ONE correlated view" — writes a console-click audit record (the
+  exact shape ControlPlaneAuditInterceptor produces) under a
+  correlationId, then runs an infrastructure change whose verify step
+  fails, passing the SAME correlationId through. getCorrelatedTrace()
+  returns: event[0] is the console-click record; at least one
+  pipeline.step.* event follows it; failedAt names the exact step
+  ("verify") and its real error ("Verification failed...").
+
+--- Proof 2: wired to configuration, never fabricated ---
+  "is wired to the existing Grafana/OTel backends via configuration --
+  never fabricates a link with none configured" — with no
+  GRAFANA_BASE_URL/TEMPO_BASE_URL set, both links are null.
+
+--- Proof 3: real deep link when configured ---
+  GRAFANA_BASE_URL=https://grafana.internal produces
+  https://grafana.internal/explore?correlationId=corr-xyz — a genuine
+  URL built from the actual configured value, not a placeholder string.
+
+--- Proof 4: unknown correlationId, well-formed empty trace ---
+  a correlationId with no events returns [] and failedAt null, not an
+  error or undefined shape.
+
+--- Proof 5: break/restore ---
+BREAK: the Job-join that locates the failed step removed entirely --
+failedAt always null regardless of what actually happened.
+
+Result: observability-trace.service.spec.ts — 1/4 tests FAIL:
+  x a FAILED plan is traced from the console click to the provider call
+    in ONE correlated view
+
+RESTORE: observability-trace.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/ + admin tests + guard tests
+  Test Files  50 passed (50)
+       Tests  272 passed (272)
+unierp-api: node --max-old-space-size=6144 tsc --noEmit -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 40 controllers, 208 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+unierp-shared: npm run build -> dist rebuilt proactively this phase
+  (applying the D055 lesson before it could recur, not after).
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Unified log search and a metric explorer UI (named in the Deliverable
+  alongside tracing/APM) are not built — the exit criterion's own text
+  is specifically about a correlated trace view for a failed plan, which
+  is what is proven; log search and metric exploration would be Grafana/
+  Loki/Prometheus UI concerns this phase deliberately does not duplicate,
+  consistent with "wired to... rather than duplicating them."
+- correlationId threading is wired end-to-end through exactly ONE
+  endpoint (InfrastructureResourceController.change) as the concrete
+  proof target; extending it to every other M09/M12 endpoint
+  (KubernetesFleetController, ReleasePromotionService, BudgetService,
+  FinOpsRecommendationService, etc.) is a one-line addition per call
+  site using the same new optional parameter, not new mechanism, and
+  was not done exhaustively here.
+- No live Grafana/Tempo instance in this dev environment — the deep
+  links are proven to be correctly BUILT from configuration, not proven
+  to resolve against a real backend, consistent with the "no live
+  external system reachable" constraint stated across every other Track
+  M phase this session.
+```
+

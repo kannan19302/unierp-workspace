@@ -4947,3 +4947,107 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M20 · FINISH · 2026-08-11T09:49:01Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M20 — Environments, deployments and release binding
+======================================================
+
+Exit criterion: "A promotion blocked by its health gate rolls back
+automatically and the rollback is the previous manifest — C27's stated
+invariant, now executed by the pipeline rather than by hand. C27 and C29
+keep their surfaces and gain a plan."
+
+--- Mechanism ---
+- unierp-api: ReleasePromotionService models an environment as an M07
+  Resource (kind environment-release). promote(environmentName,
+  targetManifestVersion, healthCheck) compiles a plan (M09) and runs a
+  durable M12 Job with two steps:
+    1. deploy-manifest -- writes the target manifest as desired state.
+       Its compensator reverts desired state to exactly the manifest
+       version this environment held immediately before the call, read
+       from the same M07/M14 desired-state history, not recomputed.
+    2. health-gate -- runs the caller-supplied health check; throws on
+       failure.
+  A thrown health-gate step triggers M12's own compensate-on-failure
+  walk (DurableExecutorCore.compensateAndFinish), which runs
+  deploy-manifest's compensator automatically -- this IS "executed by
+  the pipeline rather than by hand": no second, bespoke rollback
+  function, the same mechanism M12 already provides for any job.
+- ReleaseControlController: POST /platform/v1/releases/promote (new
+  permission system.release.promote). C27's own surfaces
+  (getCurrentManifest, triggerRollback) are UNCHANGED -- "C27 keeps its
+  surface... and gains a plan" is literal: the controller gained one new
+  endpoint, nothing existing was touched. C29 (LiveTenantUpgradeService)
+  is similarly untouched in this phase.
+
+--- Proof 1: healthy promotion ---
+release-promotion.service.spec.ts:
+  "a healthy promotion deploys the manifest and the job completes" --
+  job.status DONE, desired state carries the new manifest version.
+
+--- Proof 2: blocked promotion rolls back automatically to the PREVIOUS manifest ---
+  "a promotion blocked by its health gate rolls back automatically, and
+  the rollback is the PREVIOUS manifest" -- first promote "prod" to
+  2026.08.0 (healthy, succeeds). Then promote to 2026.09.0-bad with a
+  health check that returns false: job.status COMPENSATED, promoted
+  false, and desired state is verified back at 2026.08.0 -- the exact
+  prior manifest, read from history, not a hardcoded fallback.
+
+--- Proof 3: no duplicate resource ---
+  "promoting the same environment twice reuses the same resource" --
+  two promote() calls against "qa" return the same resourceId.
+
+--- Proof 4: break/restore ---
+BREAK: deploy-manifest's compensator removed entirely -- a failed health
+gate would leave the bad manifest as desired state, uncompensated.
+
+Result: release-promotion.service.spec.ts -- 1/3 tests FAIL consistently
+(3/3 runs) after fixing D053 below:
+  x a promotion blocked by its health gate rolls back automatically, and
+    the rollback is the PREVIOUS manifest
+
+RESTORE: release-promotion.service.ts restored from backup.
+Result: 3/3 tests PASS consistently (3/3 runs).
+
+--- D053, found and fixed in this phase ---
+Every DurableExecutorService.startJob() caller across the platform
+(ReconcilerService/M13, KubernetesFleetService/M19, TenantLifecycleService
+x2/M12, and this phase's ReleasePromotionService) built its job ID from
+`Date.now()` alone. Two calls against the same resource inside the same
+millisecond collide, and the SECOND call's run() loads the FIRST job's
+already-DONE row, silently reporting success without running a single
+step. Reproduced directly: this phase's own rollback test failed 4 of 5
+consecutive runs before the fix. Fixed at all five call sites by
+appending a random suffix, matching the pattern PlanningService.createPlan()
+already used for its own id field. Filed as D053 in 90-DEFECT-LOG.md.
+After the fix: the same test passed 3/3 consecutive runs, and the
+break/restore proof above is itself now deterministic (it was flaky
+before the fix, which is why the fix was made before finishing this
+phase rather than left for later).
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  26 passed (26)
+       Tests  128 passed (128)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 26 controllers, 174 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- The health check itself is supplied by the caller (a `healthy: boolean`
+  field in the promote endpoint's request body) rather than this phase
+  running its own synthetic/smoke checks against a deployed environment --
+  that probe is outside this platform's scope; what this phase owns is
+  what happens with the signal once received.
+- Promotion PATHS (dev -> staging -> prod ordering, named in the
+  Deliverable) are not modelled -- promote() targets one named
+  environment directly. The exit criterion tests the health-gate/rollback
+  mechanism for a single promotion, not a path graph.
+- No console UI surface in this phase -- the exit criterion is a
+  backend mechanism (a promotion "rolls back automatically"), unlike
+  M15/M16/M19 which named UI requirements explicitly.
+```
+

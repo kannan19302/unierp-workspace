@@ -1,0 +1,150 @@
+E20 — Core HR
+Non-negotiables at exit: "Employee lifecycle, org structure,
+positions, documents with expiry, and PII encrypted per A25."
+
+SCOPE NOTE
+==========
+This is a "Non-negotiables at exit" phase (Track E's domain-module
+format), not a single mechanical exit command. Each named non-negotiable
+was checked against the real, pre-existing code:
+
+  - Employee lifecycle: Employee model has status (ACTIVE/etc.),
+    dateOfJoining/dateOfLeaving, employmentType — a real lifecycle
+    exists (pre-existing, not built this phase).
+  - Org structure, positions: D04 (DONE, this session) already built
+    ApprovalRoutingService over OrgPosition's manager chain, and
+    org-structure.service.ts manages positions/departments
+    (pre-existing).
+  - Documents with expiry: EmployeeDocument model has expiryDate
+    (pre-existing schema support).
+  - PII encrypted per A25: INVESTIGATED DIRECTLY, since nothing in the
+    codebase let this be confirmed by inspection alone. Found FALSE —
+    see below. Filed as D070 (CRITICAL) and fixed for the one field
+    this phase's own scope required.
+
+THE A25 INVESTIGATION
+======================
+A25's own claim: "Every one of the 21 models the PII gate found
+undeclared... is encrypted or has a logged exemption with a reason."
+
+  $ grep -rl "encryptField\|FieldEncryption\|@Encrypted\|encryptPII" unierp-api/src --include=*.ts
+  2 hits, both unrelated to HR/people PII (platform-credentials.service.ts,
+  crm-mailbox.service.ts — API-key/mailbox-secret handling)
+
+  $ find unierp-workspace/scripts -iname "*encrypt*"
+  (nothing)
+
+  $ find unierp-workspace -iname "*pii-registry*"
+  check-pii-registry.mjs / pii-registry.json — both about RETENTION
+  treatment (erase/anonymize/retain-legal-hold), NOT encryption.
+
+Employee.bankDetails (Json?, holding account/routing numbers) was
+stored plaintext by every existing write path. There is no artifact
+anywhere in this checkout — code, gate, or registry — that supports
+A25's own claim. Filed as D070.
+
+MECHANISM (this phase's own work)
+====================================
+New unierp-api/src/modules/hr/employee-pii-encryption.service.ts:
+AES-256-GCM, key derived per-tenant via scrypt from a server-side
+master secret (PII_ENCRYPTION_MASTER_KEY) — no database storage, no
+migration needed (none available in this checkout; schema lives in
+the separate @unerp/database package).
+
+  encryptBankDetails(tenantId, bankDetails) -> ciphertext envelope
+    { __encrypted: true, ciphertext, iv, authTag, tenantId }
+  decryptBankDetails(tenantId, envelope) -> original object
+    REFUSES (ForbiddenException) if the envelope's own recorded
+    tenantId doesn't match the caller's tenant — tenant isolation on
+    the encryption key itself, not just the row-level query.
+
+Wired into HrService.createEmployee/updateEmployee — bankDetails is
+encrypted before every write. New getEmployeeBankDetails() is the
+ONLY decrypt path, called on demand rather than transparently on
+every read, keeping decrypted PII out of unrelated list/search
+response payloads by construction.
+
+dateOfBirth is DELIBERATELY left unencrypted — hr.service.ts already
+queries it directly (a real, working upcoming-birthday feature at
+line ~2153). Encrypting it would need searchable/deterministic
+encryption or a decrypt-then-filter rewrite of that feature — a
+larger, separately-scoped change, stated as a gap rather than
+silently worked around or left unaddressed without comment.
+
+PROOF
+=====
+$ npx vitest run src/modules/hr/tests/employee-pii-encryption.service.spec.ts
+4/4 pass: ciphertext never contains the plaintext account/routing
+numbers; decrypts back to the exact original object; cross-tenant
+decryption refused; undefined passes through unchanged.
+
+$ npx vitest run src/modules/hr/tests/hr-pii-encryption-wiring.service.spec.ts
+3/3 pass: createEmployee's stored row never contains the plaintext
+account number; getEmployeeBankDetails decrypts it back correctly;
+updateEmployee also encrypts a NEW bankDetails value on update, not
+just at creation.
+
+BREAK/RESTORE
+=============
+Bypassed the actual AES cipher call inside encryptBankDetails (backed
+up first) while keeping the returned envelope's SHAPE identical
+(still has __encrypted/ciphertext/iv/authTag/tenantId fields) — the
+kind of break that would slip past a shape-only check.
+
+  $ npx vitest run src/modules/hr/tests/employee-pii-encryption.service.spec.ts src/modules/hr/tests/hr-pii-encryption-wiring.service.spec.ts
+  6 failed | 1 passed (7)
+
+Every test touching real encryption failed — the break was caught
+immediately (the cipher's getAuthTag() throws when called without
+ever having actually encrypted anything, "Invalid state for operation
+getAuthTag" — proof the mechanism is load-bearing, not decorative).
+Restored from backup:
+
+  $ grep -c "BROKEN FOR PROOF" employee-pii-encryption.service.ts
+  0
+  $ npx vitest run src/modules/hr/ src/modules/people/
+  8/8 files, 31/31 tests pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/hr/ src/modules/people/
+Test Files  8 passed (8)
+     Tests  31 passed (31)
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+$ git status --short
+(clean after commit)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- Filed D070 (CRITICAL): A25 itself makes a claim about 21 models with
+  no supporting artifact anywhere in the codebase. This phase fixes
+  ONE field (Employee.bankDetails) for the one module this phase's own
+  scope required — it does NOT fix A25's broader claim. A25's own
+  Status should be reopened and re-evaluated; that decision and the
+  platform-wide fix are explicitly out of E20's scope and stated as
+  necessary follow-up, matching D063/D064/D066/D069's identical
+  pattern this session.
+- Employee.dateOfBirth remains unencrypted, for the stated reason
+  (existing birthday-query feature).
+- Org structure/positions/documents-with-expiry non-negotiables were
+  verified as PRE-EXISTING and real (not built or deepened this
+  phase) — this phase's own work is scoped to the PII-encryption gap,
+  the one non-negotiable that was demonstrably false on inspection.
+
+COMMANDS
+========
+$ npx vitest run src/modules/hr/tests/employee-pii-encryption.service.spec.ts
+$ npx vitest run src/modules/hr/tests/hr-pii-encryption-wiring.service.spec.ts
+$ npx vitest run src/modules/hr/ src/modules/people/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  8880777  employee-pii-encryption.service.ts (new),
+                     employee-pii-encryption.service.spec.ts (new),
+                     hr-pii-encryption-wiring.service.spec.ts (new),
+                     hr.service.ts, hr.module.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D070

@@ -1976,3 +1976,48 @@ active filter for a `viewId` unconditionally, which on its face has the same sha
 `applyViewConfig()` had. This defect was found and fixed for the one method the exit criterion's own
 scenario names ("apply a shared view"); a full audit of every saved-view accessor for the same missing-check
 pattern is stated as necessary follow-up, not silently assumed complete.
+
+### D070 · 🔴 CRITICAL · A25 ("field-level encryption for PII") is marked DONE with no encryption mechanism, gate, or registry to support the claim
+
+Found while claiming and building E20 (Core HR), whose own exit criterion depends on "PII encrypted per
+A25." A25's row in `10-TRACK-A-FOUNDATION.md` claims: *"Every one of the 21 models the PII gate found
+undeclared — including `HealthcarePatient` and `EducationStudent` — is encrypted or has a logged exemption
+with a reason."* Investigating this claim for `Employee` (the model E20 needed to actually rely on it for)
+found:
+
+- No field-encryption code anywhere in `unierp-api/src` touching HR/people models — a grep for
+  `encryptField`/`FieldEncryption`/`@Encrypted`/`encryptPII` returns two hits total, both unrelated
+  (`platform-credentials.service.ts`, `crm-mailbox.service.ts` — API-key/mailbox-secret handling, not PII
+  field encryption).
+- No encryption-specific gate script anywhere in `unierp-workspace/scripts` — only
+  `check-pii-registry.mjs`/`pii-registry.json` exist, and that registry is about RETENTION/deletion
+  treatment (`erase`/`anonymize`/`retain-legal-hold`), a completely different concern from
+  encryption-at-rest. There is no script that could ever have verified A25's own exit criterion.
+- `Employee.dateOfBirth` and `Employee.bankDetails` (a `Json?` column holding account/routing numbers) were
+  both stored as plain, unencrypted values by every existing write path (`hr.service.ts`'s
+  `createEmployee`/`updateEmployee`), with zero encryption applied at any layer.
+
+A25 is not "mostly true with a documented gap" — there is no artifact anywhere in this checkout (code, gate,
+or registry) that supports the claim that ANY of the 21 models are encrypted, let alone all of them. This
+matches the exact shape of D046/D048/D049 (falsified DONE claims, cited in this session's earlier work) and
+B23/D063 (a gate that never ran the thing it claims to verify).
+
+**How it was caught:** E20's own exit criterion ("PII encrypted per A25") could not be satisfied by
+inspection — there was nothing to point to — so the claim was investigated directly rather than trusted.
+
+**Fixed (E20's own scope, Employee.bankDetails only):** new `EmployeePiiEncryptionService`
+(AES-256-GCM, per-tenant key derived via scrypt from a server-side master secret, no database storage or
+migration needed) wired into `HrService.createEmployee`/`updateEmployee`. Proven via break/restore. This is
+NOT a fix for A25 itself — it closes the gap for exactly the one field this session's own scope (Core HR)
+needed to make true.
+
+**Not fixed — explicitly out of scope:** the other 20 models A25 claims to cover (`HealthcarePatient`,
+`EducationStudent`, and 18 others named by the PII gate) were not audited or fixed in this pass.
+`Employee.dateOfBirth` was also left unencrypted (queried directly for birthday reporting — see E20's own
+evidence file for the reasoning). A25 itself should be REOPENED: its Status should not read DONE while zero
+verifiable encryption mechanism exists for the claim it makes. A real fix requires, at minimum: (1) a real
+encryption-specific gate script (the mirror of what `check-pii-registry.mjs` does for retention, but for
+encryption-at-rest), (2) an actual encryption registry naming which of the 21 models/fields are encrypted
+vs. exempted and why, and (3) the encryption code itself for whichever models don't yet have it. This is a
+multi-session effort at true platform scale, exactly the class of finding this session's D12/D19/J04
+precedent says to report honestly rather than understate.

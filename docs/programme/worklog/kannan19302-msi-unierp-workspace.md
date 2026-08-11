@@ -2467,3 +2467,108 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M01 · FINISH · 2026-08-11T04:03:24Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M01 — The app platform: apps as first-class objects
+EXIT CRITERION (verbatim):
+  "A new app appears in navigation, search, the command palette and the
+   permission registry by adding one manifest and zero files elsewhere.
+   Removing its manifest removes it from all four. Proven with a
+   throwaway app added and removed in the test."
+
+==================== 1. PASSING ====================
+$ npx vitest run src/lib/navigation.test.ts
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+ RUN  v4.1.10 D:/UniERP/unierp-console
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  09:32:58
+   Duration  1.44s (transform 62ms, setup 221ms, import 115ms, tests 5ms, environment 904ms)
+
+
+==================== 2. OBSERVED FAILING (registerApp stubbed to a no-op) ====================
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+ RUN  v4.1.10 D:/UniERP/unierp-console
+
+ ❯ src/lib/navigation.test.ts (4 tests | 3 failed) 10ms
+     × the 14 real console apps are registered — this change did not lose any 4ms
+     × adding one manifest makes the app appear in navigation, search/command-palette source, and the permission registry 4ms
+     × removing the manifest removes the app from all four 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/navigation.test.ts > M01 · app manifest registry > the 14 real console apps are registered — this change did not lose any
+AssertionError: expected 0 to be greater than or equal to 14
+ ❯ src/lib/navigation.test.ts:43:26
+     41|
+     42|   it("the 14 real console apps are registered — this change did not lo…
+     43|     expect(realAppCount).toBeGreaterThanOrEqual(14);
+       |                          ^
+     44|     expect(navItemById("overview")).toBeDefined();
+     45|     expect(navItemById("settings")).toBeDefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/lib/navigation.test.ts > M01 · app manifest registry > adding one manifest makes the app appear in navigation, search/command-palette source, and the permission registry
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/lib/navigation.test.ts:69:58
+     67|
+     68|     // Navigation: the sidebar's data source.
+     69|     expect(NAV_ITEMS.some((a) => a.id === THROWAWAY_ID)).toBe(true);
+       |                                                          ^
+     70|     expect(navItemById(THROWAWAY_ID)?.label).toBe("M01 Throwaway");
+     71|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/lib/navigation.test.ts > M01 · app manifest registry > removing the manifest removes the app from all four
+AssertionError: expected undefined to be defined
+ ❯ src/lib/navigation.test.ts:94:39
+     92|       tabs: [{ key: "main", label: "Main", path: "/m01-throwaway", per…
+     93|     });
+     94|     expect(navItemById(THROWAWAY_ID)).toBeDefined();
+       |                                       ^
+     95|     expect(getAllDeclaredPermissions()).toContain("m01.throwaway.read"…
+     96|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  09:33:08
+   Duration  1.50s (transform 68ms, setup 247ms, import 107ms, tests 10ms, environment 940ms)
+
+
+==================== 3. RESTORED ====================
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+ RUN  v4.1.10 D:/UniERP/unierp-console
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  09:33:12
+   Duration  1.46s (transform 69ms, setup 245ms, import 119ms, tests 5ms, environment 895ms)
+```
+

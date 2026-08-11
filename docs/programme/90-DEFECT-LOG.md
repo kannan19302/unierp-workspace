@@ -1608,3 +1608,34 @@ name, or another field) into `AuditLog`/`ChangeHistory` outside the GDPR erasure
 found because D11's exit criterion happened to require reading `executeErasure()`'s full body closely; a
 platform-wide grep for PII-shaped literals passed into `auditLog.create`/`changeHistory.create` calls
 would be a reasonable follow-up.
+
+### D059 · 🟠 HIGH · 1,853 of 1,904 Prisma models have no declared retention/deletion class
+
+Found and measured during D12. `DELETION_POLICY.md`'s own class taxonomy (SD/HD/ER/RT) declares a
+per-entity table, but only 45 model rows are populated across it; `retention-matrix.json` (H.4, RT-class
+only) declares 7 models. Between the two, only 51 of the platform's 1,904 real Prisma models
+(`unierp-data` + the IdP schema) have ANY documented deletion-class decision. The remaining 1,853 —
+measured directly by the new `scripts/check-retention-coverage.mjs` enumerating every `model` block in
+the real schema — have no SD/HD/ER/RT determination anywhere: nobody has decided whether deleting one of
+those records should soft-delete, hard-delete, trigger GDPR erasure handling, or age out on a retention
+timer. `DELETION_POLICY.md` and `DATA_RETENTION_MATRIX.md` (D12's own Deliverable text) are therefore
+documented in principle but not true of the platform's actual schema — the exact gap D12 names.
+
+**How it was caught:** building `check-retention-coverage.mjs` for D12's own exit criterion ("any model
+without a retention class fails the gate") and running it against the real schema, which is the intended,
+correct behavior of the gate — it is SUPPOSED to fail loudly here, not silently pass.
+
+**Not fixed — deliberately not attempted.** Classifying 1,853 models correctly requires reviewing each
+one's actual data-lifecycle semantics (business document vs. operational log vs. PII vs. config/reference
+table with no deletion lifecycle at all) — a mistake here is a data-loss or compliance risk, not a
+documentation nicety, so mass-classifying superficially just to make the gate pass would be actively
+harmful. The gate mechanism itself (proven correct via break/restore in the D12 evidence file) and a
+generic legal-hold mechanism (`RecordLegalHoldService`) are the real, complete deliverables of D12; full
+corpus classification is untouched, tracked here explicitly so it is visible rather than implied "done"
+by D12's own DONE status.
+
+**Not fully investigated:** which of the 1,853 uncovered models are genuinely exempt (config/reference
+tables with no deletable records at all) versus genuinely unclassified business data — `scripts/
+retention-exemptions.json` is scaffolded (the gate reads it if present) but empty; populating it for the
+genuinely-exempt subset would meaningfully shrink this number without requiring a business-semantics
+decision for every model.

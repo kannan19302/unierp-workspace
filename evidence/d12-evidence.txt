@@ -1,0 +1,149 @@
+D12 — Retention and deletion administration
+Exit criterion: "enforce-retention.mjs runs against every model; any
+model without a retention class fails the gate. Legal hold provably
+suspends deletion."
+
+TWO INDEPENDENT MECHANISMS, BOTH REAL AND PROVEN
+====================================================
+
+1. THE GATE — scripts/check-retention-coverage.mjs (unierp-workspace)
+------------------------------------------------------------------------
+enforce-retention.mjs itself only iterates over the RT-class entries
+already declared in retention-matrix.json — it has no way to notice a
+model that was never added there at all. check-retention-coverage.mjs
+is the missing check: it enumerates EVERY model in the real Prisma
+schema (via the existing scripts/lib/read-schema.mjs, the same helper
+check-pii-registry.mjs already uses) and confirms each has an explicit
+deletion-class determination, from any of three sources:
+  - an RT entry in retention-matrix.json,
+  - an SD/HD/ER row in DELETION_POLICY.md's per-entity tables,
+  - an explicit exemption in a new retention-exemptions.json.
+A model matching NONE of the three fails the gate, named explicitly in
+the output — never silently skipped.
+
+Run against the REAL schema:
+
+  $ node scripts/check-retention-coverage.mjs
+  {
+    "summary": {
+      "totalModels": 1904,
+      "rtClassCovered": 7,
+      "sdHdErCovered": 44,
+      "exempted": 0,
+      "uncoveredCount": 1853
+    },
+    "uncovered": [ ... 1853 model names ... ]
+  }
+  FAIL  1853 of 1904 models have no retention/deletion class ...
+  (exit 1)
+
+This is the HONEST, real current state — the gate correctly fails,
+because the vast majority of the platform's ~1900 models genuinely
+have never had a deletion-class decision made about them. See
+"WHAT THIS PHASE DOES NOT COVER" below and D059 in the defect log.
+
+Verified correctness on known cases:
+  $ node scripts/check-retention-coverage.mjs | node -e "...uncovered.includes(...)"
+  Invoice uncovered? false      (SD, DELETION_POLICY.md)
+  AuditLog uncovered? false     (RT, retention-matrix.json)
+  TelemetrySample uncovered? false  (RT, retention-matrix.json, M37)
+
+Break/restore: short-circuited the uncovered-detection filter to
+`const uncovered = [];` (always empty), commented `// BROKEN FOR
+PROOF: uncovered filter short-circuited to always-empty -- gate would
+report OK regardless of actual coverage`.
+
+  $ node scripts/check-retention-coverage.mjs
+  OK    all 1904 models have a retention/deletion class.
+  (exit 0 — the gate would have LIED about the platform's real state)
+
+Exactly the intended failure mode reproduced. Restored, then:
+
+  $ node scripts/check-retention-coverage.mjs
+  FAIL  1853 of 1904 models have no retention/deletion class ...
+  (exit 1 — the gate correctly, honestly fails again)
+
+2. LEGAL HOLD — RecordLegalHoldService (unierp-api)
+------------------------------------------------------------------------
+RecordLegalHold (unierp-data, new model) + RecordLegalHoldService:
+generic across any entity type — documents/folders already carry their
+own boolean `legalHold` field for the same purpose
+(documents.service.ts); this makes the equivalent mechanism reusable
+for every OTHER entity, not a second document-specific implementation.
+isOnHold() is the one check any deletion path must consult;
+excludeHeld() is the exact filter a bulk retention/erasure run needs
+against a candidate id list — "legal hold PROVABLY suspends deletion"
+made literal as a filtering function with its own test.
+
+record-legal-hold.service.spec.ts (6 tests): no hold = not on hold;
+placing a hold makes isOnHold() true; refuses a second active hold on
+an already-held record; releasing a hold makes isOnHold() false again;
+excludeHeld() provably removes a held record from a candidate id list;
+a hold on one entityType never suspends deletion for the same id under
+a different entityType. All 6 passed on first run.
+
+Broke excludeHeld() by returning every candidate unfiltered, commented
+`// BROKEN FOR PROOF: filter removed -- every candidate is returned
+regardless of hold status, deletion never actually suspended`.
+
+  $ npx vitest run src/modules/saas-portal/tests/record-legal-hold.service.spec.ts
+  ×  EXCLUDES held records from a deletion candidate list — the exact
+       filter a bulk retention/erasure run needs
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/modules/saas-portal/tests/record-legal-hold.service.spec.ts
+  Tests  6 passed (6)
+
+FULL REGRESSION (unierp-api, post-restore, all changes in place)
+====================================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — no new HTTP surface this phase)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/saas-portal/
+  Test Files  9 passed (9)
+       Tests  28 passed (28)
+
+Zero pre-existing tests required changes.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+=================================================================
+Full corpus classification of all ~1900 Prisma models is NOT done.
+This is a genuinely large undertaking — reviewing every model's actual
+data-lifecycle semantics (is it a business document that must stay
+recoverable, an operational log that ages out, PII requiring erasure,
+a config/reference table with no deletion lifecycle at all?) — that a
+single phase of this session cannot responsibly complete by classifying
+models superficially just to make a number pass. Doing so would be
+worse than leaving the gap honest: a wrong SD/HD/ER/RT classification
+on a real model is a data-loss or compliance risk, not a documentation
+nicety.
+
+What IS complete and real:
+  - The gate mechanism itself is correct, proven via break/restore, and
+    currently reports the TRUE state of the platform (1853 of 1904
+    models uncovered) rather than a false pass.
+  - Legal hold is a complete, generic, provably-correct mechanism ready
+    for any future model's deletion path to consult.
+  - retention-exemptions.json is scaffolded (the check reads it if
+    present) but not yet populated — a natural next step for genuinely
+    exempt models (config/reference tables) is to add entries there
+    rather than force them into SD/HD/ER/RT.
+
+Filed as D059 (HIGH) in the defect log: the scale of the remaining
+classification work (~1850 models), so it is visible and trackable for
+whoever picks it up next, rather than silently implied "done" by this
+phase's own DONE status.
+
+COMMITS
+=======
+unierp-data      706097b  RecordLegalHold model
+unierp-api       b43328b  RecordLegalHoldService, spec, module wiring
+unierp-workspace ed12b7d  check-retention-coverage.mjs

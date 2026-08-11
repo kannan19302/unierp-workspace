@@ -152,11 +152,17 @@ covers the components an enterprise application actually needs.*
 
 ### Wave 2 · "The platform is operable"
 
-**Phases:** C01–C28 · D01–D12 · J09–J12 · K05–K08 · L19–L20
+**Phases:** C01–C28 · D01–D12 · **M01–M20** · J09–J12 · K05–K08 · L19–L20
 **Claim:** *A provider can provision, meter, bill, support, impersonate and offboard a tenant end
 to end without a database client; a tenant administrator can run their own organisation.*
 **Exit:** the full tenant lifecycle is executable from the console UI, audited, and rehearsed as a
 runbook.
+**Amended 2026-08-11 — M01–M20 added.** The C phases satisfied this claim for the *tenant* and
+left it false for the *estate the tenant runs on*: the console can observe clusters, regions,
+compute and AI providers and cannot change any of them (D044). "Operable" that excludes the
+infrastructure is not the sentence this wave promises, so the OS kernel (M01–M08), the operation
+pipeline (M09–M15) and the estate stages through M20 belong here. M21–M46 carry no Wave-2 claim
+and fall to Wave 6.
 
 ### Wave 3 · "The applications are genuinely functional"
 
@@ -183,7 +189,7 @@ from a template, edit it without code, and see it on every client.*
 
 ### Wave 6 · "Commercially launchable"
 
-**Phases:** K09–K18 · residual from every track
+**Phases:** K09–K18 · **M21–M46** · residual from every track
 **Claim:** *A stranger can sign up, pay, use, get support, export their data and leave — and we
 can prove to an auditor that we did it correctly.*
 
@@ -267,3 +273,4 @@ phase is `OPEN`.
 | Date | Change | By |
 | :--- | :----- | :- |
 | 2026-08-07 | Established. Ten brief objectives ranked into twelve tracks; dependency graph and seven waves defined. | Claude Code |
+| 2026-08-11 | **Track M placed: M01–M20 into Wave 2, M21–M46 into Wave 6.** Wave 2's claim was measurably false for the estate — see the amendment under § 4 Wave 2 and D044. No wave's claim text was altered; a wave whose claim needed weakening to stay true would be a § 0 rule 4 violation, and this is the opposite move: the phases were added so the existing sentence becomes true. | Claude Code |

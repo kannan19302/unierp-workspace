@@ -392,3 +392,4 @@ R e f a c t o r e d   u n i e r p - c o n s o l e :   e l i m i n a t e d   i n 
  - **2026-08-10 (D01):** Implemented plane-2 boundary by adding a Next.js middleware guard in unierp-web that blocks non-admin users with a 403 response.
 2 0 2 6 - 0 8 - 1 0   -   f e a t ( a p i , w e b ) :   D 0 2   -   A d d   u s e r   l i f e c y c l e   o p e r a t i o n s ,   b u l k   e n d p o i n t s ,   s e s s i o n   r e v o c a t i o n ,   r e c o r d   r e a s s i g n m e n t   i n   A d m i n S e r v i c e ,   a d d   E 2 E   t e s t s  
  
+- **2026-08-11 (Track M):** Established Track M — Provider Admin OS (M01-M46, plan doc + registration only, no product code). Filed D044 (Track C console surfaces are read-only; exit criterion never asked for a mutation) and D045 (README section 0 rule 1 omits the nine [A-L] phase-ID regexes, so a new track's dependencies parse as prose and report startable).

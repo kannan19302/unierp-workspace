@@ -51,6 +51,7 @@ const DECLARED = [
   "19-TRACK-J-QUALITY.md",
   "20-TRACK-K-OPERATIONS-GTM.md",
   "21-TRACK-L-CODE-QUALITY.md",
+  "22-TRACK-M-PROVIDER-ADMIN-OS.md",
   "90-DEFECT-LOG.md",
   "WORKLOG.md",
   "worklog", // directory: one journal file per agent, written by start.mjs
@@ -71,6 +72,7 @@ const TRACK_FILES = {
   J: "19-TRACK-J-QUALITY.md",
   K: "20-TRACK-K-OPERATIONS-GTM.md",
   L: "21-TRACK-L-CODE-QUALITY.md",
+  M: "22-TRACK-M-PROVIDER-ADMIN-OS.md",
 };
 
 const failures = [];
@@ -186,7 +188,7 @@ const ids = [...phases.keys()].sort();
     }
     const out = new Set();
     let residue = raw;
-    const rangeRe = /([A-L])(\d{2})\s*[–-]\s*(?:[A-L])?(\d{2})/g;
+    const rangeRe = /([A-M])(\d{2})\s*[–-]\s*(?:[A-M])?(\d{2})/g;
     let m;
     while ((m = rangeRe.exec(raw)) !== null) {
       for (let n = Number(m[2]); n <= Number(m[3]); n++) {
@@ -194,10 +196,10 @@ const ids = [...phases.keys()].sort();
       }
       residue = residue.replace(m[0], " ");
     }
-    for (const d of residue.match(/\b[A-L]\d{2}[a-z]?\b/g) ?? []) out.add(d);
+    for (const d of residue.match(/\b[A-M]\d{2}[a-z]?\b/g) ?? []) out.add(d);
     // Anything left that is not punctuation is prose masquerading as a dependency.
     const leftover = residue
-      .replace(/\b[A-L]\d{2}[a-z]?\b/g, "")
+      .replace(/\b[A-M]\d{2}[a-z]?\b/g, "")
       .replace(/[\s,;.()–-]|\(hard\)/gi, "");
     if (leftover) {
       fail(

@@ -48,6 +48,7 @@ const TRACKS = {
   J: { file: "19-TRACK-J-QUALITY.md", name: "Quality" },
   K: { file: "20-TRACK-K-OPERATIONS-GTM.md", name: "Operations and GTM" },
   L: { file: "21-TRACK-L-CODE-QUALITY.md", name: "Code quality" },
+  M: { file: "22-TRACK-M-PROVIDER-ADMIN-OS.md", name: "Provider Admin OS" },
 };
 
 const VALID_STATUS = ["OPEN", "READY", "WIP", "DONE", "BLOCKED", "WITHDRAWN"];
@@ -125,7 +126,7 @@ function parseDeps(raw) {
   if (!raw) return [];
   const text = raw.replace(/\*\*/g, "");
   const out = new Set();
-  const rangeRe = /([A-L])(\d{2})\s*[–-]\s*(?:[A-L])?(\d{2})/g;
+  const rangeRe = /([A-M])(\d{2})\s*[–-]\s*(?:[A-M])?(\d{2})/g;
   let m;
   let consumed = text;
   while ((m = rangeRe.exec(text)) !== null) {
@@ -135,7 +136,7 @@ function parseDeps(raw) {
     }
     consumed = consumed.replace(full, " ");
   }
-  for (const id of consumed.match(/\b[A-L]\d{2}[a-z]?\b/g) ?? []) out.add(id);
+  for (const id of consumed.match(/\b[A-M]\d{2}[a-z]?\b/g) ?? []) out.add(id);
   return [...out].sort();
 }
 
@@ -164,7 +165,7 @@ const opt = (name) => {
   const i = argv.indexOf(`--${name}`);
   return i === -1 ? null : argv[i + 1];
 };
-const target = argv.find((a) => /^[A-L]\d{2}[a-z]?$/.test(a));
+const target = argv.find((a) => /^[A-M]\d{2}[a-z]?$/.test(a));
 
 const all = parseAll();
 

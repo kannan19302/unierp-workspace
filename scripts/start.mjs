@@ -170,7 +170,7 @@ function logBlocks() {
   }
   const out = [];
   for (const text of texts) {
-    const re = /^### ([A-L]\d{2}[a-z]?) · (\w+) · (\S+) · (.+)$/gm;
+    const re = /^### ([A-M]\d{2}[a-z]?) · (\w+) · (\S+) · (.+)$/gm;
     let m;
     while ((m = re.exec(text)) !== null) {
       const bodyStart = text.indexOf("```", m.index);
@@ -213,7 +213,7 @@ function waves() {
     const seg = text.slice(m.index, text.indexOf("\n### ", m.index + 1) + 1 || undefined);
     const line = seg.split("\n").find((l) => l.startsWith("**Phases:**")) ?? "";
     const ids = new Set();
-    const rangeRe = /([A-L])(\d{2})\s*[–-]\s*(?:[A-L])?(\d{2})/g;
+    const rangeRe = /([A-M])(\d{2})\s*[–-]\s*(?:[A-M])?(\d{2})/g;
     let r;
     let residue = line;
     while ((r = rangeRe.exec(line)) !== null) {
@@ -222,7 +222,7 @@ function waves() {
       }
       residue = residue.replace(r[0], " ");
     }
-    for (const id of residue.match(/\b[A-L]\d{2}[a-z]?\b/g) ?? []) ids.add(id);
+    for (const id of residue.match(/\b[A-M]\d{2}[a-z]?\b/g) ?? []) ids.add(id);
     out.push({ n: Number(m[1]), claim: m[2], ids });
   }
   return out.sort((a, b) => a.n - b.n);

@@ -1002,3 +1002,70 @@ docker build -t unierp-api ./unierp-api
 `
 **Fix Required:** Either publish updated @kannan19302/data package to registry or mount local Prisma schemas during Docker build to run 
 px prisma generate.
+
+### D044 · 🟠 High · Track C's console surfaces satisfy their exit criterion by being read-only
+
+**Found:** 2026-08-11, during the Track M establishment audit. **Fixed by:** [M19](22-TRACK-M-PROVIDER-ADMIN-OS.md) for the named page, [M46](22-TRACK-M-PROVIDER-ADMIN-OS.md) as the standing gate.
+
+Track C § 6 claims: *"Every endpoint in `unierp-api/src/platform/v1` has a corresponding console
+surface, or a logged reason it deliberately has none."* The claim is true and the criterion is
+weaker than it reads. "A corresponding surface" was satisfied by pages that render an endpoint's
+list response and cannot mutate it. The console can observe the estate; it cannot operate it.
+
+This is the sixth instance of the shape § 1 warns about — a claim that outlived its mechanism —
+except that here nothing was disabled. The criterion never asked for the mechanism.
+
+**Reproduction:**
+
+```bash
+sed -n '38,80p' 'unierp-console/app/(control-plane)/infrastructure/kubernetes/page.tsx'
+```
+
+Observed: two `useList` calls against `/platform/v1/cluster-routing-deep/{routing,clusters}`, a
+four-item `StatCardRow`, and `routing.data.slice(0, 30).map(...)` rendering a `<ul>`. There is no
+filter, no server-side pagination, no detail route, and no mutation of any kind. The response
+shape is unknown to the page, which compensates with
+`r.sourceCluster ?? r.fromCluster ?? r.source` — three guesses at one field.
+
+```bash
+# the class, not the instance
+grep -rlE 'useList<' 'unierp-console/app/(control-plane)' | wc -l   # → 100+ pages
+grep -rlE 'useMutation|method: .(POST|PATCH|DELETE)' \
+     'unierp-console/app/(control-plane)/infrastructure' | wc -l    # → 0
+```
+
+Eleven infrastructure pages, zero mutations among them. `ai/` and `ops/` share the shape.
+
+**Not fixed inline, and Track C is not reopened.** Rewriting C's surfaces before M01–M15 exist
+would produce eleven private implementations of the operation pipeline. The correct order is the
+kernel, then the pipeline, then each domain onto it. **M46** turns the missing half of the
+criterion into an executable check: a page that renders a resource kind it cannot operate fails
+the build.
+
+### D045 · 🟡 Medium · `README § 0` rule 1 lists five registration sites for a new track; there are six
+
+**Found:** 2026-08-11, while registering Track M. **Fixed by:** Open — a Track L or A phase.
+
+Rule 1 requires, in one commit: the README § 3 table, `DECLARED` and `TRACK_FILES` in
+`check-plan-integrity.mjs`, `TRACKS` in `phase-brief.mjs`, the manifest via `--update`, and a
+reason in § 6. Following exactly that list produces a broken plan, because the phase-ID character
+class is hard-coded to `[A-L]` in nine places across three scripts.
+
+**Reproduction** — before the widening applied in this commit:
+
+```bash
+grep -rn '\[A-L\]' scripts/          # → 9 hits in 3 files
+node scripts/start.mjs --dry-run
+```
+
+Observed: `M01`'s dependencies (`C01, C02, B04`) parse correctly, but every *dependent* phase's
+`Depends` cell containing `M07` matches no ID. `check-plan-integrity.mjs:200` strips known IDs and
+treats the residue as prose, so `M07` is discarded silently rather than reported as an unknown
+dependency — and `--ready` then reports M09–M46 as startable with their kernel unbuilt. The
+failure is silent in exactly the direction that causes work to be started out of order.
+
+**The general defect:** the guard at `check-plan-integrity.mjs:200` exists to catch a dependency
+naming a track rather than a phase (the J26 / `"all J"` case). It cannot distinguish "prose" from
+"a phase ID whose track letter this regex predates". A well-formed ID outside `[A-L]` is
+indistinguishable from a comment. The durable fix is to derive the class from
+`Object.keys(TRACK_FILES)` rather than to widen it again at track N.

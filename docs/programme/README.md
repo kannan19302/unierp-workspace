@@ -66,7 +66,7 @@ lines of unread process there will produce it here unless this folder has a law 
 
 ## 1. What this programme is
 
-A **310-phase** execution plan to take UniERP from *"broad, architecturally sound, and now
+A **356-phase** execution plan to take UniERP from *"broad, architecturally sound, and now
 mostly verifiable"* to *"a complete commercial multi-tenant application platform"* — public
 marketing site, provider control plane, tenant SaaS portal, 45 deep business modules, a
 Salesforce-class developer platform, tenant website templates, and the test discipline that
@@ -94,7 +94,7 @@ has one maintainer (`GOVERNANCE.md`); a dated plan from a single maintainer is a
 | In what *layer order* is any one feature built? | `docs/ai/IMPLEMENTATION_PLAN.md` |
 | What is *honestly wrong* with the foundation? | `docs/ai/ARCHITECTURE_REVIEW.md` |
 | What is the *standing review checklist*? | `docs/ai/CODE_STANDARDS.md` |
-| **In what order do the 310 remaining pieces of work happen, and how do I know one is done?** | **this folder** |
+| **In what order do the 356 remaining pieces of work happen, and how do I know one is done?** | **this folder** |
 
 `IMPLEMENTATION_PLAN.md § 10` defines five coarse phases (0–4). This programme is the
 decomposition of those five into work a session can actually pick up. The mapping is in
@@ -123,9 +123,10 @@ decomposition of those five into work a session can actually pick up. The mappin
 | 14 | [`19-TRACK-J-QUALITY.md`](19-TRACK-J-QUALITY.md) | **J01–J26** · Every test discipline: functional, non-functional, black/white box, manual. |
 | 15 | [`20-TRACK-K-OPERATIONS-GTM.md`](20-TRACK-K-OPERATIONS-GTM.md) | **K01–K19** · Billing, compliance, support, localisation, launch readiness. |
 | 16 | [`21-TRACK-L-CODE-QUALITY.md`](21-TRACK-L-CODE-QUALITY.md) | **L01–L20** · Enforcing `CODE_STANDARDS.md`: size, complexity, test quality, agent legibility. |
-| 17 | [`90-DEFECT-LOG.md`](90-DEFECT-LOG.md) | Living register of architecture-level defects and improvements found *during* execution. Append-only. |
-| 18 | [`WORKLOG.md`](WORKLOG.md) | **Written by `scripts/start.mjs`, never by hand.** What is claimed, by whom, how far it got, and the evidence a phase was finished on. |
-| 19 | `plan-manifest.json` | Machine-readable index of every phase ID. The integrity gate reads this. |
+| 17 | [`22-TRACK-M-PROVIDER-ADMIN-OS.md`](22-TRACK-M-PROVIDER-ADMIN-OS.md) | **M01–M46** · The Provider Admin OS — the control plane made operable, provider-plural and costed (plane 1, successor to C). |
+| 18 | [`90-DEFECT-LOG.md`](90-DEFECT-LOG.md) | Living register of architecture-level defects and improvements found *during* execution. Append-only. |
+| 19 | [`WORKLOG.md`](WORKLOG.md) | **Written by `scripts/start.mjs`, never by hand.** What is claimed, by whom, how far it got, and the evidence a phase was finished on. |
+| 20 | `plan-manifest.json` | Machine-readable index of every phase ID. The integrity gate reads this. |
 
 **Track letter → plane**, so you can always tell whose blast radius you are in:
 
@@ -133,6 +134,7 @@ decomposition of those five into work a session can actually pick up. The mappin
  A  cross-cutting foundation          (all planes)
  H  plane 0  public
  C  plane 1  control        ← provider staff; a bug here affects every tenant
+ M  plane 1  control OS     ← the same blast radius, plus the estate itself
  D  plane 2  tenant admin
  E  plane 3  application
  F  plane 3/4 studio + published sites
@@ -208,3 +210,4 @@ protection; CODEOWNERS is the reminder.
 | 2026-08-07 | **Track L added (L01–L20), 298 phases across 12 tracks.** `CODE_STANDARDS.md` was the one governance document the original plan under-used: its § 10 R13 lint rules had no phase (D018), its § 4 1,000-line ceiling is violated by 86 files (D017), and its § 8 prohibition on coverage-padding tests was written about a 23,285-line file still in the tree (D016). Registered per § 0 rule 1: § 3 table, `DECLARED` in the integrity gate, `TRACKS` in the brief generator, and the manifest, in one change. | Claude Code |
 | 2026-08-07 | **Autonomous development protocol.** `scripts/start.mjs` + `WORKLOG.md` (declared file 18) make the claim a pushed git commit, so two agents cannot take the same phase — § 0 rule 6 and `02-EXECUTION-GUIDELINES § 4` asserted this and nothing enforced it. Adds resume-before-claim, stale-claim reset at 72h, and a `--finish` that refuses DONE over a red `verify.mjs` and requires an evidence transcript including the output when the change is deliberately broken. |
 | 2026-08-07 | **Content gaps from the second review: E43–E47, C29, K19 → 305 phases.** Concurrency/idempotency and gapless statutory numbering (correctness concerns the 42 E phases assumed); AI model ops, guardrails and evaluation (the PRD's strategic differentiator had one line in a container phase); live tenant version upgrade; and cost per tenant, without which no plan can be shown to be profitable. |
+| 2026-08-11 | **Track M added (M01–M46), 356 phases across 13 tracks.** Track C's exit criterion — *"every endpoint in `platform/v1` has a corresponding console surface"* — was satisfied by read-only surfaces: 132 route pages that render the estate and cannot change it (**D044**). Three mechanisms the brief's control plane requires are absent from the tree entirely, each measured: a provider registry (0 hits), desired-vs-actual state and reconciliation in plane 1 (0 relevant hits), and cost ingestion and allocation (0 hits) — so K19's cost-per-tenant requirement has no supplier. Track M is the successor to C, not a revision of it: no C phase is reopened and no C surface is rewritten. Registered per § 0 rule 1 in one commit — this § 3 table, `DECLARED` and `TRACK_FILES` in the integrity gate, `TRACKS` in the brief generator, the manifest via `--update`, and this reason. The nine `[A-L]` phase-ID regexes across the three scripts were widened to `[A-M]` in the same commit; rule 1 does not list them, and without them every Track M dependency parses as prose and `--ready` reports blocked phases as startable (**D045**). | Claude Code |

@@ -5273,3 +5273,107 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M23 · FINISH · 2026-08-11T10:08:52Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M23 — Secrets, certificates and keys
+=======================================
+
+Exit criterion: "A certificate within its alert window raises before
+expiry, and rotation completes without downtime. No secret value is
+readable through any console API — asserted by a test that requests one
+and expects a redacted reference. C26's certificate lifecycle consumes
+this."
+
+--- Mechanism ---
+- unierp-data: SaasSslCertificate gains secretRef (a pointer into an
+  external secrets manager) and rotatedFromId. No pem/privateKey/value
+  field exists on this model at all — "no secret value readable" is true
+  by construction, not by a redaction step that could be forgotten.
+- unierp-api: CertificateLifecycleService is the ONE implementation:
+    - issue() creates a cert with a secretRef, never material.
+    - get() returns exactly CertificateSummary — a redacted secretRef
+      pointer, never anything else.
+    - rotate() issues the NEW certificate and marks it ACTIVE, THEN marks
+      the old one ROTATED (never deleted) — the domain has at least one
+      ACTIVE certificate at every instant, before, during and after the
+      call, which is "without downtime" made literal.
+    - checkExpiryAlerts() scans ACTIVE certificates inside a window and
+      records a certificate.expiry-alert audit entry for each — the
+      "raise before expiry," reusable by any real alerting channel.
+- CertificateLifecycleController: GET :id, GET (at-risk list), POST
+  :id/rotate, POST (issue). New permissions
+  system.certificate.read/manage.
+- SaasWhiteLabelDeepService.issueSslCert() (C26) now delegates entirely
+  to CertificateLifecycleService.issue() — it previously built its own
+  SaasSslCertificate row directly with no secretRef discipline at all;
+  that duplicate implementation is removed.
+
+--- Proof 1: no secret value readable, only a redacted reference ---
+certificate-lifecycle.service.spec.ts:
+  "no secret value is readable through any console API — only a
+  redacted reference" — get()'s response keys never include pem,
+  privateKey, value or secret; secretRef itself is asserted to match
+  vault://... and NOT match a PEM header pattern.
+
+--- Proof 2: raises before expiry ---
+  "a certificate within its alert window raises BEFORE expiry" — a cert
+  5 days from expiry is returned by checkExpiryAlerts(14) and produces
+  a certificate.expiry-alert audit record; a cert 90 days out (the
+  default lifetime) is not.
+
+--- Proof 3: rotation without downtime ---
+  "rotation completes WITHOUT DOWNTIME: the domain always has at least
+  one ACTIVE certificate" — after rotate(), the old row still exists
+  (status ROTATED, not deleted) and a NEW row exists with status ACTIVE
+  — a lookup for "any ACTIVE cert on this domain" always finds one.
+
+--- Proof 4: C26 consumes this, not a duplicate ---
+  "C26's certificate lifecycle (issueSslCert) consumes this service, not
+  a duplicate implementation" — SaasWhiteLabelDeepService.issueSslCert()
+  produces a certificate that CertificateLifecycleService.get() reads
+  back identically, proving it went through the same store via the same
+  service, not a second code path.
+
+--- Proof 5: break/restore ---
+BREAK: rotate() changed to mark the old certificate DELETED_FOR_PROOF
+in place instead of writing a genuinely retired (but still-present)
+ROTATED row via the normal flow — simulating a delete-before-confirm
+race.
+
+Result: certificate-lifecycle.service.spec.ts — 1/4 tests FAIL:
+  x rotation completes WITHOUT DOWNTIME: the domain always has at least
+    one ACTIVE certificate
+
+RESTORE: certificate-lifecycle.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  29 passed (29)
+       Tests  143 passed (143)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 28 controllers, 182 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Secrets and keys as GENERIC resources (the Deliverable's own title,
+  "Secrets, certificates and keys") are not built as a separate model —
+  this phase builds the certificate half specifically, since that is
+  the entirety of what the exit criterion tests (expiry alert, rotation,
+  no-secret-value, C26 consumption). Generic secret/key issuance beyond
+  certificates would duplicate M03's existing ProviderCredential
+  secret-ref pattern rather than add anything new.
+- Per-provider KMS/vault BACKEND integration (the Deliverable also names
+  this) is not built — secretRef values are simulated pointers
+  (vault://certs/...), consistent with every other Track M adapter this
+  session (M03/M05/M16/M22): no live external secrets manager is
+  reachable in this dev environment.
+- No console UI surface in this phase — the exit criterion is a backend
+  mechanism (redaction, alerting, rotation, C26 integration), unlike
+  M15/M16/M19/M21 which named UI requirements explicitly.
+```
+

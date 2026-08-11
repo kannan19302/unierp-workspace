@@ -10831,3 +10831,147 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E02 · FINISH · 2026-08-11T19:03:13Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E02 — Baseline audit of all 45 modules
+Exit criterion: "45/45 modules scored with evidence. The table is
+committed and becomes the source for E05-E28's priorities."
+
+BEFORE
+======
+$ ls docs/programme/E02-MODULE-BASELINE.md
+No such file or directory
+(exit 2 — no baseline existed)
+
+MECHANISM
+=========
+New scripts/score-all-modules.mjs shells out to E01's
+scripts/score-module.mjs for every directory under
+unierp-api/src/modules (46 found — see note below), parses each
+module's 16-row output, computes a total (/48) and the rubric's own
+"next level" threshold (>=2 every row, >=3 on rows 1/2/3/7/14), sorts
+lowest-total-first (the modules with the most work ahead surface at
+the top, not the ones already closest to done), and writes one
+markdown table plus full per-row evidence for every module to
+docs/programme/E02-MODULE-BASELINE.md.
+
+HONEST COUNT — 46, not 45
+============================
+The track brief states "the 45 business modules". This checkout has 46
+directories under unierp-api/src/modules. Six of them (outbox, admin,
+devops, ext-gateway, extension-registry, api-platform) are
+platform/plane-2 infrastructure by the track's own definition ("Plane
+3 -- the 45 business modules"), not business-logic gaps -- but rather
+than silently drop them to force the count to exactly 45 (which would
+hide which directories were excluded and why), score-all-modules.mjs
+scores every directory it finds and states the real count and the
+platform-vs-business distinction explicitly in the generated file's
+own header. This is the same honest-measurement precedent as D12/D19/
+J04/J07/E01's row 15.
+
+RESULT
+======
+$ node scripts/score-all-modules.mjs
+Scored 46/46 modules. Written to unierp-workspace\docs\programme\E02-MODULE-BASELINE.md
+0/46 are "next level". Lowest 5: org-structure(9), service-management(10),
+ext-gateway(11), extension-registry(11), saved-views(11)
+
+Every module has all 16 rows scored with evidence (visible in the
+"Full evidence per module" section of the generated file). 0/46
+modules currently meet "next level" -- an honest finding, not a bug in
+the tool: row 15 (Performance) is 0 for every module (no module has
+recorded p95 profiling data anywhere in this checkout), which alone
+prevents "next level" everywhere until real load-testing happens. This
+is named explicitly in the generated file's Summary section so it
+reads as "no module has been load-tested" rather than "every module is
+equally unfinished."
+
+DETERMINISM
+============
+$ node scripts/score-all-modules.mjs; sha1sum docs/programme/E02-MODULE-BASELINE.md
+f62c3a0a61064b468b746aa2741a2b3933f2a5c5
+$ node scripts/score-all-modules.mjs; sha1sum docs/programme/E02-MODULE-BASELINE.md
+f62c3a0a61064b468b746aa2741a2b3933f2a5c5
+(byte-identical across reruns)
+
+BREAK/RESTORE
+=============
+Two-part break, isolating what the aggregator's own validation is for
+(as distinct from E01's own already-proven row-3 break):
+
+1. Disabled scores-all-modules.mjs's row-count validation (the guard
+   that rejects a module whose score-module.mjs output doesn't parse
+   to exactly 16 rows), backed up first.
+2. Truncated scripts/score-module.mjs to print only its first 10 rows
+   (simulating malformed/truncated per-module output), backed up
+   first.
+3. Ran the (validation-disabled) aggregator against the
+   (truncated-output) scorer:
+     $ node scripts/score-all-modules.mjs
+     Scored 46/46 modules ...
+   Silently accepted every truncated 10-row score as if it were a
+   complete, valid 16-row score -- exactly the intended failure mode
+   (a gate that cannot fail lies about coverage, same class as D063's
+   B23 finding).
+4. Restored score-module.mjs from backup (validation still disabled):
+     $ node scripts/score-all-modules.mjs
+     Scored 46/46 modules ... (0/46 next level, same lowest-5 as the
+     original correct run)
+   Confirms the aggregator's own logic is otherwise correct once fed
+   real 16-row data -- isolating that the row-count guard specifically
+   is what catches malformed input.
+5. Restored score-all-modules.mjs from backup (both files now clean):
+     $ git status --short scripts/score-module.mjs scripts/score-all-modules.mjs
+     (clean)
+     $ node scripts/score-all-modules.mjs; sha1sum docs/programme/E02-MODULE-BASELINE.md
+     f62c3a0a61064b468b746aa2741a2b3933f2a5c5
+   Identical to the original correct hash -- full restoration
+   confirmed byte-for-byte, not just "tests pass."
+
+PLAN-INTEGRITY GATE
+======================
+docs/programme/E02-MODULE-BASELINE.md is a new file under
+docs/programme/ -- check-plan-integrity.mjs's own § 0 rule 1 requires
+every such file to be declared in both README.md § 3 and the script's
+DECLARED list, or the gate fails. Added both:
+  - README.md: new row 21 pointing at E02-MODULE-BASELINE.md, marked
+    "Generated by scripts/score-all-modules.mjs, never by hand" (same
+    convention as WORKLOG.md's own row).
+  - scripts/check-plan-integrity.mjs: added to DECLARED.
+$ node scripts/check-plan-integrity.mjs
+OK    359 phases intact across 13 tracks; every phase retains an exit
+criterion; no undeclared files.
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- The rubric's mechanical rows (per E01's own stated limits) are
+  keyword/pattern heuristics for several dimensions, not deep semantic
+  proof -- this applies identically across all 46 modules in this
+  table, not newly introduced by E02.
+- Row 15 (Performance) being 0 everywhere is a real, honest gap, not
+  filled in by this phase -- recording real p95 data per module is
+  future work (score-module.mjs --record-perf exists for exactly this,
+  unused so far).
+- This phase does not audit or fix any individual module -- it
+  produces the priority-ordered INPUT that E05-E28 use to decide which
+  modules to deepen first, per the exit criterion's own words.
+
+COMMANDS
+========
+$ node scripts/score-all-modules.mjs
+$ node scripts/check-plan-integrity.mjs
+$ sha1sum docs/programme/E02-MODULE-BASELINE.md
+
+COMMITS
+=======
+unierp-workspace  (this phase)  scripts/score-all-modules.mjs (new),
+                                 docs/programme/E02-MODULE-BASELINE.md (new,
+                                 generated -- not hand-edited),
+                                 docs/programme/README.md (declared the new
+                                 file), scripts/check-plan-integrity.mjs
+                                 (declared the new file)
+```
+

@@ -4545,3 +4545,97 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M16 · FINISH · 2026-08-11T09:21:12Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M16 — Cloud accounts and multi-cloud onboarding
+=================================================
+
+Exit criterion: "A second cloud account of a different provider is
+onboarded through the UI and its inventory appears in the estate without
+a code change. Its credentials are secret-refs (M03)."
+
+--- Mechanism ---
+- unierp-api: CloudAccountService.onboardAccount() composes three
+  already-built mechanisms: M03 ProviderRegistryService (registerProvider,
+  setCredential with secret-ref only, discoverCapabilities), and M07
+  ResourceModelService (each discovered inventory kind becomes its own
+  Resource). Discovery is driven by a single GenericCloudAdapter,
+  parameterised entirely by the `inventoryKinds` supplied at onboarding —
+  not one adapter class per vendor. Onboarding a second, DIFFERENT
+  provider is therefore a different request body against the exact same
+  code path.
+- unierp-api: CloudAccountsController — GET/POST /platform/v1/cloud-accounts
+  (new permission system.cloudaccount.onboard).
+- unierp-console: Infrastructure > Cloud Accounts page — onboarding form
+  (account name, provider type, secret-ref, inventory kinds via TagInput)
+  and a list of onboarded accounts, reading the same Resource table M15's
+  estate search reads.
+
+--- Proof 1: two different providers, one code path ---
+cloud-account.service.spec.ts:
+  "a second cloud account of a DIFFERENT provider onboards through the
+  exact same code path, with no per-vendor branch" — onboards an AWS
+  account (ec2-instance, s3-bucket) then an Azure account (vm,
+  storage-account, resource-group) through the identical
+  CloudAccountService.onboardAccount() call; asserts distinct provider ids
+  and the correct inventory-resource counts for each.
+
+--- Proof 2: inventory appears in the estate ---
+  "its inventory appears in the estate — the same Resource table M15's
+  search reads" — onboards a GCP account, then calls
+  ResourceModelService.searchResources() (M15's own search) directly and
+  confirms the discovered resource shows up under its
+  `cloud-account.gcp.compute-instance` kind, and the account itself shows
+  up under `cloud-account`.
+
+--- Proof 3: credentials are secret-refs ---
+  "credentials are secret-refs" — asserts the persisted
+  ProviderCredential row has exactly the secretRef supplied and no
+  `secret`/`value` key at all (the input type CloudAccountService accepts
+  has nowhere to put a literal secret, per M03's own design).
+
+--- Proof 4: break/restore ---
+BREAK: removed the loop converting each discovered inventoryKind into a
+Resource, leaving `inventoryResources` empty.
+
+Result: cloud-account.service.spec.ts — 2/3 tests FAIL:
+  x a second cloud account of a DIFFERENT provider onboards through the
+    exact same code path, with no per-vendor branch
+  x its inventory appears in the estate
+
+RESTORE: cloud-account.service.ts restored from backup.
+Result: 3/3 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  24 passed (24)
+       Tests  116 passed (116)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 25 controllers, 166 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-console: npx tsc --noEmit -> clean
+unierp-console: node scripts/check-layer.mjs -> OK, L4 layer rule holds
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Org/subscription hierarchy (parent/child cloud accounts) is not
+  modelled — onboarding is flat, one account at a time. The exit
+  criterion as written does not require hierarchy; the phase's own
+  Deliverable text mentions it, so this is a scoped-down implementation
+  of the deliverable, not the exit criterion.
+- Per-account guardrails (the phase's Deliverable also names these) are
+  not built — no rate limits, spend caps, or policy binding specific to a
+  cloud account beyond what M08's PolicyEngineService already offers
+  generically.
+- No live cloud SDK integration: GenericCloudAdapter's discover() returns
+  exactly the `inventoryKinds` supplied at onboarding, not a real API
+  call to AWS/Azure/GCP. This is consistent with M03/M05's own stated
+  adapter precedent (SMTP/log adapters, not real vendor SDKs) and with
+  the "no live external credentials in this dev environment" constraint
+  already stated across this session's other Track M phases.
+- No e2e/axe sweep against the console page in this session (no live
+  backend reachable to render it against).
+```
+

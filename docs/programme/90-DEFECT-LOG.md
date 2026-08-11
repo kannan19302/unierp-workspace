@@ -1348,3 +1348,40 @@ here — filed as the residual half of this defect, folded into the same M-phase
 mechanism existed, was unit-tested in isolation, and either was never connected to anything or its
 one connected check was incomplete. All four were on phases marked `DONE` with no ADP evidence
 (`WORKLOG.md` holds a `CLAIMED` block for C01 and nothing for C02–C29).
+
+### D050 · 🟠 High · Stale npm-published `@kannan19302/shared` copies in pnpm's virtual store shadow the local workspace symlink
+
+**Found:** 2026-08-11, building M03. `unierp-api/src/platform/provider-registry/provider-registry.service.ts` imported `bindProvider`/`unbindProvider` from `@kannan19302/shared` (added in M02, same session) and TypeScript reported `TS2305: has no exported member`, even though `unierp-shared/dist/index.d.ts` was freshly rebuilt and confirmably correct, and Node's own `require()` resolved the export fine.
+
+**Root cause**, isolated by elimination (top-level symlink → correct file, confirmed by `--traceResolution`; content on disk → correct, confirmed by direct read and by `node -e "require(...)"`; not the new file's structure — an isolated one-line reproduction outside any of my new files failed identically):
+
+`unierp-api/node_modules/.pnpm/@kannan19302+shared@1.0.5/node_modules/@kannan19302/shared` is a **real, standalone directory** — not a symlink — dated **2026-08-08**, the actual npm-registry-published `1.0.5` package. The top-level `node_modules/@kannan19302/shared` is a symlink to the live repo (correctly overriding the registry copy for direct imports), but pnpm's content-addressable virtual store, used for *transitive* resolution, still holds the stale published copy. `unierp-data` gained a direct dependency on `@kannan19302/shared` in M49 (`seed-platform-roles.test.ts`); TypeScript's module-resolution cache, once it resolves `@kannan19302/shared` while walking `@kannan19302/database`'s own type graph, appears to seed a shared cache entry from the stale `.pnpm` copy that later lookups for the bare specifier reuse — even though `--traceResolution`'s per-file log for the *originating* file still prints the correct path, which is what made this take an hour to isolate.
+
+**Reproduction:**
+
+```bash
+cd unierp-api
+python3 -c "import os; print(os.path.islink('node_modules/.pnpm/@kannan19302+shared@1.0.5/node_modules/@kannan19302/shared'))"
+# -> False (a real directory, not a symlink — the defect)
+ls -la node_modules/.pnpm/@kannan19302+shared@1.0.5/node_modules/@kannan19302/shared
+# -> dated 2026-08-08, predates any of this session's changes to unierp-shared
+```
+
+Confirmed present, same way, in **four other repositories** without attempting a fix in any of them (out of this phase's scope):
+
+```bash
+for repo in unierp-idp unierp-auth unierp-console unierp-web; do
+  test -d "$repo/node_modules/.pnpm/@kannan19302+shared@1.0.5/node_modules/@kannan19302/shared" && echo "$repo: present, not a symlink"
+done
+```
+
+**This is D043's pattern, confirmed for a second package.** D043 found the identical shape for `@kannan19302/data`: "`npm install` fetches `@kannan19302/data` from `registry.npmjs.org`. Its postinstall hook runs `prisma generate` using the schema packaged in that published version." Any repo whose `.pnpm` store has a stale registry copy of a `@kannan19302/*` package sitting alongside a manually-overridden top-level symlink is exposed to this — new exports added to the workspace package silently fail to resolve for *some* consumers depending on unrelated dependency-graph ordering, with a correct-looking `--traceResolution` log.
+
+**Fixed in this repo only** (`unierp-api`), by replacing the stale directory with a junction to the real repo, matching the existing top-level symlink:
+
+```bash
+rm -rf "node_modules/.pnpm/@kannan19302+shared@1.0.5/node_modules/@kannan19302/shared"
+cmd /c "mklink /J shared D:\UniERP\unierp-shared"   # from inside .../@kannan19302/
+```
+
+**Not fixed:** the same defect in `unierp-idp`, `unierp-auth`, `unierp-console`, `unierp-web`, and not audited for other `@kannan19302/*` packages (`@kannan19302/database` itself, `@kannan19302/config`, etc.) or other repos in the family. The durable fix is a postinstall or CI check asserting every `.pnpm`-store entry for a `@kannan19302/*` package is a symlink to the workspace source, not a registry-fetched copy — filed for Track A or L, not built here.

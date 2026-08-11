@@ -1442,3 +1442,27 @@ inherits this same gap for its own domain (provider registry, policy engine, sch
 reconciliation) until each phase exposes its own controller as part of doing its own work — this
 entry exists so that gap is visible and expected, not rediscovered as a surprise once several more
 backend-only phases have accumulated.
+
+### D053 · 🟡 Medium · Durable job IDs built from `Date.now()` alone could collide under rapid consecutive calls to the same resource
+
+Every caller of `DurableExecutorService.startJob()` in the platform (`ReconcilerService`,
+`KubernetesFleetService`, `TenantLifecycleService` x2, and this phase's `ReleasePromotionService`)
+built its job ID as `` `<prefix>-<resourceId>-${Date.now()}` `` — a millisecond timestamp with no
+disambiguator. Two calls against the same resource inside the same millisecond (measured directly:
+M20's own test suite hit this on 4 of 5 consecutive runs) produce the same job ID. Because
+`JobStateStore.loadJob()` looks up by that ID, the second `startJob()` call loads whichever row a
+`findUnique`/`find()` returns for the colliding ID — in the encountered case, the FIRST job's
+already-`DONE` row — so `run()`'s loop (`for (let i = job.stepIndex; ...)`) finds `stepIndex`
+already past the end and exits immediately, silently reporting the SECOND operation as `DONE`
+without running a single step of it.
+
+**Fixed here** in all five call sites: appended `-${Math.random().toString(36).slice(2, 8)}` to
+every job ID built this way, matching the pattern `PlanningService.createPlan()`'s own `id` field
+already used. Re-ran M20's own test 3 times after the fix with no failures (was 4/5 failing
+before).
+
+**Not investigated:** whether any of the four OTHER call sites (`ReconcilerService`,
+`KubernetesFleetService`, `TenantLifecycleService` x2) had actually hit this in a real (non-test)
+run before today — none had a test exercising two rapid consecutive calls against the same
+resource the way M20's rollback test does, which is exactly why it went undetected in M12/M13/M19
+despite being present in their code from the start.

@@ -3396,3 +3396,175 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M08 · FINISH · 2026-08-11T07:58:31Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M08 — Policy-as-code, inheritance and overrides
+EXIT CRITERION (verbatim):
+  "A change violating policy is refused with the rule and the failing
+   field named. An override records who, why and until when, and
+   reverts automatically on expiry (the C12 rule, applied to the
+   estate). The simulator answers what would this policy have blocked
+   last month against real history."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+[2mfilter:  [22m[33msrc/platform/policy-engine/policy-engine.service.ts.spec.ts[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/dist/**[39m
+[31m
+No test files found, exiting with code 1[39m
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/policy-engine/policy-engine.service.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:28:13
+[2m   Duration [22m 667ms[2m (transform 69ms, setup 24ms, collect 346ms, tests 7ms, environment 0ms, prepare 118ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (rule evaluation bypassed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/policy-engine/policy-engine.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M08 · policy-as-code, inheritance and overrides[2m > [22ma change violating policy is refused with the rule and the failing field named[90m 7[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+[31m   [31m×[31m M08 · policy-as-code, inheritance and overrides[2m > [22man override reverts automatically on expiry, and the policy is enforced again[90m 1[2mms[22m[31m[39m
+[31m     → expected true to be false // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/policy-engine/policy-engine.service.spec.ts[2m > [22mM08 · policy-as-code, inheritance and overrides[2m > [22ma change violating policy is refused with the rule and the failing field named
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/policy-engine/policy-engine.service.spec.ts:[2m111:28[22m[39m
+    [90m109| [39m      { amount[33m:[39m [34m75_000[39m }[33m,[39m
+    [90m110| [39m    )[33m;[39m
+    [90m111| [39m    [34mexpect[39m(result[33m.[39mallowed)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m112| [39m    [35mif[39m ([33m![39mresult[33m.[39mallowed) {
+    [90m113| [39m      [34mexpect[39m(result[33m.[39mviolation[33m.[39mrule)[33m.[39m[34mtoBe[39m([32m"large-purchase-requires-appr[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/policy-engine/policy-engine.service.spec.ts[2m > [22mM08 · policy-as-code, inheritance and overrides[2m > [22man override reverts automatically on expiry, and the policy is enforced again
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m src/platform/policy-engine/policy-engine.service.spec.ts:[2m168:47[22m[39m
+    [90m166| [39m      { amount[33m:[39m [34m60_000[39m }[33m,[39m
+    [90m167| [39m    )[33m;[39m
+    [90m168| [39m    [34mexpect[39m(whileExpiredButUnreverted[33m.[39mallowed)[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m   | [39m                                              [31m^[39m
+    [90m169| [39m
+    [90m170| [39m    [35mconst[39m reverted [33m=[39m [35mawait[39m engine[33m.[39m[34mrevertExpiredOverrides[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:28:16
+[2m   Duration [22m 528ms[2m (transform 55ms, setup 27ms, collect 232ms, tests 12ms, environment 0ms, prepare 94ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (revertExpiredOverrides no-ops) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/policy-engine/policy-engine.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 11[2mms[22m[39m
+[31m   [31m×[31m M08 · policy-as-code, inheritance and overrides[2m > [22man override reverts automatically on expiry, and the policy is enforced again[90m 5[2mms[22m[31m[39m
+[31m     → expected null not to be null[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/policy-engine/policy-engine.service.spec.ts[2m > [22mM08 · policy-as-code, inheritance and overrides[2m > [22man override reverts automatically on expiry, and the policy is enforced again
+[31m[1mAssertionError[22m: expected null not to be null[39m
+[36m [2m❯[22m src/platform/policy-engine/policy-engine.service.spec.ts:[2m172:41[22m[39m
+    [90m170| [39m    [35mconst[39m reverted [33m=[39m [35mawait[39m engine[33m.[39m[34mrevertExpiredOverrides[39m()[33m;[39m
+    [90m171| [39m    [34mexpect[39m(reverted)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m172| [39m    [34mexpect[39m(overrides[[34m0[39m][33m.[39mrevertedAt)[33m.[39mnot[33m.[39m[34mtoBeNull[39m()[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m173| [39m  })[33m;[39m
+    [90m174| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:28:18
+[2m   Duration [22m 513ms[2m (transform 52ms, setup 26ms, collect 220ms, tests 11ms, environment 0ms, prepare 93ms)[22m
+
+
+==================== 2c. OBSERVED FAILING (simulator returns nothing) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/policy-engine/policy-engine.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m M08 · policy-as-code, inheritance and overrides[2m > [22mthe simulator answers 'what would this policy have blocked' against real history[90m 6[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ 'log-2' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/policy-engine/policy-engine.service.spec.ts[2m > [22mM08 · policy-as-code, inheritance and overrides[2m > [22mthe simulator answers 'what would this policy have blocked' against real history
+[31m[1mAssertionError[22m: expected [] to deeply equal [ 'log-2' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   "log-2",[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m src/platform/policy-engine/policy-engine.service.spec.ts:[2m197:46[22m[39m
+    [90m195| [39m    [35mconst[39m blocked [33m=[39m [35mawait[39m engine[33m.[39m[34msimulateAgainstHistory[39m([32m"large-purchas[39m…
+    [90m196| [39m
+    [90m197| [39m    [34mexpect[39m(blocked[33m.[39m[34mmap[39m((b) [33m=>[39m b[33m.[39mauditLogId))[33m.[39m[34mtoEqual[39m([[32m"log-2"[39m])[33m;[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m198| [39m    [34mexpect[39m(blocked[[34m0[39m][33m.[39mviolation[33m.[39mfield)[33m.[39m[34mtoBe[39m([32m"amount"[39m)[33m;[39m
+    [90m199| [39m    [34mexpect[39m(blocked[[34m0[39m][33m.[39mtargetId)[33m.[39m[34mtoBe[39m([32m"t2"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:28:21
+[2m   Duration [22m 516ms[2m (transform 52ms, setup 22ms, collect 229ms, tests 13ms, environment 0ms, prepare 96ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/policy-engine/policy-engine.service.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:28:23
+[2m   Duration [22m 516ms[2m (transform 52ms, setup 22ms, collect 225ms, tests 7ms, environment 0ms, prepare 100ms)[22m
+```
+

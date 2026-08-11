@@ -395,3 +395,5 @@ R e f a c t o r e d   u n i e r p - c o n s o l e :   e l i m i n a t e d   i n 
 - **2026-08-11 (Track M):** Established Track M — Provider Admin OS (M01-M46, plan doc + registration only, no product code). Filed D044 (Track C console surfaces are read-only; exit criterion never asked for a mutation) and D045 (README section 0 rule 1 omits the nine [A-L] phase-ID regexes, so a new track's dependencies parse as prose and report startable).
 
 - **2026-08-11 (Track M):** Added M47 (Wave 0). Filed D046 CRITICAL - 54 of 156 mounted /platform/v1 endpoints have no @Permissions and no @UseGuards, including offboard, soc/revoke-sessions, releases/rollback and the invoicing surface; only global APP_GUARD is TenantThrottlerGuard. Falsifies C02's exit criterion, which is marked DONE with no ADP evidence (worklog has C01 CLAIMED and nothing for C02-C29).
+
+- **2026-08-11 (D03):** Released D03 back to OPEN (not BLOCKED - nothing blocks it) to take M47/D046, per the Critical-stops-current-phase rule. No work had been done under the claim.

@@ -2034,3 +2034,12 @@ status → BLOCKED
 Released to take M47 (D046, CRITICAL): 54 of 156 mounted /platform/v1 endpoints have no authorization guard. Per 90-DEFECT-LOG section 1, a Critical defect stops the current phase. No D03 work was done under this claim - it had zero progress notes when resumed, so nothing is lost. D03 returns to OPEN unchanged.
 ```
 
+### M47 · CLAIMED · 2026-08-11T02:35:38Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    autopilot/d01-plane2-boundary
+selected  explicitly requested
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

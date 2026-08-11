@@ -1844,3 +1844,36 @@ more budget would likely resolve this quickly. Whether `extension-registry`, `ma
 `org-structure` belong in Tier A or Tier B (rather than the Tier-3 default this phase assigned) was not
 decided here — that is an architecture judgment call, not something a reconciliation script should default
 without a human or a dedicated phase reviewing each module's actual money/regulatory/complexity profile.
+
+### D066 · 🔴 CRITICAL · CrmConfigService.approveRequest() never verified the acting user was an authorized approver — any authenticated user could approve any pending approval request
+
+Found while claiming and building E05 (Approval-chain engine). The pre-existing generic approval
+scaffolding (`ApprovalProcess`/`ApprovalRequest`/`ApprovalAction`, used by `CrmConfigService`) declares each
+step's intended `approvers: string[]` inside the process's `steps` JSON, but `approveRequest()` in
+`unierp-api/src/modules/crm/crm-config.service.ts` never read that list to check the caller. It accepted
+whatever `userId` the controller passed, recorded an `ApprovalAction`, and advanced `currentStep`
+unconditionally. Any user holding only the generic "can call this endpoint" permission — not membership in
+the step's declared approver set — could approve (or, by extension, reject/recall in the same pattern) a
+pending request for anything routed through this mechanism: CPQ discount overrides, contract sign-off, or
+any future caller of `submitForApproval`. This is a genuine authorization bypass, not a theoretical one —
+the check was simply absent from the code path, not merely under-tested.
+
+**How it was caught:** building E05's `ApprovalChainEngineService.approveStep()` as a declared, reusable
+replacement for this exact code path, and writing the FAIL-first test
+`REJECTS an approval attempt from a user not among the step's resolved approvers` — which would have failed
+identically against the original `CrmConfigService.approveRequest()` had it been run against that function
+directly.
+
+**Fixed (in E05's own scope, not a separate cleanup):** `ApprovalChainEngineService.approveStep()` resolves
+each step's real approver set before accepting an action (named users as declared, or an org position's
+occupant found via D04's vacancy-safe hierarchy walk) and throws `ForbiddenException` when the caller is
+not in that set. Proven via break/restore: disabling the check reproduces exactly this defect and fails 2
+of 5 tests; restored, 5/5 pass.
+
+**Not fully investigated:** `CrmConfigService.approveRequest()`/`rejectRequest()`/`recallRequest()`
+themselves were NOT modified or removed in this pass — they remain live, still missing the same check, and
+still reachable via `CrmConfigService`'s own controller endpoints. E05 built the correct, reusable
+replacement mechanism; migrating `crm.controller.ts`'s approval endpoints onto
+`ApprovalChainEngineService` instead of `CrmConfigService`'s own approval methods (and then deleting the
+vulnerable originals) is follow-up work explicitly out of E05's stated scope, and should be prioritised
+given the severity — this is a live, exploitable gap in shipped code until that migration happens.

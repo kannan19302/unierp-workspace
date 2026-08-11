@@ -1,0 +1,122 @@
+D09 — Migration templates for common sources
+Exit criterion: "Opening balances imported from a template produce a
+trial balance that reconciles to the source, and the reconciliation
+statement is a downloadable artefact."
+
+MECHANISM
+=========
+unierp-api/src/modules/advanced-finance/services/opening-balance-migration.service.ts
+composes two pre-existing, real, UNMODIFIED mechanisms — never a second
+ledger-writing or reporting path:
+- GlAccountingService.createAccount/createJournal/postJournal (the
+  same pipeline every other journal in the platform goes through;
+  createJournal itself already balance-checks debits==credits;
+  postJournal already applies budget checks, updates account balances,
+  and writes a finance audit-log entry).
+- FinancialReportingService.getTrialBalance (unmodified).
+
+importOpeningBalances(tenantId, orgId, rows):
+- Refuses upfront (BadRequestException naming the mismatch, before any
+  account or journal is created) if the source template's own total
+  debit != total credit — a source that can never reconcile is refused
+  before anything is written, not discovered afterward.
+- Creates any missing accounts by code (looks up existing first, never
+  duplicates).
+- Composes one journal entry per template row and posts it as a
+  single, real POSTED journal via the existing pipeline.
+
+reconcileOpeningBalances(tenantId, orgId, sourceRows, asOfDate) — the
+downloadable artefact: a self-contained structured statement comparing
+the source template against the CURRENT trial balance, account by
+account, matched by a stable natural key (account code — never
+internal database ids, which the import process doesn't echo back).
+Reports MATCH/MISMATCH per account (naming both the source and
+trial-balance debit/credit for each) plus aggregate source vs.
+trial-balance totals; a discrepancy is never silently reported as
+reconciled.
+
+OpeningBalanceMigrationController: POST .../import, POST .../reconcile,
+gated by the existing finance.account.create/read permissions.
+
+PROOF — RECONCILIATION ACTUALLY DETECTS DIVERGENCE
+======================================================
+opening-balance-migration.service.spec.ts (5 tests): refuses an
+unbalanced template before writing anything; imports a balanced
+template as one POSTED journal, creating accounts as needed; produces a
+trial balance that reconciles to the source (100% match); the
+reconciliation statement is a downloadable artefact (self-contained,
+names every account, has a real generatedAt); catches a genuine
+reconciliation failure (simulated post-import drift on one account).
+
+Broke reconcile()'s per-entry comparison by hardcoding `reconciled:
+true` regardless of the actual debit/credit comparison, commented
+`// BROKEN FOR PROOF: reconciliation always reports true regardless of
+whether the trial balance actually matches the source`.
+
+  $ npx vitest run src/modules/advanced-finance/services/tests/opening-balance-migration.service.spec.ts
+  ×  catches a genuine reconciliation FAILURE — a trial balance that
+       diverges from the source is never reported as reconciled
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/modules/advanced-finance/services/tests/opening-balance-migration.service.spec.ts
+  Tests  5 passed (5)
+
+PROOF — SOURCE-BALANCE PRECONDITION
+======================================
+Broke importOpeningBalances() by removing the upfront debit==credit
+refusal, commented `// BROKEN FOR PROOF: source-balance check removed
+-- an unbalanced template would be imported anyway`.
+
+  $ npx vitest run src/modules/advanced-finance/services/tests/opening-balance-migration.service.spec.ts
+  ×  REFUSES an unbalanced template before writing anything
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/modules/advanced-finance/services/tests/opening-balance-migration.service.spec.ts
+  Tests  5 passed (5)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/advanced-finance/
+  Test Files  30 passed (30)
+       Tests  524 passed (524)
+
+Zero pre-existing tests required changes.
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Named mapping templates for the specific incumbent sources (Tally,
+  QuickBooks, Zoho, SAP B1, spreadsheets) — Deliverable text names
+  these as sources a template should cover their COLUMN LAYOUTS for.
+  This phase builds the underlying import-and-reconcile MECHANISM the
+  exit criterion actually tests (generic {code, name, type, debit,
+  credit} rows) — mapping any of those sources' specific export column
+  layouts onto that shape is a thin, source-specific adapter that
+  reuses this same mechanism, not built here.
+- Customers, suppliers and items (Deliverable text, beyond opening
+  balances) are not covered by this phase's own import path — D08's
+  existing import framework already covers Customer/Vendor/Product.
+- No console UI for uploading/mapping a template file — a backend
+  mechanism proven by API + tests.
+- The reconciliation statement is returned as a JSON response body
+  (the same real data the mechanism computed, per this session's own
+  "never a second dataset" precedent) rather than a formatted
+  CSV/PDF file — a presentation-layer concern a client can add without
+  touching the mechanism.
+
+COMMITS
+=======
+unierp-api  ae30e9e  opening-balance-migration.service.ts, spec,
+                     opening-balance-migration.controller.ts,
+                     advanced-finance.module.ts wiring

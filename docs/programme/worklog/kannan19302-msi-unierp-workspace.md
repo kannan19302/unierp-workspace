@@ -2043,3 +2043,9 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M47 · PROGRESS · 2026-08-11T02:49:14Z · kannan19302@MSI/unierp-workspace
+
+```
+M47: gate scripts/check-platform-permissions.mjs written and PROVEN failing (126 -> corrected parser -> 104). Added 40 system.* plane-1 codes + planeOne() helper to unierp-shared PERMISSION_REGISTRY (no dupes introduced). Guarded 7 controllers: tenant-export-offboarding, security-operations, release-control, broadcast-maintenance, customer-import, dunning, invoicing. Spec src/platform/v1/control-plane-authz.spec.ts written, currently RED (proves gap). Remaining: 7 controllers with no @Permissions (live-tenant-upgrade, metering, plans, quota-admin, subscription-management, support-workspace, tenant-migration) + 6 needing ControlPlaneGuard/re-namespace (cluster-routing, reseller-channel, white-label, enterprise-scale, feature-flags-metering, operations admin.*->system.*). Then seed provider roles, extend permissions-drift to src/platform, wire gate into CI.
+```
+

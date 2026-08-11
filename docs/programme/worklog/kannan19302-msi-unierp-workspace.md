@@ -5597,3 +5597,93 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M26 · FINISH · 2026-08-11T10:22:46Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M26 — Real-time usage and consumption telemetry
+==================================================
+
+Exit criterion: "Utilisation for any resource is available within its
+stated freshness bound, and the bound is asserted by test rather than
+documented. Gaps are reported as gaps, never interpolated to zero."
+
+--- Mechanism ---
+- unierp-data: TelemetrySample — resourceId, metric, value, observedAt.
+- unierp-api: TelemetryService.getUtilization(resourceId, metric, now,
+  freshnessBoundMs) compares the most recent sample's age (now minus
+  observedAt) against freshnessBoundMs, evaluated at read time using a
+  `now` PARAMETER (not an internal Date.now() call) — this is exactly
+  what makes the bound "asserted by test rather than documented": a test
+  can move `now` across the boundary deterministically. Returns
+  FRESH/STALE/NO_DATA; `value` is null whenever status is not FRESH.
+  getUtilizationSeries() buckets a [from, to) range and reports any
+  bucket with no sample as `value: null` — never 0.
+- TelemetryController: POST record, GET current utilisation, GET series.
+  New permissions system.telemetry.read/write.
+
+--- Proof 1: fresh inside the bound ---
+telemetry.service.spec.ts:
+  "utilisation for a resource is FRESH within its stated freshness bound"
+  — a sample read exactly 1ms before the 5-minute default bound: FRESH,
+  correct value.
+
+--- Proof 2: the bound is a real, testable line ---
+  "utilisation goes STALE the instant it crosses the freshness bound" —
+  the SAME sample read 1ms past the bound (2ms later than proof 1's
+  read): STALE, value null. The bound is proven by moving the clock
+  across it, not by two independently-set-up cases.
+
+--- Proof 3: no data is not zero ---
+  "a resource with no samples at all is NO_DATA, not zero" — value null.
+
+--- Proof 4: custom bound honoured ---
+  "a custom freshness bound is honoured exactly, not just the default"
+  — a 1-minute bound correctly marks a 90-second-old sample STALE, where
+  the 5-minute default would have called it FRESH.
+
+--- Proof 5: gaps in a series are gaps, never interpolated ---
+  "gaps in a bucketed series are reported as gaps (null), never
+  interpolated to zero" — 4 five-minute buckets; data exists in bucket 0
+  (value 100) and bucket 2 (value 0 — a REAL zero reading, distinct from
+  a gap); buckets 1 and 3 have no samples at all and report null, not 0.
+  The test explicitly distinguishes a genuine zero from a genuine gap in
+  the same series.
+
+--- Proof 6: break/restore ---
+BREAK: empty buckets changed to report 0 instead of null (gap
+interpolation reintroduced).
+
+Result: telemetry.service.spec.ts — 1/5 tests FAIL:
+  x gaps in a bucketed series are reported as gaps (null), never
+    interpolated to zero
+
+RESTORE: telemetry.service.ts restored from backup.
+Result: 5/5 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  32 passed (32)
+       Tests  155 passed (155)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 31 controllers, 191 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Per-tenant/service/environment aggregation (named in the Deliverable
+  alongside "per resource") is not built as a separate rollup — samples
+  are keyed by resourceId, and M18's ResourceAttribution already maps a
+  resource to tenant/service/environment; a rollup query would join
+  through that table rather than duplicate attribution inside this
+  service. The exit criterion tests freshness and gap-reporting for "any
+  resource," which is what is proven.
+- No live metrics-collection agent — recordSample() accepts an
+  already-measured value, consistent with the adapter precedent through
+  this entire session (no external monitoring system is reachable in
+  this dev environment).
+- No console UI surface in this phase — the exit criterion is a backend
+  mechanism (freshness bound, gap semantics), not a console requirement.
+```
+

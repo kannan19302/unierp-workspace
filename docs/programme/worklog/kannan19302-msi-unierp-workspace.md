@@ -3188,3 +3188,202 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M07 · FINISH · 2026-08-11T04:54:54Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M07 — Resource model: desired state, actual, drift
+EXIT CRITERION (verbatim):
+  "A resource whose actual state is changed out of band is reported as
+   drifted, with a diff naming the fields. The dependency graph refuses
+   a cycle. Deleting a resource with dependents is refused with the
+   dependents named, not with a foreign-key error."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/resource-model/resource-model.service.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 10:24:36
+[2m   Duration [22m 709ms[2m (transform 72ms, setup 24ms, collect 364ms, tests 7ms, environment 0ms, prepare 123ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (diff detection disabled) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/resource-model/resource-model.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 16[2mms[22m[39m
+[31m   [31m×[31m M07 · resource model — desired state, actual, drift[2m > [22ma resource whose actual state changes out of band is reported as drifted, with a diff naming the fields[90m 10[2mms[22m[31m[39m
+[31m     → expected [] to have a length of 2 but got +0[39m
+[31m   [31m×[31m M07 · resource model — desired state, actual, drift[2m > [22mdiffStates is correct in isolation — the exact mechanism the exit criterion names[90m 2[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ 'a', 'c' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/resource-model/resource-model.service.spec.ts[2m > [22mM07 · resource model — desired state, actual, drift[2m > [22ma resource whose actual state changes out of band is reported as drifted, with a diff naming the fields
+[31m[1mAssertionError[22m: expected [] to have a length of 2 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/platform/resource-model/resource-model.service.spec.ts:[2m140:26[22m[39m
+    [90m138| [39m    })[33m;[39m
+    [90m139| [39m
+    [90m140| [39m    [34mexpect[39m(drifted[33m.[39mdiff)[33m.[39m[34mtoHaveLength[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m141| [39m    [35mconst[39m fields [33m=[39m drifted[33m.[39mdiff[33m.[39m[34mmap[39m((d) [33m=>[39m d[33m.[39mfield)[33m.[39m[34msort[39m()[33m;[39m
+    [90m142| [39m    [34mexpect[39m(fields)[33m.[39m[34mtoEqual[39m([[32m"recordCount"[39m[33m,[39m [32m"ttl"[39m])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/resource-model/resource-model.service.spec.ts[2m > [22mM07 · resource model — desired state, actual, drift[2m > [22mdiffStates is correct in isolation — the exact mechanism the exit criterion names
+[31m[1mAssertionError[22m: expected [] to deeply equal [ 'a', 'c' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   "a",[39m
+[32m-   "c",[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m src/platform/resource-model/resource-model.service.spec.ts:[2m161:20[22m[39m
+    [90m159| [39m    )[33m;[39m
+    [90m160| [39m    [35mconst[39m fields [33m=[39m diffs[33m.[39m[34mmap[39m((d) [33m=>[39m d[33m.[39mfield)[33m.[39m[34msort[39m()[33m;[39m
+    [90m161| [39m    [34mexpect[39m(fields)[33m.[39m[34mtoEqual[39m([[32m"a"[39m[33m,[39m [32m"c"[39m])[33m;[39m
+    [90m   | [39m                   [31m^[39m
+    [90m162| [39m  })[33m;[39m
+    [90m163| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 10:24:38
+[2m   Duration [22m 568ms[2m (transform 56ms, setup 24ms, collect 252ms, tests 16ms, environment 0ms, prepare 99ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (cycle check disabled) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/resource-model/resource-model.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[90m 15[2mms[22m[39m
+[31m   [31m×[31m M07 · resource model — desired state, actual, drift[2m > [22mthe dependency graph refuses a direct cycle[90m 8[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'dep-10', …(2) }" instead of rejecting[39m
+[31m   [31m×[31m M07 · resource model — desired state, actual, drift[2m > [22mthe dependency graph refuses a transitive (3-node) cycle[90m 1[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'dep-17', …(2) }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/resource-model/resource-model.service.spec.ts[2m > [22mM07 · resource model — desired state, actual, drift[2m > [22mthe dependency graph refuses a direct cycle
+[31m[1mAssertionError[22m: promise resolved "{ id: 'dep-10', …(2) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "dependsOnId": "res-7",[39m
+[31m+   "id": "dep-10",[39m
+[31m+   "resourceId": "res-8",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m src/platform/resource-model/resource-model.service.spec.ts:[2m170:51[22m[39m
+    [90m168| [39m
+    [90m169| [39m    [35mawait[39m service[33m.[39m[34maddDependency[39m(a[33m.[39mid[33m,[39m b[33m.[39mid)[33m;[39m [90m// A depends on B — fine[39m
+    [90m170| [39m    [35mawait[39m [34mexpect[39m(service[33m.[39m[34maddDependency[39m(b[33m.[39mid[33m,[39m a[33m.[39mid))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/c[39m…
+    [90m   | [39m                                                  [31m^[39m
+    [90m171| [39m  })[33m;[39m
+    [90m172| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/resource-model/resource-model.service.spec.ts[2m > [22mM07 · resource model — desired state, actual, drift[2m > [22mthe dependency graph refuses a transitive (3-node) cycle
+[31m[1mAssertionError[22m: promise resolved "{ id: 'dep-17', …(2) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "dependsOnId": "res-12",[39m
+[31m+   "id": "dep-17",[39m
+[31m+   "resourceId": "res-14",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m src/platform/resource-model/resource-model.service.spec.ts:[2m181:51[22m[39m
+    [90m179| [39m    [35mawait[39m service[33m.[39m[34maddDependency[39m(a[33m.[39mid[33m,[39m b[33m.[39mid)[33m;[39m [90m// A -> B[39m
+    [90m180| [39m    [35mawait[39m service[33m.[39m[34maddDependency[39m(b[33m.[39mid[33m,[39m c[33m.[39mid)[33m;[39m [90m// B -> C[39m
+    [90m181| [39m    [35mawait[39m [34mexpect[39m(service[33m.[39m[34maddDependency[39m(c[33m.[39mid[33m,[39m a[33m.[39mid))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([36m/c[39m…
+    [90m   | [39m                                                  [31m^[39m
+    [90m182| [39m  })[33m;[39m
+    [90m183| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 10:24:41
+[2m   Duration [22m 543ms[2m (transform 55ms, setup 24ms, collect 225ms, tests 15ms, environment 0ms, prepare 100ms)[22m
+
+
+==================== 2c. OBSERVED FAILING (dependents check disabled) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/resource-model/resource-model.service.spec.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 14[2mms[22m[39m
+[31m   [31m×[31m M07 · resource model — desired state, actual, drift[2m > [22mdeleting a resource with dependents is refused with the dependents named, not a foreign-key error[90m 6[2mms[22m[31m[39m
+[31m     → promise resolved "undefined" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/resource-model/resource-model.service.spec.ts[2m > [22mM07 · resource model — desired state, actual, drift[2m > [22mdeleting a resource with dependents is refused with the dependents named, not a foreign-key error
+[31m[1mAssertionError[22m: promise resolved "undefined" instead of rejecting[39m
+
+[32m- Expected:[39m 
+[Error: rejected promise]
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/platform/resource-model/resource-model.service.spec.ts:[2m199:51[22m[39m
+    [90m197| [39m    [35mawait[39m service[33m.[39m[34maddDependency[39m(child2[33m.[39mid[33m,[39m parent[33m.[39mid)[33m;[39m
+    [90m198| [39m
+    [90m199| [39m    [35mawait[39m [34mexpect[39m(service[33m.[39m[34mdeleteResource[39m(parent[33m.[39mid))[33m.[39mrejects[33m.[39m[34mtoThrow[39m(
+    [90m   | [39m                                                  [31m^[39m
+    [90m200| [39m      [36m/Web tier subnet.*DB tier subnet|DB tier subnet.*Web tier subnet[39m…
+    [90m201| [39m    )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 10:24:44
+[2m   Duration [22m 542ms[2m (transform 54ms, setup 23ms, collect 232ms, tests 14ms, environment 0ms, prepare 102ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/resource-model/resource-model.service.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 10:24:46
+[2m   Duration [22m 525ms[2m (transform 58ms, setup 24ms, collect 231ms, tests 8ms, environment 0ms, prepare 97ms)[22m
+```
+

@@ -2994,3 +2994,188 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M06 · FINISH · 2026-08-11T04:49:05Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M06 — Routing, priority, fallback and tenant selection
+EXIT CRITERION (verbatim):
+  "Disabling the primary provider moves traffic to the secondary with no
+   code change and no request loss, proven by an integration test. A
+   tenant pinned to a specific provider is never routed elsewhere,
+   including during fallback - asserted separately."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/routing.service.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 10:18:50
+[2m   Duration [22m 747ms[2m (transform 84ms, setup 24ms, collect 387ms, tests 9ms, environment 0ms, prepare 126ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (health exclusion removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/provider-registry/routing.service.spec.ts [2m([22m[2m9 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[90m 15[2mms[22m[39m
+[31m   [31m×[31m M06 · routing, priority, fallback and tenant selection[2m > [22mdisabling the primary provider moves traffic to the secondary with no code change and no request loss[90m 7[2mms[22m[31m[39m
+[31m     → expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+[31m   [31m×[31m M06 · routing, priority, fallback and tenant selection[2m > [22ma tenant pinned to a specific provider is never routed elsewhere, including during fallback[90m 1[2mms[22m[31m[39m
+[31m     → expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+[31m   [31m×[31m M06 · routing, priority, fallback and tenant selection[2m > [22msticky routing follows fallback once its pinned provider becomes unroutable[90m 1[2mms[22m[31m[39m
+[31m     → expected 'prov-primary' to be 'prov-secondary' // Object.is equality[39m
+[31m   [31m×[31m M06 · routing, priority, fallback and tenant selection[2m > [22mthrows a typed error when every bound provider is unroutable — not a silent wrong answer[90m 2[2mms[22m[31m[39m
+[31m     → promise resolved "{ providerId: 'prov-only', …(1) }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/routing.service.spec.ts[2m > [22mM06 · routing, priority, fallback and tenant selection[2m > [22mdisabling the primary provider moves traffic to the secondary with no code change and no request loss
+[31m[1mAssertionError[22m: expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[32m-   "providerId": "prov-secondary",[39m
+[32m-   "reason": "fallback",[39m
+[31m+   "providerId": "prov-primary",[39m
+[31m+   "reason": "primary",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/platform/provider-registry/routing.service.spec.ts:[2m162:19[22m[39m
+    [90m160| [39m
+    [90m161| [39m    [35mconst[39m after [33m=[39m [35mawait[39m router[33m.[39m[34mresolve[39m({ tenantId[33m:[39m [32m"tenant-a"[39m[33m,[39m capabil…
+    [90m162| [39m    [34mexpect[39m(after)[33m.[39m[34mtoEqual[39m({ providerId[33m:[39m [32m"prov-secondary"[39m[33m,[39m reason[33m:[39m [32m"fal[39m…
+    [90m   | [39m                  [31m^[39m
+    [90m163| [39m  })[33m;[39m
+    [90m164| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/routing.service.spec.ts[2m > [22mM06 · routing, priority, fallback and tenant selection[2m > [22ma tenant pinned to a specific provider is never routed elsewhere, including during fallback
+[31m[1mAssertionError[22m: expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[32m-   "providerId": "prov-secondary",[39m
+[32m-   "reason": "fallback",[39m
+[31m+   "providerId": "prov-primary",[39m
+[31m+   "reason": "primary",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/platform/provider-registry/routing.service.spec.ts:[2m196:22[22m[39m
+    [90m194| [39m    [90m// And an UNPINNED tenant in the same window correctly falls over.[39m
+    [90m195| [39m    [35mconst[39m unpinned [33m=[39m [35mawait[39m router[33m.[39m[34mresolve[39m({ tenantId[33m:[39m [32m"tenant-unpinned[39m…
+    [90m196| [39m    [34mexpect[39m(unpinned)[33m.[39m[34mtoEqual[39m({ providerId[33m:[39m [32m"prov-secondary"[39m[33m,[39m reason[33m:[39m [32m"[39m…
+    [90m   | [39m                     [31m^[39m
+    [90m197| [39m  })[33m;[39m
+    [90m198| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/routing.service.spec.ts[2m > [22mM06 · routing, priority, fallback and tenant selection[2m > [22msticky routing follows fallback once its pinned provider becomes unroutable
+[31m[1mAssertionError[22m: expected 'prov-primary' to be 'prov-secondary' // Object.is equality[39m
+
+Expected: [32m"prov-[7msecond[27mary"[39m
+Received: [31m"prov-[7mprim[27mary"[39m
+
+[36m [2m❯[22m src/platform/provider-registry/routing.service.spec.ts:[2m242:37[22m[39m
+    [90m240| [39m      stickyKey[33m:[39m [32m"thread-1"[39m[33m,[39m
+    [90m241| [39m    })[33m;[39m
+    [90m242| [39m    [34mexpect[39m(afterFailure[33m.[39mproviderId)[33m.[39m[34mtoBe[39m([32m"prov-secondary"[39m)[33m;[39m
+    [90m   | [39m                                    [31m^[39m
+    [90m243| [39m  })[33m;[39m
+    [90m244| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/routing.service.spec.ts[2m > [22mM06 · routing, priority, fallback and tenant selection[2m > [22mthrows a typed error when every bound provider is unroutable — not a silent wrong answer
+[31m[1mAssertionError[22m: promise resolved "{ providerId: 'prov-only', …(1) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "providerId": "prov-only",[39m
+[31m+   "reason": "primary",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m src/platform/provider-registry/routing.service.spec.ts:[2m297:86[22m[39m
+    [90m295| [39m    [35mawait[39m [34mmarkHealthy[39m([32m"prov-only"[39m[33m,[39m [35mfalse[39m)[33m;[39m
+    [90m296| [39m
+    [90m297| [39m    [35mawait[39m [34mexpect[39m(router[33m.[39m[34mresolve[39m({ tenantId[33m:[39m [32m"tenant-i"[39m[33m,[39m capabilityId[33m:[39m …
+    [90m   | [39m                                                                                     [31m^[39m
+    [90m298| [39m      [36m/no routable provider/i[39m[33m,[39m
+    [90m299| [39m    )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 10:18:52
+[2m   Duration [22m 559ms[2m (transform 69ms, setup 25ms, collect 245ms, tests 15ms, environment 0ms, prepare 100ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (tenant pin check disabled) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/provider-registry/routing.service.spec.ts [2m([22m[2m9 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 13[2mms[22m[39m
+[31m   [31m×[31m M06 · routing, priority, fallback and tenant selection[2m > [22ma tenant pinned to a specific provider is never routed elsewhere, including during fallback[90m 7[2mms[22m[31m[39m
+[31m     → expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/routing.service.spec.ts[2m > [22mM06 · routing, priority, fallback and tenant selection[2m > [22ma tenant pinned to a specific provider is never routed elsewhere, including during fallback
+[31m[1mAssertionError[22m: expected { providerId: 'prov-primary', …(1) } to deeply equal { providerId: 'prov-secondary', …(1) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[32m-   "providerId": "prov-secondary",[39m
+[32m-   "reason": "pinned",[39m
+[31m+   "providerId": "prov-primary",[39m
+[31m+   "reason": "primary",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/platform/provider-registry/routing.service.spec.ts:[2m178:33[22m[39m
+    [90m176| [39m
+    [90m177| [39m    [35mconst[39m whilePrimaryHealthy [33m=[39m [35mawait[39m router[33m.[39m[34mresolve[39m({ tenantId[33m:[39m [32m"tena[39m…
+    [90m178| [39m    [34mexpect[39m(whilePrimaryHealthy)[33m.[39m[34mtoEqual[39m({ providerId[33m:[39m [32m"prov-secondary"[39m…
+    [90m   | [39m                                [31m^[39m
+    [90m179| [39m
+    [90m180| [39m    [90m// Now the primary goes down — every OTHER tenant would fail over,[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m8 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 10:18:55
+[2m   Duration [22m 556ms[2m (transform 71ms, setup 24ms, collect 250ms, tests 13ms, environment 0ms, prepare 98ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/routing.service.spec.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 10:18:57
+[2m   Duration [22m 543ms[2m (transform 67ms, setup 24ms, collect 252ms, tests 7ms, environment 0ms, prepare 97ms)[22m
+```
+

@@ -3907,3 +3907,143 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M11 · FINISH · 2026-08-11T08:14:16Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M11 — Approvals, two-person control and scheduling
+EXIT CRITERION (verbatim):
+  "A destructive plan cannot execute on one operators approval. A plan
+   scheduled into a blackout window is refused at schedule time, not
+   at run time. A test proves this uses C04 mechanism - removing C04
+   guard breaks this phase test."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/scheduling.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:43:56
+[2m   Duration [22m 564ms[2m (transform 66ms, setup 23ms, collect 276ms, tests 5ms, environment 0ms, prepare 97ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (C04's ControlPlaneApprovalsService.decide() separation check removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/scheduling.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M11 · approvals, two-person control and scheduling[2m > [22ma destructive plan cannot execute on one operator's approval — the same operator cannot request and approve[90m 9[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'appr-1', …(6) }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/scheduling.service.spec.ts[2m > [22mM11 · approvals, two-person control and scheduling[2m > [22ma destructive plan cannot execute on one operator's approval — the same operator cannot request and approve
+[31m[1mAssertionError[22m: promise resolved "{ id: 'appr-1', …(6) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "approvedBy": "operator-a",[39m
+[31m+   "expiresAt": 2026-08-11T08:43:59.429Z,[39m
+[31m+   "id": "appr-1",[39m
+[31m+   "requestedAction": "plan.execute:res-1",[39m
+[31m+   "requestedBy": "operator-a",[39m
+[31m+   "status": "APPROVED",[39m
+[31m+   "targetId": "res-1",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/scheduling.service.spec.ts:[2m100:82[22m[39m
+    [90m 98| [39m    [35mconst[39m approval [33m=[39m [35mawait[39m scheduling[33m.[39m[34mrequestApproval[39m(plan[33m,[39m [32m"operator-[39m…
+    [90m 99| [39m
+    [90m100| [39m    [35mawait[39m [34mexpect[39m(scheduling[33m.[39m[34mdecideApproval[39m(approval[33m.[39mid[33m,[39m [32m"operator-a"[39m[33m,[39m …
+    [90m   | [39m                                                                                 [31m^[39m
+    [90m101| [39m      [36m/cannot also approve their own request/i[39m[33m,[39m
+    [90m102| [39m    )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:43:58
+[2m   Duration [22m 674ms[2m (transform 86ms, setup 32ms, collect 295ms, tests 12ms, environment 0ms, prepare 151ms)[22m
+
+
+    (and confirming this is genuinely C04's own mechanism, not a copy: M49's guard-based spec is unaffected — an independent, second enforcement of the same rule)
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/common/guards/tests/two-person-control-separation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 13:44:00
+[2m   Duration [22m 732ms[2m (transform 63ms, setup 23ms, collect 421ms, tests 6ms, environment 0ms, prepare 102ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (blackout check removed from scheduleOperation) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/scheduling.service.spec.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M11 · approvals, two-person control and scheduling[2m > [22ma plan scheduled into a blackout window is refused at schedule time, not at run time[90m 7[2mms[22m[31m[39m
+[31m     → promise resolved "{ id: 'sched-7', …(6) }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/scheduling.service.spec.ts[2m > [22mM11 · approvals, two-person control and scheduling[2m > [22ma plan scheduled into a blackout window is refused at schedule time, not at run time
+[31m[1mAssertionError[22m: promise resolved "{ id: 'sched-7', …(6) }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "approvalId": null,[39m
+[31m+   "id": "sched-7",[39m
+[31m+   "planId": "plan-res-3",[39m
+[31m+   "recurrence": null,[39m
+[31m+   "resourceId": "res-3",[39m
+[31m+   "scheduledFor": 2026-12-25T12:00:00.000Z,[39m
+[31m+   "status": "SCHEDULED",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/scheduling.service.spec.ts:[2m121:68[22m[39m
+    [90m119| [39m
+    [90m120| [39m    [35mconst[39m insideBlackout [33m=[39m [35mnew[39m [33mDate[39m([32m"2026-12-25T12:00:00Z"[39m)[33m;[39m
+    [90m121| [39m    [35mawait[39m [34mexpect[39m(scheduling[33m.[39m[34mscheduleOperation[39m(plan[33m,[39m insideBlackout))[33m.[39mr…
+    [90m   | [39m                                                                   [31m^[39m
+    [90m122| [39m
+    [90m123| [39m    [90m// Refused BEFORE any ScheduledOperation row exists — not created-[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 13:44:03
+[2m   Duration [22m 570ms[2m (transform 65ms, setup 23ms, collect 275ms, tests 12ms, environment 0ms, prepare 96ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/scheduling.service.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/common/guards/tests/two-person-control-separation.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 13:44:05
+[2m   Duration [22m 739ms[2m (transform 101ms, setup 45ms, collect 742ms, tests 11ms, environment 0ms, prepare 202ms)[22m
+```
+

@@ -4843,3 +4843,98 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M19 · FINISH · 2026-08-11T09:40:28Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M19 — Kubernetes fleet operations
+===================================
+
+Exit criterion: "Replaces the read-only page named in D044. A routing
+weight is changed through a planned, approved, reconciled operation and
+reverts on rollback. kubernetes/page.tsx has a detail route, server-side
+filtering and at least one mutation."
+
+--- Mechanism ---
+- unierp-data: SaasTenantNodeRouting gains `weight` (Int, default 100),
+  changed only through the new plan pipeline, never written directly.
+- unierp-api: KubernetesFleetService models a tenant/cluster routing pair
+  as an M07 Resource (kind cluster-routing-weight). Changing its weight
+  is a two-call cycle:
+    1. proposeRoutingWeight() -- compiles a plan (M09) and requests C04
+       two-person approval. Nothing touches the actual routing table yet.
+    2. applyRoutingWeight() -- decides the approval (a DIFFERENT operator
+       than the requester, C04's own rule, applied unmodified), then runs
+       a durable M12 Job whose one step writes BOTH the new M07 desired
+       state (so M14 versions it) and the real
+       SaasTenantNodeRouting.weight row, with a compensator reverting
+       both on failure.
+  rollbackRoutingWeight() is M14's own PlanningService.rollback() against
+  the same resource -- reverting is a new proposal through the identical
+  propose/approve/apply cycle, never a bypass.
+- KubernetesFleetController: GET routing (server-side clusterId filter),
+  GET routing/:id (detail + version history), POST routing/propose,
+  POST routing/apply, POST routing/:id/rollback.
+- unierp-console: kubernetes/page.tsx rebuilt -- server-side cluster
+  filter, DataTable instead of a hand-rolled <ul>, row click to a NEW
+  detail route (app/.../kubernetes/[id]/page.tsx) which shows the version
+  history and the propose/apply mutation UI.
+
+--- Proof 1: planned, approved, reconciled ---
+kubernetes-fleet.service.spec.ts:
+  "a routing weight is changed through a planned, approved, reconciled
+  operation" -- proposeRoutingWeight() leaves the actual routing table at
+  its old weight (100) with a PENDING approval; only after
+  applyRoutingWeight() (decided by a different operator) does the actual
+  SaasTenantNodeRouting.weight row AND the M07 desired state both update
+  to 50, via a DONE durable Job.
+
+--- Proof 2: two-person control applies unmodified ---
+  "the same operator cannot both propose and approve" -- applying with
+  decidedBy === requestedBy throws C04's own error and the routing table
+  is provably unchanged.
+
+--- Proof 3: reverts on rollback ---
+  "reverts on rollback" -- after changing weight 100 -> 50,
+  rollbackRoutingWeight(resourceId, 1) returns a Plan whose diff proposes
+  100 again; proposing and applying THAT plan through the identical
+  pipeline actually reverts the real routing table back to 100.
+
+--- Proof 4: break/restore ---
+BREAK: the approval-decision call in applyRoutingWeight() removed
+entirely -- the weight change would apply with no two-person control.
+
+Result: kubernetes-fleet.service.spec.ts -- 2/3 tests FAIL:
+  x the same operator cannot both propose and approve
+  x reverts on rollback (fails because it also exercises apply)
+
+RESTORE: kubernetes-fleet.service.ts restored from backup.
+Result: 3/3 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  25 passed (25)
+       Tests  125 passed (125)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 26 controllers, 173 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-console: npx tsc --noEmit -> clean
+unierp-console: node scripts/check-layer.mjs -> OK, L4 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- The Deliverable text also names workloads, nodes, namespaces,
+  autoscaling, drain/cordon/scale/rollout as pipeline plans -- the exit
+  criterion tests exactly ONE mutation (routing weight) through the
+  pipeline with a detail route and server-side filtering, which is what
+  was built and proven. The other cluster-fleet operations named in the
+  Deliverable are not built in this phase.
+- M06's own direct write (SaasClusterRoutingDeepService.setTenantRouting)
+  is left in place, unmodified -- it is a pre-existing surface this phase
+  does not own or reopen; the console's Kubernetes page is wired to the
+  NEW plan-gated path, not the old direct one.
+- No e2e/axe sweep against the console pages in this session (no live
+  backend reachable to render against).
+```
+

@@ -1910,3 +1910,39 @@ back to `OPEN`. Both proven via break/restore.
 `advanced-hr`/`fixed-assets`/other modules that also care about period immutability) that still bypasses
 `PeriodCloseGuardService` entirely, since it was wired into exactly the two call sites this phase touched
 and no platform-wide sweep for unguarded `journal`/`financialPeriod` writes was performed.
+
+### D068 · 🟠 HIGH · BulkOperationsService wrapped every write method's ENTIRE loop in one single transaction — times out and misreports outcomes at scale
+
+Found while claiming and building E07 (Bulk operations framework). All 5 write methods in
+`unierp-api/src/common/services/bulk-operations.service.ts` (`bulkCreate`, `bulkUpdate`, `bulkDelete`,
+`bulkRestore`, `bulkStatusChange`) wrapped their entire per-record loop — regardless of how many records —
+in one single `prisma.$transaction(async (tx) => { for (...) { try {...} catch {...} } })`. At the scale
+E07's own exit criterion names (10,000 rows), this has three compounding problems: it would blow past any
+realistic database transaction timeout; it holds row/table locks for the WHOLE operation's duration
+(directly violating "does not lock the table for other tenants," since Postgres row locks from an
+uncommitted transaction are visible to other sessions); and on Postgres specifically, one statement failing
+inside a transaction aborts the ENTIRE transaction — every subsequent statement in that same transaction
+then also throws ("current transaction is aborted") until rollback, meaning a single bad row anywhere in a
+10,000-row batch would cause every row after it to be misreported as failed, even though nothing was
+actually wrong with those later rows. "Reports per-row outcomes" was not true under failure at any real
+scale.
+
+**How it was caught:** writing the FAIL-first test for E07's own exit criterion, using a mock that
+simulates real Postgres transaction-abort semantics (a "poisoned" row causes every subsequent statement
+inside the SAME transaction object to also throw) — this reproduced the exact misreporting bug, and a
+second test confirmed the pre-existing code ran the entire 10,000-item loop inside one transaction call
+with no bound.
+
+**Fixed:** a new `runBatched()` helper processes items `CONCURRENCY_BATCH_SIZE` (50) at a time with NO
+shared transaction across items — each record's write is now its own independent, atomic Prisma call, so
+one row's failure cannot affect any other row's reported outcome, and no lock is held across the whole
+operation. All 5 write methods were migrated to it, not just `bulkUpdate` (the literal "bulk edit" named in
+the exit criterion) — the identical broken pattern existed in all 5, so the identical fix was applied to
+all 5 in the same pass rather than leaving 4 known-broken siblings unaddressed.
+
+**Not fully investigated:** whether the SAME "wrap N records in one $transaction" pattern exists in other
+services across the 45 modules, outside this one shared `BulkOperationsService`. This defect was found only
+because E07 happened to audit this specific, shared file; a platform-wide grep for `prisma.$transaction`
+wrapping a `for`/`.map` loop over a caller-supplied array (rather than a small, fixed number of related
+writes) would be a reasonable, high-value follow-up given how directly this shape of bug violates a
+platform invariant (no long-held cross-tenant lock, no unbounded transaction).

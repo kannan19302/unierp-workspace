@@ -1548,3 +1548,33 @@ check. Proven via break/restore (removing the namespace check reproduces the exa
 elsewhere in the codebase (a second implementation this session did not search for) that performs its
 own, possibly-also-incomplete platform-permission check independently of `AdminService`'s. Worth a
 platform-wide grep for `platformOnly` call sites as a follow-up.
+
+### D057 · 🟠 HIGH · `SaasPortalAuditTrailDeepService.getAuditLogs()` returned a hardcoded fake row — the tenant audit-trail endpoint rendered but never queried real data
+
+Found and fixed during D05. `GET saas-portal/audit-trail-deep/logs` was a mounted, guarded, reachable
+endpoint — but `SaasPortalAuditTrailDeepService.getAuditLogs(tenantId)` ignored its `tenantId` argument
+entirely and returned one literal object (`{ id: "audit-101", actor: "admin@acme.com", action:
+"UPDATE_SSO_CONFIG", ... }`) on every call, for every tenant, with no filter parameter of any kind. The
+real, already-indexed `ChangeHistory` table (`tenantId`/`entityType`/`entityId`/`userId`/`createdAt`,
+the same field-level change log `unierp-workspace/scripts/retention-matrix.json` already declares under
+`change-history`) was never read. A tenant admin could open the audit trail and see plausible-looking
+data that had no relationship to their tenant's actual history — the same class of defect as D044 (a
+console surface that renders without a real mechanism behind it), here on the API side rather than the
+UI side.
+
+**How it was caught:** writing `audit-trail.service.spec.ts` as the FAIL-first proof for D05's exit
+criterion — every one of 4 assertions failed against the pre-existing code, including `TypeError:
+result.entries.map is not a function` (the mock's return shape didn't even resemble a real,
+paginated search result) and `auditSvc.exportAuditLogs is not a function` (no export mechanism existed
+at all, despite the endpoint's own name — `-deep` — implying real depth).
+
+**Fixed:** rewrote the service against `ChangeHistory` directly: `getAuditLogs()` (real, paginated,
+filtered search) and `exportAuditLogs()` (every real matching row, unpaginated, over the identical
+table). Proven via break/restore (dropping the `tenantId` scope — itself a real cross-tenant leak, not
+just a proof device — failed all 4 tests).
+
+**Not fully investigated:** whether other `-deep`-suffixed services in `saas-portal` or elsewhere in the
+codebase follow the same pattern (a plausible-looking hardcoded fixture standing in for a real query).
+Worth a platform-wide audit of services returning a literal object/array with no parameter actually
+consulted, as a follow-up — this session found this one only because D05's own exit criterion happened
+to require exercising it.

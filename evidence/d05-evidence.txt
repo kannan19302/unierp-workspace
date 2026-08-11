@@ -1,0 +1,116 @@
+D05 — Tenant audit trail as a product surface
+Exit criterion: "A tenant admin answers 'who changed this and when' for
+any record without contacting support, and exports evidence for an
+auditor (G-9)."
+
+FINDING (a real, previously hidden gap)
+==========================================
+GET saas-portal/audit-trail-deep/logs (mounted, reachable, guarded)
+delegated to SaasPortalAuditTrailDeepService.getAuditLogs(), which
+returned a single HARDCODED fake row — same shape, every call, every
+tenant, every filter, since it took no filter parameter at all and
+never queried a database. A tenant admin using this endpoint could never
+actually answer "who changed record X and when": the endpoint existed
+and rendered, but the mechanism behind it was fabricated.
+
+MECHANISM
+=========
+Rewrote unierp-api/src/modules/saas-portal/audit-trail.service.ts
+against the real, already-indexed ChangeHistory model
+(@@index([tenantId, entityType, entityId]),
+@@index([tenantId, createdAt]), @@index([tenantId, userId]) — the same
+tenant-scoped, field-level change log unierp-workspace's own retention
+matrix already declares under "change-history"):
+- getAuditLogs(tenantId, filter, page, pageSize): real search filtered
+  by any combination of entityType/entityId/userId/action/date-range,
+  most-recent-first, paginated (entries + total + page + pageSize).
+- exportAuditLogs(tenantId, filter): every real matching row,
+  unpaginated — the auditor's evidence set, over the IDENTICAL table
+  the search reads, never a second dataset.
+- audit-trail.controller.ts: the existing GET logs route gained query
+  filters; a new GET logs/export route added. Both gated by the
+  pre-existing saas_portal.audit.read permission — no new permission
+  code needed.
+
+PROOF — THE GAP, THEN THE FIX
+================================
+audit-trail.service.spec.ts (4 tests) written and run FIRST against the
+pre-existing hardcoded service:
+
+  $ npx vitest run src/modules/saas-portal/tests/audit-trail.service.spec.ts
+  ×  ANSWERS 'who changed this and when' for a specific record —
+       TypeError: result.entries.map is not a function
+  ×  is strictly TENANT-SCOPED — TypeError: result.entries.every is not
+       a function
+  ×  FILTERS by action and by actor (userId) — expected length 1, got 0
+  ×  EXPORTS evidence for an auditor — TypeError: auditSvc.
+       exportAuditLogs is not a function
+
+All 4 failed — the mock had no shape resembling a real search result and
+no export method at all. Applied the rewrite, then:
+
+  $ npx vitest run src/modules/saas-portal/tests/audit-trail.service.spec.ts
+  Tests  4 passed (4)
+
+PROOF — BREAK / RESTORE
+==========================
+Broke buildWhere() by dropping the tenantId scope from the query (a
+genuinely dangerous mutation on its own, not just a test-proof device),
+commented `// BROKEN FOR PROOF: tenantId scoping dropped -- a tenant
+admin could read every other tenant's change history`.
+
+  $ npx vitest run src/modules/saas-portal/tests/audit-trail.service.spec.ts
+  ×  ANSWERS 'who changed this and when' for a specific record
+  ×  is strictly TENANT-SCOPED
+  ×  FILTERS by action and by actor (userId)
+  ×  EXPORTS evidence for an auditor
+
+All 4 failed (cross-tenant rows leaked into every result set). Restored,
+then:
+
+  $ npx vitest run src/modules/saas-portal/tests/audit-trail.service.spec.ts
+  Tests  4 passed (4)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK (unchanged — plane-1 only, this is a tenant-plane surface)
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/modules/saas-portal/ \
+    src/modules/admin/tests/permissions-drift.spec.ts \
+    src/modules/admin/tests/rbac-regression-sweep.spec.ts
+  Test Files  9 passed (9)
+       Tests  45 passed (45)
+
+Zero pre-existing tests required changes — nothing else in the codebase
+called SaasPortalAuditTrailDeepService.getAuditLogs() or referenced its
+old return shape.
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- Retention per DATA_RETENTION_MATRIX.md (Deliverable text): ChangeHistory
+  is already declared in unierp-workspace/scripts/retention-matrix.json
+  as dataClass "change-history" (730 days, enforced by
+  enforce-retention.mjs, unmodified by this phase) — this phase reads
+  that table, it does not alter its retention policy.
+- No console UI for the audit-trail search/export page — a backend
+  mechanism proven by API + tests.
+- No CSV/PDF formatting for the export — exportAuditLogs() returns the
+  real structured rows; formatting them as a downloadable file is a
+  presentation-layer concern the console (or a client) can add without
+  touching this mechanism.
+- C11 (the plane-1 SUPPORT-agent-facing tenant audit-trail viewer,
+  already DONE) is a separate, distinct surface — this phase does not
+  modify it.
+
+COMMITS
+=======
+unierp-api  b422996  audit-trail.service.ts rewrite, audit-trail.controller.ts
+                     filters/export route, audit-trail.service.spec.ts

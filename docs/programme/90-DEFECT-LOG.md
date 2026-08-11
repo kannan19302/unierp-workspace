@@ -849,7 +849,7 @@ it was detected._
 | 2026-08-07 | Log established with D001‚ÄìD014 from the programme baseline audit. D013 (layer gate declared in 21 repos, present in none) is the most consequential: the platform's central invariant is asserted by a CI step that has never executed. | Claude Code |
 | 2026-08-08 | D027 filed by A20: reporting engine `groupBy` aggregations return HTTP 400 `DB_VALIDATION_ERROR` ‚Äî reproduced via `POST /reporting/engine/query` with `groupBy` + `aggregations`; root cause in `reporting-engine.service.ts` option-shaping (`_avg` reaches Prisma as `{ select: undefined }`). Fixing phase E35. | opencode |
 
-### D034 ∑ ?? High ∑ package-lock.json enforces localhost:4873 causing EINTEGRITY on real registries
+### D034 ÔøΩ ?? High ÔøΩ package-lock.json enforces localhost:4873 causing EINTEGRITY on real registries
 
 **Found:** 2026-08-08 by Track C (PSC Bring-up). **Fixed by:** Track C.
 
@@ -868,7 +868,7 @@ pm install in all five Dockerfiles.
 
 ---
 
-### D035 ∑ ?? High ∑ Unmigrated schema drift blocks seeding for saas_plans.version and 	enants.residency_region
+### D035 ÔøΩ ?? High ÔøΩ Unmigrated schema drift blocks seeding for saas_plans.version and 	enants.residency_region
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
 
@@ -884,7 +884,7 @@ npm run db:seed
 
 ---
 
-### D036 ∑ ?? High ∑ Seeding script expects Role and User in main PrismaClient
+### D036 ÔøΩ ?? High ÔøΩ Seeding script expects Role and User in main PrismaClient
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
 
@@ -899,7 +899,7 @@ npm run db:seed
 
 ---
 
-### D037 ∑ ?? High ∑ unierp-console relies on unpublished SessionTokenPayload export
+### D037 ÔøΩ ?? High ÔøΩ unierp-console relies on unpublished SessionTokenPayload export
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
 
@@ -914,7 +914,7 @@ npm run build # inside unierp-console container
 
 ---
 
-### D038 ∑ ?? High ∑ 
+### D038 ÔøΩ ?? High ÔøΩ 
 ode:22-alpine network timeouts on musl headers for isolated-vm
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
@@ -930,7 +930,7 @@ docker compose up --build
 **Fix:** Switched all Dockerfiles to use 
 ode:22-slim (Debian) which relies on standard glibc and the official nodejs infrastructure, and updated package manager dependencies from pk to pt-get.
 
-### D039 ∑ ?? High ∑ Misplaced "use client" directives break unierp-web production build
+### D039 ÔøΩ ?? High ÔøΩ Misplaced "use client" directives break unierp-web production build
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
 
@@ -945,7 +945,7 @@ npm run build
 `
 **Fix:** Created and ran a script to identify all files containing "use client" and moved the directive to the very first line of the file.
 
-### D040 ∑ ?? High ∑ TypeScript Set generic missing in unierp-web register page
+### D040 ÔøΩ ?? High ÔøΩ TypeScript Set generic missing in unierp-web register page
 
 **Found:** 2026-08-08 by Track C. **Fixed by:** Track C.
 
@@ -961,7 +961,7 @@ npm run build
 **Fix:** Explicitly defined the generic type 
 ew Set<string>(prev) in egister/page.tsx.
 
-### D041 ∑ ?? High ∑ Tenant user can access plane-1 /tenants and /extensions views in Platform Admin Console (unierp-console)
+### D041 ÔøΩ ?? High ÔøΩ Tenant user can access plane-1 /tenants and /extensions views in Platform Admin Console (unierp-console)
 
 **Found:** 2026-08-08 by Track C (PSC UI E2E Exercise). **Fixed by:** Open.
 
@@ -974,7 +974,7 @@ During end-to-end browser testing of unierp-console (Plane 1), authenticating wi
 4. **Observed:** Page renders full Tenant Directory with cross-tenant details and "Provision Tenant" / "Impersonate" actions.
 5. **Expected:** 403 Forbidden or Access Denied UI block for non-provider staff users.
 
-### D042 ∑ ?? High ∑ unierp-console/next.config.mjs defaults piBaseUrl fallback to port 3003 instead of 3001
+### D042 ÔøΩ ?? High ÔøΩ unierp-console/next.config.mjs defaults piBaseUrl fallback to port 3003 instead of 3001
 
 **Found:** 2026-08-08 by Track C (PSC UI E2E Exercise). **Fixed by:** Open.
 
@@ -987,7 +987,7 @@ pm run dev in unierp-console without API_URL set.
 3. **Observed:** Server log prints Failed to proxy http://localhost:3003/api/platform/v1/super-admin/tenants [AggregateError: ] { code: 'ECONNREFUSED' }.
 4. **Expected:** Fallback target should be http://localhost:3001.
 
-### D043 ∑ ?? High ∑ unierp-api Docker build fails TypeScript check due to stale published Prisma client in @kannan19302/data
+### D043 ÔøΩ ?? High ÔøΩ unierp-api Docker build fails TypeScript check due to stale published Prisma client in @kannan19302/data
 
 **Found:** 2026-08-08 by Track C (Container Stack Bring-up). **Fixed by:** Open.
 
@@ -1138,3 +1138,82 @@ without one.
 ```bash
 node scripts/start.mjs --who      # C01 CLAIMED, never FINISHed; C02‚ÄìC29 absent
 ```
+
+### D047 ¬∑ üî¥ CRITICAL ¬∑ A regression suite asserted the plane-1 escalation as required behaviour
+
+**Found:** 2026-08-11, closing M47/D046. **Fixed by:** [M47](22-TRACK-M-PROVIDER-ADMIN-OS.md), in the same change.
+
+`unierp-api/src/modules/admin/tests/rbac-regression-sweep.spec.ts` ‚Äî a suite written
+specifically to prove the RBAC boundary ‚Äî contained three assertions requiring that a **tenant**
+credential succeed against `OperationsController`:
+
+```ts
+it("admin.operations.read grants GET /admin/operations/jobs", async () => {
+  await expect(
+    callWithRole(guard, OperationsController, "getBackgroundJobs", ["admin.operations.read"]),
+  ).resolves.toBe(true);
+});
+
+it("the same Tenant Admin persona legitimately succeeds on tenant-scoped admin.operations.* endpoints
+    (proves the rejection above is a real boundary, not a broken guard)", ‚Ä¶)
+```
+
+`OperationsController` is `@Controller("platform/v1/operations")` and `@SkipTenantScope()`. It is
+plane 1 ‚Äî C05's operations dashboard, mounted in `platform.module.ts`. A tenant admin holds
+`admin.operations.read` through the seeded `admin.*` grant, so the suite required that a customer's
+administrator reach a cross-tenant controller.
+
+**There is no `/admin/operations/*` route.** The endpoint the test names does not exist:
+
+```bash
+grep -rn '@Controller(.*operations' src/ --include=*.controller.ts
+#   src/modules/admin/bulk-operations.controller.ts:34   admin/bulk-operations
+#   src/modules/crm/crm-sales-operations-deep.controller.ts:21
+#   src/modules/hr-advanced/hr-operations.controller.ts:40
+#   src/platform/v1/operations.controller.ts:34          platform/v1/operations   ‚Üê the one imported
+```
+
+**And the assertion never held at runtime.** The suite constructs `RbacGuard` alone. The real chain
+is `JwtAuthGuard ‚Üí RbacGuard ‚Üí ControlPlaneGuard`, and `ControlPlaneGuard` rejects any
+`@SkipTenantScope()` handler guarded by a code outside `CONTROL_PLANE_NAMESPACES` before RbacGuard's
+verdict matters (`control-plane.guard.ts:65-76`). `admin.operations.read` is outside it. So
+`/platform/v1/operations/*` returned **403 to every caller, including platform staff** ‚Äî C05's
+operations dashboard could not have worked ‚Äî while this suite reported the boundary as verified.
+
+Measured, by reverting only the two permission strings on `operations.controller.ts` and running
+M47's sweep against a fully-credentialled platform owner (`realm: provider`, MFA satisfied,
+`["system.*","platform.*"]`):
+
+```
+A correctly-credentialled platform owner was refused on 9 endpoint(s):
+GET /platform/v1/operations/health    ‚Äî Cross-tenant handler is guarded by tenant-scoped
+GET /platform/v1/operations/dashboard   permission(s): admin.operations.read. Control-plane
+‚Ä¶                                       handlers require a system/platform-scoped permission.
+```
+
+**Reproduction** (against the pre-M47 tree):
+
+```bash
+npx vitest run src/modules/admin/tests/rbac-regression-sweep.spec.ts   # green
+# yet, in the same tree, the real chain denies everyone:
+grep -n '@SkipTenantScope\|@Permissions' src/platform/v1/operations.controller.ts
+#   @SkipTenantScope()  +  @Permissions("admin.operations.read")  ‚Üí ControlPlaneGuard misScoped throw
+```
+
+**Why this is Critical rather than Medium.** It is not merely a wrong test. A test asserting an
+escalation is *load-bearing in the wrong direction*: it converts the correct fix into a build
+failure, so the next agent to notice the escalation sees a red suite and reverts. D046 was
+discoverable for as long as this file existed; closing D046 was blocked by it.
+
+**Amendment, recorded rather than made quietly** (`README ¬ß 0` rule 4 in spirit ‚Äî this is a test,
+not a plan document, but the same reasoning applies): the three assertions now require the tenant
+credential to be **refused** and a `system.*` grant to **succeed**. The original intent ‚Äî "prove the
+rejection is a real boundary, not a broken guard" ‚Äî is preserved and still asserted, using the
+credential that should work instead of the one that must not. The controller's permissions moved
+`admin.operations.* ‚Üí system.operations.*` in the same change, which also fixes the 403-for-everyone
+bug above.
+
+**The generalisation worth acting on.** This suite tests one guard out of a three-guard chain. Any
+assertion it makes about *allowing* access is unsound by construction, because a later guard can
+still deny. Only its *denial* assertions are trustworthy. A phase should either drive the full chain
+or restrict itself to denials ‚Äî filed for Track J.

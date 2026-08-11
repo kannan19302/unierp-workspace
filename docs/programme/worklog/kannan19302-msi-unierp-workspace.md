@@ -2876,3 +2876,112 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M05 · FINISH · 2026-08-11T04:42:02Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M05 — Provider adapter contract and the reference pair
+EXIT CRITERION (verbatim):
+  "The conformance suite runs against both adapters and passes. A
+   deliberately non-conforming adapter fails the suite. Adding a third
+   provider requires no change outside its own adapter."
+
+==================== 1. PASSING (both real adapters) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/provider-registry/adapters/log-email.adapter.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 2[2mms[22m[39m
+ [32m✓[39m src/platform/provider-registry/adapters/smtp-email.adapter.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 10:11:48
+[2m   Duration [22m 354ms[2m (transform 65ms, setup 47ms, collect 67ms, tests 5ms, environment 0ms, prepare 223ms)[22m
+
+
+==================== 2. A DELIBERATELY NON-CONFORMING ADAPTER FAILS THE SUITE ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/provider-registry/adapters/non-conforming-adapter.spec.ts [2m([22m[2m8 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 10[2mms[22m[39m
+[31m   [31m×[31m Adapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mdiscover() returns an array whose entries include this adapter's own capability[90m 5[2mms[22m[31m[39m
+[31m     → discover() must report the adapter's own declared capability among what it found — an adapter that discovers nothing matching its own claim is not conforming: expected false to be true // Object.is equality[39m
+[31m   [31m×[31m Adapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mcheckHealth() returns a typed result with a boolean healthy field[90m 1[2mms[22m[31m[39m
+[31m     → an unhealthy result must explain why — an operator cannot act on a bare false: expected undefined to be truthy[39m
+[31m   [31m×[31m Adapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mexecute() with invalid input reports failure via the typed result — never an uncaught throw[90m 1[2mms[22m[31m[39m
+[31m     → execute() threw Error: uncaught: recipient missing instead of returning { success: false, error }. A caller three layers up should see a typed failure, not catch an adapter's raw exception.: expected Error: uncaught: recipient missing to be undefined[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/adapters/non-conforming-adapter.spec.ts[2m > [22mAdapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mdiscover() returns an array whose entries include this adapter's own capability
+[31m[1mAssertionError[22m: discover() must report the adapter's own declared capability among what it found — an adapter that discovers nothing matching its own claim is not conforming: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/platform/provider-registry/adapter-conformance-suite.ts:[2m40:9[22m[39m
+    [90m 38| [39m        [32m"discover() must report the adapter's own declared capability [39m…
+    [90m 39| [39m          [32m"an adapter that discovers nothing matching its own claim is[39m…
+    [90m 40| [39m      )[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m        [31m^[39m
+    [90m 41| [39m    })[33m;[39m
+    [90m 42| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/adapters/non-conforming-adapter.spec.ts[2m > [22mAdapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mcheckHealth() returns a typed result with a boolean healthy field
+[31m[1mAssertionError[22m: an unhealthy result must explain why — an operator cannot act on a bare false: expected undefined to be truthy[39m
+
+[32m- Expected:[39m 
+true
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/platform/provider-registry/adapter-conformance-suite.ts:[2m51:11[22m[39m
+    [90m 49| [39m          result[33m.[39merror[33m,[39m
+    [90m 50| [39m          [32m"an unhealthy result must explain why — an operator cannot a[39m…
+    [90m 51| [39m        )[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m   | [39m          [31m^[39m
+    [90m 52| [39m      }
+    [90m 53| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/provider-registry/adapters/non-conforming-adapter.spec.ts[2m > [22mAdapter conformance: BrokenAdapter (INTENTIONALLY NON-CONFORMING — expected to fail)[2m > [22mexecute() with invalid input reports failure via the typed result — never an uncaught throw
+[31m[1mAssertionError[22m: execute() threw Error: uncaught: recipient missing instead of returning { success: false, error }. A caller three layers up should see a typed failure, not catch an adapter's raw exception.: expected Error: uncaught: recipient missing to be undefined[39m
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+[Error: uncaught: recipient missing]
+
+[36m [2m❯[22m src/platform/provider-registry/adapter-conformance-suite.ts:[2m75:9[22m[39m
+    [90m 73| [39m        [32m`execute() threw [39m[36m${[39m[33mString[39m(thrown)[36m}[39m[32m instead of returning { succ[39m…
+    [90m 74| [39m          [32m`A caller three layers up should see a typed failure, not ca[39m…
+    [90m 75| [39m      )[33m.[39m[34mtoBeUndefined[39m()[33m;[39m
+    [90m   | [39m        [31m^[39m
+    [90m 76| [39m      [34mexpect[39m(result[33m?.[39msuccess[33m,[39m [32m"invalid input must report success: fals[39m…
+    [90m 77| [39m      [34mexpect[39m(result[33m?.[39merror[33m,[39m [32m"a failure must include an error message"[39m)…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 10:11:50
+[2m   Duration [22m 322ms[2m (transform 38ms, setup 23ms, collect 22ms, tests 10ms, environment 0ms, prepare 96ms)[22m
+
+
+==================== 3. adapter-contract.ts and adapter-conformance-suite.ts were written once and never modified while adding either adapter ====================
+fdb1d90 feat(provider-registry): adapter contract, conformance suite, and the reference pair (M05)
+fdb1d90 feat(provider-registry): adapter contract, conformance suite, and the reference pair (M05)
+(both: exactly one commit each - written once, never touched again while both adapters and the non-conforming spec were added)
+```
+

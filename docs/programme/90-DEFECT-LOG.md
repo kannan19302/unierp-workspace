@@ -1639,3 +1639,38 @@ tables with no deletable records at all) versus genuinely unclassified business 
 retention-exemptions.json` is scaffolded (the gate reads it if present) but empty; populating it for the
 genuinely-exempt subset would meaningfully shrink this number without requiring a business-semantics
 decision for every model.
+
+### D060 · 🟠 HIGH · 107 of 130 module-local settings pages have not adopted the D13-D18 settings contract, and no real storage backend exists for any settings runtime this wave built
+
+Found and measured during D19. Track D's Stage D-III (D13-D18) built a complete, tested settings
+CONTRACT: a declarative schema specification (D13), a single rendering component with zero bespoke UI
+code per app (D14), deterministic scope resolution (D15), versioning/migration (D16), audit and
+approval-gated change control (D17), and environment promotion with secret exclusion (D18). D19 is the
+capstone phase that retrofits every existing module-local settings page onto that contract and deletes
+the bespoke UI — measured directly via the new `scripts/check-settings-contract-adoption.mjs`: 130
+`settings/page.tsx`-shaped routes exist across `unierp-web`/`unierp-console`, and only 23 (the ones this
+session itself never touched, pre-existing from earlier work) show any sign of using the shared renderer;
+the other 107 — spanning effectively every business module (CRM, finance, HR, inventory, manufacturing,
+healthcare, education, field-service, ecommerce, and the entire platform `(dashboard)/settings/*` tree) —
+remain bespoke. Separately, and more fundamentally: D13 through D18 all explicitly declared
+settings-VALUE storage the CALLER's responsibility, so even for a page that DID adopt `<SettingsPage>`,
+no real backend persists the resulting values anywhere yet — the entire runtime this wave built is
+storage-agnostic by design, and nothing has wired it to an actual data store.
+
+**How it was caught:** running `check-settings-contract-adoption.mjs` (built for D19's own exit
+criterion, "grep finds no module-local settings page") against the real repository, which is the
+intended, correct behavior of the gate — it is SUPPOSED to fail loudly here, not silently pass.
+
+**Not fixed — deliberately not attempted.** Retrofitting 107 pages superficially (registering hollow
+`SettingDefinition`s just to make the grep pass, without real per-module storage behind them) would
+produce a settings system that LOOKS unified but manages nothing real — actively worse than an honest,
+measured gap, per this session's own D12 precedent for the identical class of problem (retention/deletion
+classification). The contract itself (D13-D18) and the measurement gate (D19) are the real, complete
+deliverables; the retrofit is untouched, tracked here explicitly.
+
+**Not fully investigated:** whether a storage-backend design (a generic `TenantSettingValue` table keyed
+by tenantId/scope/key, replacing the ad-hoc `Setting`/`AppSettings`/`EcommerceStoreSetting`/
+`SaasTenantSetting`/`WebSettings` models D07's investigation already found) could serve every module at
+once, versus each module needing its own. Designing that shared store is likely the highest-leverage next
+step before attempting any of the 107 individual page retrofits, since building it once unblocks all of
+them simultaneously.

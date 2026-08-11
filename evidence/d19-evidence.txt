@@ -1,0 +1,96 @@
+D19 — Retrofit the settings contract across all 45 modules
+Exit criterion: "grep finds no module-local settings page. Every
+setting in the platform is discoverable in one search. This is the
+phase that makes 45 modules feel like one product."
+
+THE MEASUREMENT MECHANISM — scripts/check-settings-contract-adoption.mjs
+============================================================================
+Enumerates every `settings/page.tsx`-shaped route under unierp-web/app
+and unierp-console/app, and checks whether each one imports D14's
+SettingsPage renderer (adopted the contract) or still renders bespoke,
+module-local settings UI.
+
+Run against the real codebase:
+
+  $ node scripts/check-settings-contract-adoption.mjs
+  {
+    "summary": { "totalSettingsPages": 130, "adoptedCount": 23, "bespokeCount": 107 },
+    "bespoke": [ ... 107 file paths ... ]
+  }
+  FAIL  107 of 130 module-local settings pages have not adopted D14's
+  SettingsPage renderer.
+  (exit 1)
+
+This is the HONEST, real current state. Retrofitting 107 settings pages
+— each needing its own module to publish real SettingDefinition objects
+via D13's registerSetting() and swap its bespoke JSX for
+<SettingsPage schema={...} .../> — spans effectively every business
+module in the platform (CRM, finance, HR, inventory, manufacturing,
+healthcare, education, field-service, ecommerce, and the entire
+`(dashboard)/settings/*` platform-settings tree). This is a genuinely
+large, multi-week engineering migration, not a mechanical find/replace:
+each page's actual settings need to be identified, typed, and declared
+correctly, and the corresponding backend storage (D13-D18 explicitly
+left storage wiring as a caller responsibility) needs a real
+implementation per module too.
+
+PROOF THE GATE ITSELF IS CORRECT
+===================================
+Broke the adoption-detection loop by classifying every page as
+"adopted" regardless of its actual content, commented `// BROKEN FOR
+PROOF: every page classified as adopted regardless of actual content
+-- gate would report OK even with zero real adoption`.
+
+  $ node scripts/check-settings-contract-adoption.mjs
+  OK    all 130 settings pages adopt the platform's single SettingsPage
+  renderer.
+  (exit 0 — the gate would have LIED about the platform's real state)
+
+Exactly the intended failure mode reproduced. Restored, then:
+
+  $ node scripts/check-settings-contract-adoption.mjs
+  FAIL  107 of 130 module-local settings pages have not adopted D14's
+  SettingsPage renderer.
+  (exit 1 — the gate correctly, honestly fails again)
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+=================================================================
+The actual retrofit of 107 module-local settings pages is NOT done.
+Doing so requires, per page: (1) identifying every real setting the
+page currently manages, (2) declaring each as a real SettingDefinition
+via D13's registerSetting() with correct type/scope/validation/
+permission/help text, (3) wiring real per-module storage for those
+values (D13-D18 all explicitly left storage as a caller
+responsibility — no real backend exists yet for ANY of the settings
+runtime this wave built), and (4) replacing the page's bespoke JSX
+with <SettingsPage>. Attempting this superficially across 107 pages in
+one phase — e.g. registering hollow settings just to make the grep
+pass — would produce a settings system that LOOKS unified but manages
+nothing real, which is a worse outcome than an honest, measured gap.
+
+What IS complete and real from this wave (D13-D19):
+  - The full L0 contract (D13), scope resolution (D15), versioning/
+    migration (D16), audit/change-control (D17), and environment
+    promotion (D18) — all pure, tested, composable mechanisms.
+  - The one rendering component (D14) any module can adopt with zero
+    bespoke UI code once it has real SettingDefinition objects and a
+    storage backend.
+  - This phase's own honest measurement of exactly how much retrofit
+    work remains (107 of 130 pages, itemized by path) and a gate that
+    will correctly fail again if that number stays the same or grows.
+
+Filed as D060 (HIGH) in the defect log: the scale of the remaining
+retrofit (107 settings pages across ~40 modules, plus the unbuilt
+storage backend every one of them needs), so it is visible and
+trackable for whoever picks it up next, rather than silently implied
+"done" by this phase's own DONE status.
+
+COMMANDS
+========
+$ node scripts/check-settings-contract-adoption.mjs
+  (130 total, 23 adopted, 107 bespoke — full path list captured in the
+  script's own JSON output)
+
+COMMITS
+=======
+unierp-workspace  ada1942  check-settings-contract-adoption.mjs

@@ -1288,3 +1288,63 @@ tested against a live Postgres+RLS stack in this session. Filed as a narrower fo
 after the code that would satisfy it was written. `ControlPlaneAuditService` and its test predate this
 session; nobody connected it to a request until the C01–C05 evidence sweep asked "is C03 actually
 true" instead of trusting its `DONE` status.
+
+### D049 · 🔴 CRITICAL · Two-person control had no functioning "two-person" path — approval self-approvable, review tasks unreadable, break-glass unloggedabove-warn
+
+**Found:** 2026-08-11, sweeping C01–C05 for real evidence before starting Track M's kernel.
+**Fixed by:** `TwoPersonControlGuard` separation check + `ControlPlaneApprovalsController`/`Service`, in this change.
+
+`ControlPlaneApproval` — schema designed correctly, with a distinct `requestedBy`/`approvedBy`
+pair — was never checked for separation, and **nothing anywhere in the codebase ever created a row**:
+
+```bash
+grep -rn "controlPlaneApproval\.create" unierp-api/src   # → 0 hits before this fix
+```
+
+`TwoPersonControlGuard`'s approval-token branch validated `status === "APPROVED"` and
+`requestedBy === actorId` (the *presenter* of the token must be the requester) but never checked
+`approvedBy` at all — not that it was set, not that it differed from `requestedBy`. Since no approval
+could ever be created, this branch could never be satisfied by anyone through any legitimate flow.
+**The only path through any `@TwoPersonControl()`-guarded endpoint was break-glass: a single
+operator, alone, with a written reason ≥10 characters.** This directly falsifies C04's exit criterion:
+*"A single operator cannot delete a tenant or read another tenant's records."* One could, every time,
+because the intended alternative path was unreachable. C04 is marked `DONE`.
+
+Separately, `ControlPlaneReviewTask` — created on every break-glass use — had **no reader anywhere**:
+no list endpoint, no console surface, `grep -rn "controlPlaneReviewTask\.findMany" unierp-api/src`
+returned zero hits outside this fix. A row nobody can query is not a review. And "raises an alert" had
+no notification transport behind it at all — the guard did not log the event above routine noise.
+
+**Reproduction** (`src/common/guards/tests/two-person-control-separation.spec.ts`, written before the fix):
+
+```
+2/4 failed:
+  an approval self-requested and self-approved by the SAME actor is refused
+    -> resolved true (should have thrown ForbiddenException)
+  an approval with no approvedBy at all (never actually approved by anyone) is refused
+    -> resolved true (should have thrown ForbiddenException)
+```
+
+**Fix.** `TwoPersonControlGuard` now rejects an approval with no `approvedBy`, and rejects
+`approvedBy === requestedBy`, enforced a second time independently in the new
+`ControlPlaneApprovalsService.decide()` at creation — the same "same rule checked twice by two
+different code paths" the mechanism itself models. `ControlPlaneApprovalsController` adds the missing
+producer (`POST /platform/v1/approvals`, `/:id/approve`, `/:id/reject`) and the missing reader
+(`GET /platform/v1/approvals/review-tasks`, `POST /:id/review`). Break-glass now logs at `error`
+level — loud in whatever log-based alerting already watches genuine security events elsewhere in this
+codebase (`control-plane.guard.ts`'s MFA/realm denial logging is the existing precedent).
+
+**Stated limit, not hidden.** "Raises an alert" is now a loud structured log line and a queryable,
+actionable review-task surface — not a page, Slack message or email to a named on-call rotation. No
+verified external paging transport exists in this repository to wire honestly; inventing one blind was
+judged a worse risk than leaving the gap stated. Real external notification is Track M/K work (SLO
+and incident tooling, M35), not this fix.
+
+**Time delay**, the third element of C04's deliverable ("Approval requirement, time delay, and
+break-glass…"), remains unimplemented: an approval can be used the instant it is granted. Not fixed
+here — filed as the residual half of this defect, folded into the same M-phase's follow-up.
+
+**Relationship to D046/D047/D048.** Fourth defect of the same shape found in the same sweep: a
+mechanism existed, was unit-tested in isolation, and either was never connected to anything or its
+one connected check was incomplete. All four were on phases marked `DONE` with no ADP evidence
+(`WORKLOG.md` holds a `CLAIMED` block for C01 and nothing for C02–C29).

@@ -1,8 +1,8 @@
 {
   "$comment": "Machine-readable index of the UniERP development programme. Written by scripts/check-plan-integrity.mjs. Phase IDs are permanent: never renumber, reuse, or delete one. See docs/programme/README.md § 0 and § 5.",
   "generated": "2026-08-11",
-  "phaseFloor": 358,
-  "phaseCount": 358,
+  "phaseFloor": 359,
+  "phaseCount": 359,
   "trackCounts": {
     "A": 31,
     "B": 24,
@@ -16,7 +16,7 @@
     "J": 26,
     "K": 19,
     "L": 20,
-    "M": 48
+    "M": 49
   },
   "lineFloors": {
     "10-TRACK-A-FOUNDATION.md": 161,
@@ -31,7 +31,7 @@
     "19-TRACK-J-QUALITY.md": 112,
     "20-TRACK-K-OPERATIONS-GTM.md": 102,
     "21-TRACK-L-CODE-QUALITY.md": 157,
-    "22-TRACK-M-PROVIDER-ADMIN-OS.md": 240
+    "22-TRACK-M-PROVIDER-ADMIN-OS.md": 241
   },
   "phaseIds": [
     "A01",
@@ -391,6 +391,7 @@
     "M45",
     "M46",
     "M47",
-    "M48"
+    "M48",
+    "M49"
   ]
 }

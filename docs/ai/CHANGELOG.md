@@ -403,3 +403,5 @@ R e f a c t o r e d   u n i e r p - c o n s o l e :   e l i m i n a t e d   i n 
 - **2026-08-11 (D048):** Filed D048 CRITICAL - ControlPlaneAuditService (hash-chained, tamper-evident) was never called by any of 22 mounted plane-1 controllers; @TrackChanges on 28 handlers across 10 controllers was inert SetMetadata with no reader wired. C03 (audit log) marked DONE, falsified. Added M48 to Track M Wave 0, mirroring M47.
 
 - **2026-08-11 (M48):** Closed D048 CRITICAL - wired ControlPlaneAuditInterceptor globally (gated on SKIP_TENANT_SCOPE_KEY), calling the previously-dead ControlPlaneAuditService.record() for every plane-1 mutation. Removed 28 inert @TrackChanges call sites across 10 controllers rather than pairing them with a tenant-plane interceptor that would have misfiled records under the wrong tenant. Stated limit: post-hoc write, not same-transaction atomicity - carried to M14.
+
+- **2026-08-11 (D049):** Filed D049 CRITICAL - two-person control had no functioning two-person path (approval self-approvable, nothing ever created an approval row, review tasks had no reader, break-glass unlogged above routine noise). Added M49 to Track M Wave 0.

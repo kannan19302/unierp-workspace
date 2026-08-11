@@ -4172,3 +4172,113 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M13 · FINISH · 2026-08-11T08:39:50Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M13 — Reconciliation and self-healing
+EXIT CRITERION (verbatim):
+  "A resource deleted out of band is restored, and the restoration is
+   audited as a reconciliation rather than as an operator action. A
+   reconciler with a mis-set desired state hits the blast-radius
+   limit and stops instead of rebuilding the estate."
+
+==================== 1. PASSING ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/reconciler.service.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:09:35
+[2m   Duration [22m 556ms[2m (transform 75ms, setup 22ms, collect 264ms, tests 7ms, environment 0ms, prepare 101ms)[22m
+
+
+==================== 2a. OBSERVED FAILING (reconciliation audit record removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/reconciler.service.spec.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M13 · reconciliation and self-healing[2m > [22ma resource deleted out of band is restored, and audited as a reconciliation, not an operator action[90m 9[2mms[22m[31m[39m
+[31m     → expected [] to have a length of 1 but got +0[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/reconciler.service.spec.ts[2m > [22mM13 · reconciliation and self-healing[2m > [22ma resource deleted out of band is restored, and audited as a reconciliation, not an operator action
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/reconciler.service.spec.ts:[2m180:23[22m[39m
+    [90m178| [39m    [90m// The exit criterion's own words: audited AS A RECONCILIATION, no[39m…
+    [90m179| [39m    [90m// operator action — the actor identity is what makes that true.[39m
+    [90m180| [39m    [34mexpect[39m(auditLogs)[33m.[39m[34mtoHaveLength[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m181| [39m    [34mexpect[39m(auditLogs[[34m0[39m][33m.[39mactorId)[33m.[39m[34mtoBe[39m([32m"system:reconciler"[39m)[33m;[39m
+    [90m182| [39m    [34mexpect[39m(auditLogs[[34m0[39m][33m.[39maction)[33m.[39m[34mtoBe[39m([32m"reconciliation.restore"[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:09:38
+[2m   Duration [22m 565ms[2m (transform 77ms, setup 23ms, collect 266ms, tests 12ms, environment 0ms, prepare 100ms)[22m
+
+
+==================== 2b. OBSERVED FAILING (blast-radius check removed) ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [31m❯[39m src/platform/operation-pipeline/reconciler.service.spec.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 12[2mms[22m[39m
+[31m   [31m×[31m M13 · reconciliation and self-healing[2m > [22ma reconciler with a mis-set desired state hits the blast-radius limit and stops instead of rebuilding the estate[90m 6[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m src/platform/operation-pipeline/reconciler.service.spec.ts[2m > [22mM13 · reconciliation and self-healing[2m > [22ma reconciler with a mis-set desired state hits the blast-radius limit and stops instead of rebuilding the estate
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/platform/operation-pipeline/reconciler.service.spec.ts:[2m204:41[22m[39m
+    [90m202| [39m    [35mconst[39m summary [33m=[39m [35mawait[39m reconciler[33m.[39m[34mreconcile[39m()[33m;[39m
+    [90m203| [39m
+    [90m204| [39m    [34mexpect[39m(summary[33m.[39mblastRadiusExceeded)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m205| [39m    [34mexpect[39m(summary[33m.[39mcandidateCount)[33m.[39m[34mtoBe[39m([34m5[39m)[33m;[39m
+    [90m206| [39m    [34mexpect[39m(summary[33m.[39mhealed)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:09:40
+[2m   Duration [22m 579ms[2m (transform 79ms, setup 23ms, collect 267ms, tests 12ms, environment 0ms, prepare 95ms)[22m
+
+
+==================== 3. RESTORED ====================
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/UniERP/unierp-api[39m
+
+ [32m✓[39m src/platform/operation-pipeline/reconciler.service.spec.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 14:09:43
+[2m   Duration [22m 551ms[2m (transform 77ms, setup 22ms, collect 265ms, tests 7ms, environment 0ms, prepare 96ms)[22m
+```
+

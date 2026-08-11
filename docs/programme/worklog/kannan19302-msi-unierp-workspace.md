@@ -10347,3 +10347,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### J22 · RELEASED · 2026-08-11T18:39:38Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+CodeQL alert triage requires GitHub Security tab / API access not available in this environment; IDOR sweep at 'every record endpoint' scale needs the same measured-gate approach as J04 but requires picking this back up with more budget
+```
+

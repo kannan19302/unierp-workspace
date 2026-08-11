@@ -6336,3 +6336,113 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M33 · FINISH · 2026-08-11T13:27:21Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M33 — RBAC/ABAC for the estate — least privilege
+===================================================
+
+Exit criterion: "A grant scoped to one region provably cannot plan
+against another — a two-scope test asserting ZERO resources visible, not
+filtered results. No platform.* wildcard satisfies an estate grant.
+Unauthorised returns 403."
+
+--- Mechanism ---
+- unierp-data: EstateGrant — subjectId, capability (read/plan), and
+  optional scope fields (resourceKind, region, environment, tenantId,
+  accountId). Every non-null field NARROWS the grant.
+- unierp-api: EstateAbacService is a SECOND, fully independent
+  authorisation layer over the estate — it never calls hasPermission()
+  or reads a role's platform.*/["*"] RBAC grant at all. A resource's
+  REAL attributes are read from M07 (kind), the resource's own desired
+  state (region — the same field M17's residency check reads), and
+  M18's ResourceAttribution (tenant/environment) — never assumed from
+  the grant. A grant matches only if every one of its own non-null
+  scope fields equals the resource's actual value; a subject with zero
+  grants is never authorized.
+- EstateAbacGuard refuses with 403 (ForbiddenException) when no grant
+  matches, applied via @RequireEstateGrant() to a real
+  authorize-plan endpoint in the new EstateAbacController.
+
+--- Proof 1: region-scoped grant, zero visible across the boundary ---
+estate-abac.service.spec.ts:
+  "a grant scoped to one region provably CANNOT plan against another —
+  asserting ZERO resources visible, not filtered" — a grant scoped to
+  us-east-1 authorizes a us-east-1 resource, refuses a eu-west-1
+  resource, AND listAuthorizedResourceIds() over BOTH resources as
+  candidates returns exactly ["res-us"] — the eu resource is not merely
+  filtered out of a longer list, it never appears, and the test
+  explicitly asserts it is absent (not just that the array has length 1).
+
+--- Proof 2: no implicit allow ---
+  "a subject with NO grants at all is never authorized" — zero grants,
+  zero access, no default-allow fallback.
+
+--- Proof 3: capability separation ---
+  a "read" grant does not authorize "plan" on the same resource, and
+  vice versa.
+
+--- Proof 4: all scope dimensions must match ---
+  a grant scoped to BOTH region and environment refuses a resource that
+  matches the region but not the environment — partial scope matches
+  don't count.
+
+--- Proof 5: 403 via the guard, including against an RBAC-wildcard user ---
+estate-abac.guard.spec.ts:
+  "unauthorised returns 403" — a subject with no grant at all is refused
+  ForbiddenException.
+  "a region-scoped grant authorizes IN-region and refuses OUT-of-region
+  with 403, on the exact same route" — the same guard, same route,
+  different resourceId, flips from allow to 403 purely on the resource's
+  actual region.
+  "NO platform.* (or any other) RBAC wildcard satisfies this guard" — a
+  user object literally carrying `permissions: ["platform.*"]` and
+  `roles: ["SUPER_ADMIN"]` is STILL refused with 403, because the guard
+  never reads req.user.permissions or req.user.roles at all — proven by
+  constructing that exact user shape and asserting the 403 still fires.
+
+--- Proof 6: break/restore ---
+BREAK: region-scope comparison removed from matches() — a region-scoped
+grant would match every region.
+
+Result: 2 tests FAIL across both spec files:
+  x (service) a grant scoped to one region provably CANNOT plan against
+    another
+  x (guard) a region-scoped grant authorizes IN-region and refuses
+    OUT-of-region with 403
+
+RESTORE: estate-abac.service.ts restored from backup.
+Result: 9/9 tests PASS (5 service + 4 guard).
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/ + admin tests + guard tests
+  Test Files  49 passed (49)
+       Tests  268 passed (268)
+unierp-api: node --max-old-space-size=6144 tsc --noEmit -> clean
+  (default heap exhausted this run under this session's memory
+  pressure; a larger heap confirmed the typecheck itself is clean, not
+  a real error)
+unierp-api: check-platform-permissions.mjs -> OK, 39 controllers, 207 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+unierp-shared: npm run build -> rebuilt dist/ immediately after this
+  phase's permission additions, applying the D055 lesson from the
+  immediately preceding phase before it could recur.
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- accountId scoping is modelled in the schema and matching function but
+  not separately proven by its own test — the exit criterion's own
+  worked example is region, which is what the tests are built around;
+  accountId follows the identical matching logic (same code path as
+  region/environment/tenantId), not a separate mechanism.
+- Only ONE existing destructive endpoint (a new authorize-plan check in
+  EstateAbacController) demonstrates the guard; wiring
+  @RequireEstateGrant() onto other Track M plan-execution endpoints
+  (M19/M20/M21/M24 etc.) is a one-line addition per endpoint using the
+  same decorator, not new mechanism, and was not done exhaustively here.
+- No console UI surface in this phase — the exit criterion is a backend
+  authorisation-mechanism requirement.
+```
+

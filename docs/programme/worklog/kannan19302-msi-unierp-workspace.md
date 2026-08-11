@@ -7437,3 +7437,127 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M45 · FINISH · 2026-08-11T14:38:56Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M45 — Automation, runbooks and event-driven response
+Exit criterion: "A runbook is authored, dry-run, approved and executed
+from an incident, and its execution is audited as a plan. A runbook that
+would breach M08 policy cannot be published."
+
+MECHANISM
+=========
+1. unierp-data/prisma/schema/runbooks.prisma: Runbook (DRAFT/PUBLISHED,
+   an ordered list of {resourceId, proposedState} steps as JSON) and
+   RunbookExecution (incidentId/approvalId/jobId/planIds — every field
+   points at a row that actually exists).
+
+2. unierp-api/src/platform/v1/runbook.service.ts:
+   - authorRunbook(name, steps) creates a DRAFT runbook.
+   - dryRunRunbook(runbookId) calls M09's own PlanningService.dryRun()
+     for every step — no side effect on any resource, verified by
+     asserting desired state is unchanged after.
+   - publishRunbook(runbookId, policyName) evaluates EVERY step against
+     the named M08 policy (PolicyEngineService.evaluate()) BEFORE status
+     ever becomes PUBLISHED. Any step that breaches refuses the whole
+     publish — the runbook stays DRAFT, never reaching the only status
+     executeFromIncident() will run.
+   - executeFromIncident(runbookId, incidentId, requestedBy, approvedBy):
+     requires the runbook is PUBLISHED, requires a real Incident row
+     (prisma.incident.findUnique), requests and immediately decides a
+     real two-person approval via C04/M49's ControlPlaneApprovalsService
+     — reused directly (the same precedent M11 set for its own approval
+     gate), so requester/approver distinctness is enforced by that
+     service itself, not re-implemented. Compiles a real M09 plan per
+     step, then runs every step as ONE M12 durable job. M14's own audit
+     gate (a record written before every step runs) fires by
+     construction — "executed ... audited as a plan" names the
+     mechanism, not a claim.
+   - RunbookController: POST (author), GET :id/dry-run, POST :id/publish,
+     POST :id/execute.
+
+PROOF — PUBLISH REFUSES A POLICY-BREACHING RUNBOOK
+=====================================================
+runbook.service.spec.ts (7 tests): authors a DRAFT, dry-runs with no
+side effect, publishes a policy-clean runbook, REFUSES to publish a
+policy-breaching one (status stays DRAFT, still dry-runnable), executes
+a published runbook end-to-end (real incident + real two-person
+approval + real M12 job; the audit log grows; the actual desired state
+changes only through the plan pipeline), refuses to execute an
+unpublished runbook, and refuses a same-operator approval.
+
+Broke publishRunbook() by computing policyEngine.evaluate()'s result but
+never checking it, commented `// BROKEN FOR PROOF: policy evaluation
+result is computed but never checked -- publishes regardless`.
+
+  $ npx vitest run src/platform/v1/runbook.service.spec.ts
+  ×  REFUSES to publish a runbook that would breach M08 policy — never
+       reaches PUBLISHED
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/platform/v1/runbook.service.spec.ts
+  Tests  7 passed (7)
+
+PROOF — EXECUTION REFUSES AN UNPUBLISHED RUNBOOK
+===================================================
+Broke executeFromIncident() by removing the PUBLISHED-status check,
+commented `// BROKEN FOR PROOF: PUBLISHED-status check removed -- a
+DRAFT runbook would execute`.
+
+  $ npx vitest run src/platform/v1/runbook.service.spec.ts
+  ×  REFUSES to execute an unpublished (DRAFT) runbook, even from a real
+       incident
+
+Exactly the intended assertion failed. Restored, then:
+
+  $ npx vitest run src/platform/v1/runbook.service.spec.ts
+  Tests  7 passed (7)
+
+FULL REGRESSION (post-restore, all changes in place)
+======================================================
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+  (clean, no output)
+
+$ node scripts/check-platform-permissions.mjs
+  check-platform-permissions: 46 mounted controllers, 225 endpoints.
+  OK
+
+$ node scripts/check-layer.mjs
+  Layer rule verified for unierp-api (L3).
+
+$ npx vitest run src/platform/ src/modules/notifications/ \
+    src/modules/marketplace/tests/vendor-capability-gate.spec.ts \
+    src/modules/admin/tests/tenant-lifecycle.service.spec.ts \
+    src/modules/admin/tests/permissions-drift.spec.ts \
+    src/modules/admin/tests/rbac-regression-sweep.spec.ts \
+    src/common/guards/tests/two-person-control-separation.spec.ts \
+    src/common/guards/tests/control-plane-audit.spec.ts \
+    src/common/guards/tests/step-up-mfa.guard.spec.ts \
+    src/common/guards/tests/estate-abac.guard.spec.ts
+  Test Files  71 passed (71)
+       Tests  369 passed (369)
+
+WHAT THIS PHASE DOES NOT COVER
+================================
+- No event triggers or scheduled (cron) automation — the exit criterion
+  is scoped to authored/dry-run/published/executed-from-incident, which
+  is what's proven. Event-driven triggering (Deliverable text) is a
+  natural follow-up that would call executeFromIncident() the same way,
+  not new architecture.
+- No console UI for authoring or reviewing runbooks — a backend
+  mechanism proven by API + tests.
+- Rollback/compensation across a multi-step runbook execution is left to
+  M12's own existing compensate-on-failure behaviour (a thrown step
+  triggers it automatically); this phase adds no runbook-specific
+  compensator beyond what M12 already provides any job.
+
+COMMITS
+=======
+unierp-data      77b8af0  Runbook/RunbookExecution models
+unierp-shared    1e757cb  system.runbook.read/manage permissions (dist rebuilt)
+unierp-api       5e07e26  runbook service/controller, module wiring, spec
+```
+

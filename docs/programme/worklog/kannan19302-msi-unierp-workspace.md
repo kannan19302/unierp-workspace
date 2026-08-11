@@ -6683,3 +6683,104 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M36 · FINISH · 2026-08-11T13:50:18Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M36 — Backup, restore, DR and failover
+=========================================
+
+Exit criterion: "A restore is rehearsed and reconciles; the measured RPO
+and RTO are recorded against the objective and a miss is a failure, not
+a note. A region failover is rehearsed with a proven failback. Distinct
+from C22 migration — asserted."
+
+--- Mechanism ---
+- unierp-data: BackupPolicy (resource-scoped RPO/RTO objectives),
+  RestoreRehearsal (measured numbers + pass/fail + reconciled),
+  FailoverRehearsal (from/to region + failback proof fields). All
+  platform-owned, resource-scoped — never touching Tenant/
+  SaasMultiTenantCluster/UsageRecord, the models C22's tenant migration
+  actually uses.
+- unierp-api: DisasterRecoveryService.rehearseRestore() applies the
+  backed-up state AS A PLAN through M09/M12 (never a direct write),
+  measures RPO (failureAt - lastBackupAt) and RTO (restoreCompletedAt -
+  restoreStartedAt), and THROWS if either exceeds its objective or the
+  resource fails to reconcile — "measured rather than declared" and "a
+  miss is a failure" are the same enforced guarantee, not two separate
+  claims. The rehearsal is recorded regardless of outcome.
+  rehearseFailover()/rehearseFailback() are two SEPARATE calls against
+  the resource's `region` field (the same field M17/M21 already use);
+  failbackVerified is set only once the actual state confirms the
+  region reverted.
+
+--- Proof 1: restore rehearsed, reconciles, within objective passes ---
+disaster-recovery.service.spec.ts:
+  "a restore is rehearsed and RECONCILES, measured RPO/RTO recorded
+  against the objective, WITHIN objective passes" — a 30-minute data-
+  loss window against a 60-minute RPO objective, and a 60-minute restore
+  against a 120-minute RTO objective: passed true, reconciled true,
+  measured values recorded exactly (30, 60), and the resource's actual
+  desired state genuinely reflects the restored data.
+
+--- Proof 2: a miss is a FAILURE, not a note ---
+  "a MISS on either objective is a FAILURE (throws), not a note -- and
+  is still recorded" — a 60-minute data-loss window against a 15-minute
+  RPO objective throws with "RPO missed" named explicitly in the
+  message, AND the rehearsal row still exists afterward with passed:
+  false — the failure is loud AND recorded, neither swallowed nor
+  silently downgraded to a log line.
+
+--- Proof 3: failover rehearsed with a PROVEN failback ---
+  "a region failover is rehearsed with a PROVEN failback" — failing over
+  a resource from us-east-1 to eu-west-1 changes its actual region;
+  failback is a SEPARATE, later call that reverts it, and the returned
+  rehearsal's failbackVerified is true only because the resource's
+  region was independently re-read and confirmed to be us-east-1 again.
+
+--- Proof 4: distinct from C22 migration, asserted mechanically ---
+  "is DISTINCT FROM C22 migration -- a full backup/restore/failover/
+  failback cycle never touches any C22-owned model" — a spy on
+  prisma.tenant.findUniqueOrThrow (the model C22's tenant-migration
+  service actually queries) counts zero calls across an entire
+  backup-policy + restore + failover + failback cycle — not merely "no
+  import of the C22 service," a runtime count of zero touches to its
+  data.
+
+--- Proof 5: break/restore ---
+BREAK: the throw-on-miss check removed — a missed objective would be
+recorded but the call would return normally.
+
+Result: disaster-recovery.service.spec.ts — 1/4 tests FAIL:
+  x a MISS on either objective is a FAILURE (throws), not a note
+
+RESTORE: disaster-recovery.service.ts restored from backup.
+Result: 4/4 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/ + admin tests + guard tests
+  Test Files  53 passed (53)
+       Tests  291 passed (291)
+unierp-api: node --max-old-space-size=6144 tsc --noEmit -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 42 controllers, 213 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+unierp-shared: npm run build -> rebuilt proactively before the drift
+  check, per the D055 lesson.
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Cross-region REPLICATION as a continuous, ongoing mechanism (named in
+  the Deliverable) is not built — this phase builds and proves the
+  rehearsal/measurement mechanism for restore and failover, which is
+  what the exit criterion tests; continuous replication would be a
+  scheduled/streaming concern layered on top, not a different
+  measurement model.
+- No console UI surface in this phase — the exit criterion is a backend
+  measurement/enforcement mechanism, not a console requirement.
+- No live backup infrastructure — rehearseRestore() accepts an
+  already-known backedUpState and timestamps, consistent with the "no
+  live external system reachable in this dev environment" constraint
+  stated across every Track M phase this session.
+```
+

@@ -1420,3 +1420,25 @@ exercises the platform's actual tenant-data-deletion path — had been silently 
 meaningful period. Worth a Track L phase auditing test files for constructors called with the
 wrong arity generally, since this is easy to miss (the test file still runs, still reports
 "1 failed" clearly, but 6 dead assertions sat in a green-looking suite until someone read the count).
+
+### D052 · 🟠 High · Zero HTTP controllers existed for the entire Track M kernel (M02-M14) until M15
+
+Every Track M phase from M02 through M14 built a real, tested backend mechanism — provider
+registry, resource model, policy engine, durable execution, reconciler, versioning/rollback — each
+proven by break/restore against its own service-level test suite. None of it was reachable over
+HTTP. `grep -rl "class.*Controller"` under `unierp-api/src/platform/v1/` before M15 found 23
+controllers, none importing `ResourceModelService`, `ProviderRegistryService`,
+`PolicyEngineService`, `PlanningService`, or `ReconcilerService` — all five were registered as
+NestJS providers in `platform.module.ts` and exported, but never injected into a controller.
+
+**Impact:** the console (plane 1) had no way to search, view, or act on any M07 Resource, run an
+M09 plan, evaluate an M08 policy, or trigger M13 reconciliation — the entire "operating system of
+the business" Track M exists to build was backend-only. M15's `EstateController` is the first
+controller against this kernel (`GET /platform/v1/estate/resources`,
+`POST /platform/v1/estate/bulk`), scoped to what M15's own exit criterion needed.
+
+**Not fixed here, and shouldn't be:** every later Track M console-facing phase (M16 onward)
+inherits this same gap for its own domain (provider registry, policy engine, scheduling,
+reconciliation) until each phase exposes its own controller as part of doing its own work — this
+entry exists so that gap is visible and expected, not rediscovered as a surprise once several more
+backend-only phases have accumulated.

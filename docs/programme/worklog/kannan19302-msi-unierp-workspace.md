@@ -6112,3 +6112,101 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### M31 · FINISH · 2026-08-11T13:09:53Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+M31 — FinOps optimisation and waste recovery
+===============================================
+
+Exit criterion: "Every recommendation is executable as a plan and states
+its saving from M25's real prices. A recommendation acted upon is
+measured afterwards against its predicted saving, and the difference is
+shown. No recommendation is advice-only."
+
+--- Mechanism ---
+- unierp-data: FinOpsRecommendation — resourceId, kind, costBefore,
+  predictedSaving, recommendedDesiredState (required), status, and
+  (after execution + measurement) actualCostAfter/actualSaving/variance.
+- unierp-api: FinOpsRecommendationService.generateRecommendation()
+  refuses to create a recommendation with an empty
+  recommendedDesiredState — a BadRequestException, not an optional
+  field — which is what makes "no recommendation is advice-only" an
+  enforced property rather than a convention. costBefore is summed
+  directly from M25's real ingested CostLineItem rows for the resource;
+  predictedSaving is a fraction of that real number, never typed by
+  hand.
+  executeRecommendation() compiles a real M09 plan and runs it through
+  M12's durable executor — the same pipeline discipline every other
+  Track M mutation this session used — then marks the recommendation
+  EXECUTED.
+  measureActualSaving() computes actualSaving from a real follow-up cost
+  figure against costBefore, and variance against the ORIGINAL
+  predictedSaving — shown even when negative.
+- FinOpsRecommendationController: POST recommendations, POST
+  :id/execute, POST :id/measure. New permissions
+  system.finops.read/execute.
+
+--- Proof 1: saving stated from real prices ---
+finops-recommendation.service.spec.ts:
+  "a recommendation states its saving from M25's REAL prices, never a
+  made-up number" — two real CostLineItem rows (80 + 20) produce
+  costBefore "100.0000"; a 50% saving fraction produces predictedSaving
+  "50.0000", traceable arithmetic over recorded data, not a literal.
+
+--- Proof 2: no recommendation is advice-only ---
+  "no recommendation is advice-only — one without a
+  recommendedDesiredState is refused outright" — an empty desired-state
+  object throws.
+
+--- Proof 3: every recommendation is executable as a plan ---
+  "every recommendation is EXECUTABLE AS A PLAN — running it goes
+  through the real pipeline and changes desired state" — executing a
+  recommendation produces a DONE job and the resource's actual M07
+  desired state (M14-versioned) reflects the recommended change
+  afterward.
+
+--- Proof 4: measured afterwards, difference shown ---
+  "a recommendation acted upon is MEASURED afterwards against its
+  predicted saving, and the DIFFERENCE is shown" — a recommendation
+  predicting a 100.00 saving that only delivers 50.00 in reality reports
+  actualSaving "50.0000" and variance "-50.0000" — the shortfall is
+  shown, not hidden or rounded to zero.
+
+--- Proof 5: break/restore ---
+BREAK: variance hardcoded to 0 regardless of the actual computed
+difference between predicted and actual saving.
+
+Result: finops-recommendation.service.spec.ts — 1/5 tests FAIL:
+  x a recommendation acted upon is MEASURED afterwards against its
+    predicted saving, and the DIFFERENCE is shown
+
+RESTORE: finops-recommendation.service.ts restored from backup.
+Result: 5/5 tests PASS.
+
+--- Full regression after restore ---
+unierp-api: npx vitest run src/platform/
+  Test Files  39 passed (39)
+       Tests  191 passed (191)
+unierp-api: npx tsc --noEmit -p tsconfig.json -> clean
+unierp-api: check-platform-permissions.mjs -> OK, 36 controllers, 202 endpoints
+unierp-api: check-layer.mjs -> OK, L3 layer rule holds
+unierp-data: DATABASE_URL=<dummy> npx prisma validate --schema prisma/schema -> valid
+
+--- What this phase does NOT cover, stated rather than hidden ---
+- Automated DETECTION of idle/orphaned/over-provisioned/unattributed
+  resources (named in the Deliverable) is not built — this phase builds
+  the recommendation lifecycle (generate/execute/measure) generically
+  over any `kind`; a detector that scans M26 telemetry or M18's
+  unattributed bucket and calls generateRecommendation() automatically
+  is a separate, later concern that would call this same mechanism, not
+  duplicate it.
+- Commitment and scheduling recommendations specifically (also named in
+  the Deliverable) are not built as distinct recommendation types beyond
+  the four generic `kind` values already supported.
+- No console UI surface in this phase — the exit criterion is a backend
+  mechanism (executable plan, real-price sourcing, measured variance),
+  not a console requirement.
+```
+

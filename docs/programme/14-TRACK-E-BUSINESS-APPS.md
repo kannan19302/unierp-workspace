@@ -112,7 +112,7 @@ non-negotiables.
 | :- | :---- | :------ | :------ | :---------------------- | :----- |
 | **E20** | Core HR | `hr`, `people` | E05, D04 | Employee lifecycle, org structure, positions, documents with expiry, and PII encrypted per A25 | DONE |
 | **E21** | Payroll and compensation | `advanced-hr`, `hr-advanced` | E20, E09, E12 | Statutory-correct payroll per jurisdiction, retro-pay, arrears, payslips, GL posting, and a **100 %**-covered calculation engine. Consolidates the two overlapping advanced-HR modules into one | OPEN |
-| **E22** | Talent, time and attendance | `hr`, `people` | E20 | Recruitment, onboarding, appraisal, learning, leave, shifts, timesheets, overtime rules, recognition | WIP |
+| **E22** | Talent, time and attendance | `hr`, `people` | E20 | Recruitment, onboarding, appraisal, learning, leave, shifts, timesheets, overtime rules, recognition | DONE |
 
 ### Customer-facing and services
 

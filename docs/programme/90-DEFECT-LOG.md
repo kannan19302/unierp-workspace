@@ -3234,3 +3234,56 @@ class of test needs) is required to close this phase's exit criterion completely
 migrating every OTHER `count() + 1` generator in the codebase (sales orders, purchase orders, MRP items,
 and others found across earlier phases this session) to use `DocumentNumberingService` — only
 `generateProjectInvoice()` was migrated as proof-of-technique.
+
+### D101 · 🔴 CRITICAL · The GDPR erasure endpoint never worked at all (missing config file), and once fixed, erasure never touched uploaded attachments
+
+Found while claiming and building E32 (Attachment and media lifecycle), whose own exit criterion is
+explicit: "A GDPR erasure removes attachments too. Proven, not assumed." Two independent, compounding
+defects in `unierp-api/src/modules/saas-portal/services/gdpr-compliance.service.ts`:
+
+**Part 1 — the erasure feature was completely non-functional.** `loadPiiRegistry()` reads
+`scripts/pii-registry.json` via `fs.readFileSync` — a hard dependency of `executeErasure()`, called on
+every single erasure request. That file **did not exist anywhere in this repository** (confirmed via
+`find`/`git log --all` — no history of it ever existing). Every call to `executeErasure()` would throw
+`ENOENT` before doing anything at all. This is more severe than the phase's own named concern
+(attachments specifically) — the entire GDPR right-to-erasure feature was inert.
+
+**Part 2 — attachments were never in scope even once the feature worked.** `eraseRecords()` deletes rows
+from the model named in the (now-created) registry — for `User`, this deletes the `User` row matched by
+email. It never touched `StoredFile` or `Document` rows, both of which have a `createdBy` field pointing
+at the user who uploaded them. A subject's identity record could be deleted while their uploaded photos,
+ID scans, and signed contracts — exactly the kind of personal data an erasure request exists to reach —
+remained untouched and fully retrievable.
+
+**How it was caught:** confirming Part 1 directly (`find . -iname pii-registry.json` returns nothing);
+then writing a FAIL-first test for Part 2 that erases a user and asserts their `StoredFile`/`Document`
+rows are gone while another user's are untouched — against the pre-existing code (with a manually-created
+registry entry, to isolate Part 2 from Part 1), the erased user's own file survived.
+
+**Fixed (both parts):**
+- Created `scripts/pii-registry.json` with a real entry for every one of the 11 models in
+  `prismaModelMap`, each with a stated `treatment` (`erase` vs `anonymize`) and `rationale` — `anonymize`
+  for `User`/`Organization`/`Customer`/`Vendor` (referenced by records with statutory retention
+  requirements), `erase` for the rest.
+- `eraseRecords()` now captures matching user ids before deleting `User` rows, and cascades the erasure
+  to `StoredFile`/`Document` rows where `createdBy` is one of those ids, in the same call.
+
+Proven via break/restore (reverted the attachment-cascade logic, confirmed the erased user's own
+`StoredFile` row survives — exactly the original gap — restored, confirmed 0 `BROKEN FOR PROOF` markers
+remain, 1/1 test passes; separately confirmed via direct `node -e` that the new registry file now parses
+successfully and covers all 11 `prismaModelMap` entries). Full regression: `src/modules/saas-portal/`,
+all 14 test files / 53 tests pass cleanly. Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E32's full scope.** This phase's own deliverable also names "retention,
+redaction, access audit, and deletion consistent with D11–D12" — none independently audited. Specifically:
+  - Only `User`-type erasure cascades to attachments. `Employee`, `Customer`, `Vendor`, `Contact`, and
+    the other 7 erasable entity types were NOT extended the same way — if any of those models also has
+    associated uploaded files (plausible for `Employee` HR documents or `Customer` KYC uploads), those
+    remain unreached by this fix. Only the `User` case was fixed as proof-of-technique, matching the test
+    actually written.
+  - `anonymizeRecords()` (the treatment used for `User`/`Organization`/`Customer`/`Vendor`) was not
+    extended at all — an anonymized (not erased) record's attachments are entirely untouched by this fix,
+    since `eraseRecords()` and `anonymizeRecords()` are separate code paths and only the former was
+    changed.
+  - Retention policies, redaction, and access-audit logging (the phase's other three named deliverables)
+    were not investigated in this pass.

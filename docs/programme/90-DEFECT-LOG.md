@@ -4635,3 +4635,42 @@ constraint. A genuine follow-up needs: a Flutter SDK installation; `custom_lint`
 as dev dependencies with a real lint rule authored and proven via `flutter analyze`; a mechanical migration of
 the hardcoded call sites to `design_tokens.dart` references; and verification that all 7 themes and both
 densities render without regression once migrated — none of which was investigated or attempted in this pass.
+
+### D135 · 🔴 CRITICAL · The 14 Web Studio/Sites tenant tables (WebSite, WebSitePage, WebCollection, etc.) never had Row-Level Security enabled — any database session, not just the application's own tenant-scoped middleware, could read or write across every tenant's site content
+
+Found while claiming and building F01 (Site data model and tenancy), whose exit criterion is:
+"`check-rls-verify.mjs` passes over every new table. A site provably cannot reference another tenant's
+content." Confirmed a real, mature multi-site builder data model exists (`unierp-data/prisma/schema/
+web.prisma`): `WebSite`, `WebSitePage`, `WebDomain`, `WebCollection`, `WebCollectionItem`, `WebMenu`,
+`WebAsset`, `WebSeo`, `WebSettings`, `WebTemplate`, `WebChatbot`, `WebFormSubmission`, `WebOrder`,
+`WebToLeadForm` — 14 of these carry a `tenant_id` column, a schema-declared tenant table per
+`check-rls-verify.mjs`'s own schema-derived expected-set logic. Searched every migration file this
+repository has ever committed for these table names alongside RLS-enabling DDL — zero matches, on any of the
+14, ever. This is the identical class of gap `ARCHITECTURE_REVIEW § F5` and the
+`20260808010000_rls_camelcase_tenant_tables` migration both already name and fixed for a different set of 16
+tables: a tenant table shipped with RLS disabled and no policy is a tenant table any database session can
+read or write across every tenant's content, directly and severely contradicting "a site provably cannot
+reference another tenant's content."
+
+**Fixed:** added `prisma/migrations/20260812210000_rls_web_studio_sites/migration.sql`, enabling RLS,
+forcing it, and creating a `tenant_isolation_<table>` policy for each of the 14 tables — following the exact
+proven pattern already committed in `20260808010000` (same idempotent `DO $$ ... FOREACH t IN ARRAY ...
+EXECUTE format(...) ... END $$` structure, adapted for these tables' snake_case `tenant_id` column rather
+than that migration's camelCase `tenantId`). `web_domains` deliberately excluded — no direct `tenant_id`
+column, tenancy derived through its owning `WebSite` by design. `locales` already has RLS from an earlier
+migration and is unaffected.
+
+**Released, not finished — this environment provides no live database.** `check-rls-verify.mjs`'s real
+implementation requires a live PostgreSQL connection (`DATABASE_URL`) to query actual RLS state; confirmed
+directly it fails with `PrismaClientInitializationError: Environment variable not found: DATABASE_URL`, the
+same class of blocker as E38/E44/I11/J25/G05/H05/I04. `DATABASE_URL=<dummy> npx prisma validate` confirms the
+schema itself is unaffected, and manual review confirms the migration is structurally identical to the
+already-committed, presumably-applied `20260808010000` pattern — high confidence by direct analogy, but not
+independently executed or verified against a real database in this pass. The next agent with database access
+should run `check-rls-verify.mjs` before and after this migration to complete the FAIL-first/PASS/break-
+restore cycle this protocol demands, which could not be completed here.
+
+**Not fixed — the honest remaining gap.** "Redirects," the deliverable's own named requirement, has no model
+anywhere in this schema — a genuine, separate absence, not built in this pass. Whether `unierp-api`'s service
+code writing to these tables correctly sets the `current_tenant_id()` session variable RLS depends on was not
+independently re-verified for the Web* module specifically.

@@ -16873,3 +16873,140 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E24 · FINISH · 2026-08-12T09:18:28Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E24 — Projects and professional services
+Non-negotiables at exit: "WBS, budget vs actual, resourcing, billable
+time, milestone and progress billing, revenue recognition to the GL."
+
+SCOPE NOTE
+==========
+E24's full scope (WBS, budget vs actual, resourcing, billable time,
+progress billing, revenue recognition to the GL) is far larger than
+this session's remaining budget. Investigated "milestone and progress
+billing" directly by reading generateProjectInvoice() in full, and
+found two real defects: (1) no idempotency guard at all - every call
+re-bills every already-invoiced completed milestone, and (2) all
+prices are fabricated flat rates ($1000/milestone, $100/hr) unrelated
+to any real contract value. Fixed (1) completely, filed (2) and
+related gaps honestly as requiring a schema migration this pass could
+not attempt.
+
+THE INVESTIGATION
+==================
+Read generateProjectInvoice() (projects.service.ts) in full. Found:
+
+  const completedMilestones = project.milestones.filter((m) => m.isCompleted);
+  completedMilestones.forEach((m) => {
+    lineItemsData.push({ ..., unitPrice: 1000.0, totalAmount: 1000.0 });
+  });
+  ...
+  lineItemsData.push({ ..., unitPrice: 100.0, totalAmount: billableHours * 100.0 });
+
+No check anywhere for whether a milestone (or the logged hours) had
+already been billed on a prior invoice. Checked the Milestone schema
+(projects.prisma) - no isBilled flag exists. Checked Timesheet - no
+billed flag either.
+
+THE BUG, CONFIRMED (double-billing)
+====================================
+Seeded a completed milestone already referenced in a prior non-void
+invoice's line items ("Project Milestone Completed: Design Phase").
+Calling generateProjectInvoice() again created a SECOND invoice
+containing the SAME milestone line item - re-billing the customer for
+work already invoiced.
+
+MECHANISM (this phase's own fix)
+====================================
+generateProjectInvoice() now queries existing non-void invoices for
+the project, extracts the set of milestone names already billed by
+matching the exact line-item description prefix this function itself
+writes ("Project Milestone Completed: "), and excludes those
+milestones from the current billing run - the only record of
+"already billed" available without a schema change.
+
+PROOF
+=====
+$ npx vitest run src/modules/projects/tests/projects.service.spec.ts
+
+New test 1 - "REFUSES to re-bill a milestone that was already invoiced
+in a prior, non-void invoice": seeds a matching prior invoice line
+item, calls generateProjectInvoice() again.
+FAILED against the pre-existing code before the fix - confirmed the
+call resolved successfully (created a duplicate invoice) instead of
+rejecting. Real FAIL-first proof.
+PASSES after the fix - rejects since no unbilled milestones/hours
+remain.
+
+New test 2 - "bills a completed milestone that has never been invoiced
+before": positive-path regression proving the fix doesn't block
+legitimate first-time billing.
+PASSES.
+
+All 9 tests in the file pass (7 pre-existing + 2 new).
+
+BREAK/RESTORE
+=============
+Reverted the milestone-filtering logic to the original unconditional
+version (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run projects.service.spec.ts
+  1 failed | 8 passed (9)
+  (exactly the new double-billing test - reproducing the original
+  defect on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" projects.service.ts
+  (no matches — 0)
+  $ npx vitest run projects.service.spec.ts
+  9/9 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/projects/
+Test Files  8 passed (8)
+     Tests  72 passed (72)
+Clean pass - no pre-existing collection failures in this module.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E21 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D096 (CRITICAL). NOT fixed in this pass:
+  - Fabricated flat-rate pricing: every completed milestone bills at a
+    hardcoded $1000 and every billable hour at a hardcoded $100/hr,
+    unrelated to any real contract value or employee bill rate.
+    Milestone/Timesheet have no fields to store real values - requires
+    a schema migration in the separate unierp-data repo, matching this
+    session's now-familiar schema-migration-blocked pattern (D092,
+    D095).
+  - The SAME double-billing gap exists for billable hours (the "Project
+    Timesheet Logged Hours" line item aggregates ALL logged hours with
+    no per-entry identifier, so the description-prefix-matching
+    technique used for milestones can't cleanly dedupe it) - NOT fixed
+    in this pass; needs either a billed flag on Timesheet or billing by
+    explicit date range.
+  - Revenue recognition to the GL is completely absent - zero
+    references to "journal" anywhere in the projects module, the same
+    total-absence pattern as D089/D092/D095.
+  - WBS, budget vs actual, and resourcing (the exit criterion's other
+    three named requirements) were not investigated in this pass.
+
+COMMANDS
+========
+$ npx vitest run src/modules/projects/tests/projects.service.spec.ts
+$ npx vitest run src/modules/projects/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  6861642  projects.service.ts, projects.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D096
+```
+

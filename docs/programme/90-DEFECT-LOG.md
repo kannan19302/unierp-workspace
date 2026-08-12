@@ -3176,3 +3176,61 @@ conventions without a clear existing pattern to follow in this specific orphaned
 other named deliverables) were not audited: `createSignatureRequest()`'s sequential-routing notification
 logic and reminder mechanism (if any exists) were read but not verified for correctness beyond
 confirming they exist.
+
+### D100 · 🔴 CRITICAL · No component in the codebase generated gapless, concurrency-safe statutory document numbers — the schema anticipated the correct mechanism (`DocumentSequence`) but nothing ever used it
+
+Found while claiming and building E44 (Gapless statutory document numbering), whose own exit criterion
+is unusually explicit and mechanical: "10,000 concurrent invoice creations across 20 workers produce
+numbers 1…10,000 with no gaps and no duplicates. A failed transaction consumes no number." A repo-wide
+search confirmed every number generator this session has encountered — project invoice numbers
+(`INV-PRJ-####`, `projects.service.ts`), MRP work-order/PO numbers, sales order numbers, and others —
+uses a `prisma.<model>.count({...})` read followed by `count + 1` string formatting, entirely outside
+any transaction tying the read to the eventual insert. This has two independent failure modes: (1) two
+concurrent callers can read the identical count and mint the same number (a duplicate — not a
+hypothetical, the standard "lost update" race on an unsynchronized counter); (2) nothing about a
+`count()`-based read is undone by a later rollback, so a transaction that reads a count, then fails for
+an unrelated reason before inserting, leaves no trace — which sounds safe until a *different* mechanism
+(an explicit reserved-number column, which this codebase does not use for any of these generators)
+would be needed to prove no gap occurred at all; the honest status is that gaplessness was never actually
+engineered, only assumed. Separately, the schema already contains a `DocumentSequence` model
+(`tenantId`/`series`/`organizationId`, `nextNumber`, `resetFrequency`/`resetPeriod`, `version`) clearly
+designed for exactly this purpose — and a repo-wide search (`grep -rln "documentSequence" src/modules`)
+found **zero** consumers of it anywhere.
+
+**How it was caught:** reading this phase's own exit criterion literally and searching for any existing
+gapless-numbering mechanism; finding the schema had anticipated the need but no code used it, and finding
+every actual number generator in the codebase used the vulnerable `count() + 1` pattern instead.
+
+**Fixed:** new `DocumentNumberingService` (`src/common/services/document-numbering.service.ts`,
+registered in the `@Global()` `CommonModule`) with `getNextNumber(tx, tenantId, series, options)`. The
+correctness argument: an `UPDATE document_sequences SET next_number = next_number + 1 WHERE id = ?` takes
+a Postgres row lock for the duration of the enclosing transaction; a second concurrent transaction
+incrementing the *same* sequence row blocks until the first commits or rolls back, so it can never read a
+stale value (no duplicates possible). Because the caller is required to pass its own transaction handle
+(not the bare `prisma` client) and the increment happens inside that same transaction as the caller's
+document insert, a rollback of the caller's transaction rolls back the increment too (no gap possible).
+First-time sequence creation races are handled via `P2002` retry (refetch the winning row rather than
+erroring); fiscal-period resets happen atomically in the same update, not as a separate read-then-reset
+that could itself race. Wired into `projects.service.ts`'s `generateProjectInvoice()` as a first real
+consumer, replacing its own `count() + 1` invoice numbering and wrapping the reservation and the insert
+in one `prisma.$transaction`. Proven via break/restore (reverted the atomic `{ increment: 1 }` to a
+computed `sequence.nextNumber + 1` — the exact shape of the vulnerable pattern — confirmed the test
+asserting atomic-increment usage fails, restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 4/4
+service tests + 76/76 `projects` module tests pass). Full regression: `src/common/`, 4 pre-existing
+failing test files (unrelated `two-person-control` guard tests) confirmed via `git stash` to fail
+identically with or without this change. Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — the phase's own literal hard exit criterion could not be run in this
+environment.** This is the most important honest gap in this defect and is stated plainly, not
+minimized: "10,000 concurrent invoice creations across 20 workers" requires a live PostgreSQL instance
+(row-level locking is a real-database property no mock can simulate), and this environment has no
+`DATABASE_URL` configured — confirmed via `node -e "console.log(process.env.DATABASE_URL)"` returning
+unset. What was proven instead is the service's logical contract (atomic-increment usage, never a
+separate read-then-write; correct P2002 race recovery; correct atomic period-reset) via unit tests against
+a mocked `DocumentSequence` model — necessary but not sufficient evidence for the phase's own literal,
+number-labeled exit bar. A follow-up with a real Postgres instance (a disposable local/CI database,
+following this session's own L15 precedent of using disposable throwaway infrastructure for a proof this
+class of test needs) is required to close this phase's exit criterion completely. Also not attempted:
+migrating every OTHER `count() + 1` generator in the codebase (sales orders, purchase orders, MRP items,
+and others found across earlier phases this session) to use `DocumentNumberingService` — only
+`generateProjectInvoice()` was migrated as proof-of-technique.

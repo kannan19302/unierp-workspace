@@ -1,0 +1,143 @@
+E44 — Gapless statutory document numbering
+Deliverable: "Per-tenant, per-document-type, per-fiscal-year number
+series that are gapless and monotonic under concurrency and rollback
+— a legal requirement in most jurisdictions UniERP targets, and
+unsatisfiable by a database sequence, because a rolled-back
+transaction consumes a sequence value and leaves a gap."
+Exit: "10,000 concurrent invoice creations across 20 workers produce
+numbers 1...10,000 with no gaps and no duplicates. A failed
+transaction consumes no number. Verified under deliberate rollback
+injection. A gap is a finding an auditor can act on, so this is a
+hard exit."
+
+SCOPE NOTE
+==========
+This phase's own exit criterion is unusually explicit and mechanical
+- a real concurrency load test against a live database. This
+environment has NO live database (DATABASE_URL unset, confirmed
+directly). Built the real, correct mechanism, proved its LOGICAL
+correctness via unit tests against a mocked model, wired it into one
+real consumer as proof-of-technique, and files the literal hard-exit
+gap (a real 10,000-worker Postgres test) honestly as unattemptable
+here rather than fabricating a passing result.
+
+THE INVESTIGATION
+==================
+Searched for any existing gapless-numbering mechanism. Found the
+schema already has a DocumentSequence model (tenantId/series/
+organizationId, nextNumber, resetFrequency/resetPeriod, version) -
+clearly designed for exactly this purpose:
+
+  $ grep -rln "documentSequence" src/modules --include="*.ts"
+  (zero matches - never consumed anywhere)
+
+Confirmed every actual number generator encountered this session
+(project invoice numbers, MRP work-order numbers, sales/PO numbers)
+uses `count() + 1` outside any transaction tying the read to the
+insert - race-prone under concurrency, no real gap protection.
+
+MECHANISM (this phase's own fix)
+====================================
+New DocumentNumberingService.getNextNumber(tx, tenantId, series,
+options):
+  - UPDATE document_sequences SET next_number = next_number + 1
+    WHERE id = ? (via Prisma's { increment: 1 }) takes a Postgres row
+    lock for the enclosing transaction's duration - a second
+    concurrent transaction incrementing the SAME row blocks until the
+    first commits/rolls back, so it can never read a stale value (no
+    duplicates possible).
+  - Caller MUST pass its own transaction handle (not bare prisma) -
+    the increment lives in the SAME transaction as the caller's
+    document insert, so a rollback rolls back the reservation too (no
+    gaps possible).
+  - First-time sequence-row creation races handled via P2002 retry
+    (refetch the winning row).
+  - Fiscal-period resets happen atomically in the SAME update, not a
+    separate read-then-reset that could itself race.
+
+Wired into projects.service.ts's generateProjectInvoice() as first
+real consumer, replacing its own count()+1 numbering and wrapping the
+reservation + insert in one prisma.$transaction.
+
+PROOF
+=====
+$ npx vitest run src/common/services/tests/document-numbering.service.spec.ts
+
+4 tests: sequential non-repeating numbers across calls; atomic {
+increment: 1 } usage (never a separate read-then-write); atomic
+fiscal-period reset; P2002 race recovery on first-time creation.
+All 4 pass against the fix.
+
+$ npx vitest run src/modules/projects/
+76/76 pass (8 files) after migrating generateProjectInvoice to the
+new service and updating its test mocks (added documentSequence +
+$transaction to the prisma mock).
+
+BREAK/RESTORE
+=============
+Reverted the atomic { increment: 1 } to a computed
+`sequence.nextNumber + 1` value - the exact shape of the vulnerable
+count()+1-style pattern (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run document-numbering.service.spec.ts
+  1 failed | 3 passed (4)
+  (exactly the test asserting atomic-increment usage - reproducing
+  the vulnerable read-then-write pattern on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" document-numbering.service.ts
+  (no matches — 0)
+  $ npx vitest run document-numbering.service.spec.ts src/modules/projects/
+  4/4 + 76/76 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/common/
+4 pre-existing failing test files (two-person-control guard tests,
+57 failed tests) - confirmed via git stash that the SAME failures
+occur identically with or without this phase's changes, unrelated.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E31 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D100 (CRITICAL), stated plainly rather than minimized:
+
+  THE LITERAL HARD EXIT CRITERION WAS NOT RUN. "10,000 concurrent
+  invoice creations across 20 workers" requires a live PostgreSQL
+  instance - row-level locking is a real-database property no mock
+  can simulate - and this environment has no DATABASE_URL configured
+  (confirmed via node -e "console.log(process.env.DATABASE_URL)"
+  returning unset). What was proven is the service's LOGICAL
+  contract via unit tests against a mocked DocumentSequence model:
+  necessary but explicitly NOT sufficient evidence for this phase's
+  own literal, number-labeled exit bar. A follow-up with a real
+  Postgres instance (disposable local/CI database, following this
+  session's own L15 precedent for tests that need real
+  infrastructure) is required to actually close this phase.
+
+Also not attempted:
+  - Migrating every OTHER count()+1 generator in the codebase (sales
+    orders, purchase orders, MRP items, and others found across
+    earlier phases this session) to DocumentNumberingService - only
+    generateProjectInvoice() was migrated as proof-of-technique.
+
+COMMANDS
+========
+$ npx vitest run src/common/services/tests/document-numbering.service.spec.ts
+$ npx vitest run src/modules/projects/
+$ npx vitest run src/common/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  535d335  document-numbering.service.ts (new),
+                     document-numbering.service.spec.ts (new),
+                     common.module.ts, projects.service.ts,
+                     projects.service.spec.ts,
+                     projects.service.coverage.spec.ts,
+                     revenue-recognition-and-workload.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D100

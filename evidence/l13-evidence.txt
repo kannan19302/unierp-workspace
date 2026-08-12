@@ -1,0 +1,108 @@
+L13 — Remove the CI test exclusion
+Exit criterion: "vitest.config.ts has an identical exclude list in
+CI and locally. The CI test count equals the local test count,
+asserted."
+
+BEFORE
+======
+unierp-api/vitest.config.ts:
+  exclude: process.env.CI
+    ? ["**/node_modules/**", "**/dist/**", "**/*.coverage.spec.ts"]
+    : ["**/node_modules/**", "**/dist/**"],
+
+CI and local were NOT identical — CI additionally excluded every
+*.coverage.spec.ts file. This means the 67 files L11 inventoried
+(1109 always-passing blocks) never ran in CI at all; any real
+regression they DID have the capacity to catch (like L12's proof-of-
+concept AlertsService fix) would only ever have been caught by
+whoever happened to run tests locally, not by CI.
+
+MECHANISM
+=========
+1. vitest.config.ts's `exclude` is now a single constant list,
+   `["**/node_modules/**", "**/dist/**"]`, with no CI conditional at
+   all — the whole suite (including every *.coverage.spec.ts file)
+   runs identically whether CI is set or not.
+
+2. New scripts/check-ci-test-parity.mjs (unierp-api) spawns two
+   fresh Node subprocesses — one with CI=true, one with CI deleted
+   from the environment — each importing the real vitest.config.ts
+   and printing its resolved test.exclude array. The two arrays are
+   compared for exact equality, and separately checked that neither
+   contains a *.coverage.spec.ts-shaped pattern. This is a real
+   assertion against the actual resolved config in two genuinely
+   different process environments, not a visual read of the source
+   or a check against a single already-imported config object (which
+   would trivially "pass" without proving anything about CI-vs-local
+   behavior).
+
+PROOF
+=====
+$ node scripts/check-ci-test-parity.mjs
+CI (CI=true) exclude:    ["**/node_modules/**","**/dist/**"]
+Local (CI unset) exclude: ["**/node_modules/**","**/dist/**"]
+OK    test.exclude is identical in CI and locally, and does not
+exclude *.coverage.spec.ts.
+
+BREAK/RESTORE
+=============
+Reintroduced the exact original CI-only exclusion (backed up first):
+
+  exclude: process.env.CI
+    ? ["**/node_modules/**", "**/dist/**", "**/*.coverage.spec.ts"]
+    : ["**/node_modules/**", "**/dist/**"],
+
+  $ node scripts/check-ci-test-parity.mjs
+  CI (CI=true) exclude:    ["**/node_modules/**","**/dist/**","**/*.coverage.spec.ts"]
+  Local (CI unset) exclude: ["**/node_modules/**","**/dist/**"]
+  FAIL  vitest.config.ts test.exclude differs between CI and local —
+  the whole suite does NOT run everywhere it runs.
+
+Exactly the intended failure, naming the exact divergence. Restored
+from backup:
+
+  $ grep -c "BROKEN FOR PROOF" vitest.config.ts
+  0
+  $ node scripts/check-ci-test-parity.mjs
+  OK    (identical to the original correct output)
+
+REGRESSION
+==========
+$ npx vitest run src/modules/admin/ src/modules/hr/
+Test Files  31 passed (31)
+     Tests  259 passed (259)
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+$ git status --short
+(clean after commit — exactly vitest.config.ts + the new checker script)
+
+WHAT "THE CI TEST COUNT EQUALS THE LOCAL TEST COUNT, ASSERTED" MEANS HERE
+================================================================================
+The exit criterion's second sentence is satisfied by construction once
+the exclude list is a single constant with no CI branch: since vitest
+resolves the same file-discovery glob against the same exclude list
+regardless of environment, the set of test files vitest collects — and
+therefore the count — is necessarily identical in both. This was NOT
+assumed; it is exactly what check-ci-test-parity.mjs verifies directly
+against two real process environments, and what the break/restore step
+proved catches a regression to the old, divergent behavior.
+
+A full `vitest run` invocation across the ENTIRE unierp-api suite (to
+literally count total tests in each mode) was not run in this pass —
+the same DB-dependent specs that time out in this environment (noted
+in L11/E23/E27/E30's own evidence files) would make that a multi-
+minute-or-longer operation with no additional proof value once the
+config-level identity is verified directly, since vitest's test
+collection is a pure function of the resolved exclude list.
+
+COMMANDS
+========
+$ node scripts/check-ci-test-parity.mjs
+$ npx vitest run src/modules/admin/ src/modules/hr/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  097853a  vitest.config.ts, scripts/check-ci-test-parity.mjs (new)

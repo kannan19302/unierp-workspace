@@ -4674,3 +4674,43 @@ restore cycle this protocol demands, which could not be completed here.
 anywhere in this schema — a genuine, separate absence, not built in this pass. Whether `unierp-api`'s service
 code writing to these tables correctly sets the `current_tenant_id()` session variable RLS depends on was not
 independently re-verified for the Web* module specifically.
+
+### D136 · 🔴 CRITICAL · The consumer-driven-contracts (CDC) harness silently checked nothing since before the polyrepo split — its provider/consumer paths named a monorepo layout that no longer exists, and it was never wired into any CI workflow across any of the 30 repos
+
+Found while claiming and building J05 (Contract testing across 30 repos), whose exit criterion is: "A
+provider change that breaks any published consumer expectation fails the provider's CI." `scripts/ci/
+cdc-harness.mjs` is a real, sophisticated, already-built mechanism (M2, `PLATFORM_ARCHITECTURE.md § 4.5`):
+consumers publish which symbols they import from each `@kannan19302/*` provider
+(`cdc/expectations.json`), and the harness replays that corpus against each provider's actual current
+exported surface. Running it found `PROVIDERS`/`CONSUMERS` still named monorepo paths (`apps/web`,
+`packages/sdk`) from before "the Phase 3 split" the script's own docstring references — this repository's
+`apps/`/`packages/` directories are empty today, so every run silently found zero providers and zero
+consumers, checking nothing. Confirmed via grep across every `.github/workflows/*.yml` in the entire
+30-repo polyrepo that nothing has ever called this script — built, never connected to the polyrepo it now
+runs against, and never wired into any CI workflow anywhere.
+
+**Fixed:** repointed `PROVIDERS`/`CONSUMERS` to the real sibling-repo layout (`../unierp-contracts`,
+`../unierp-web`, etc.), the same layout `policy-gate.yml` already assumes for its own cross-repo gates,
+confirming each of the 10 provider package names against the real sibling repos' own `package.json`
+`"name"` fields. Ran the corrected harness against the full 30-repo checkout on disk: found genuine stale
+expectations in 9 of 12 consumers — real accumulated drift, including `@kannan19302/api` expecting
+`bindProvider`/`resolve`/`unbindProvider` from `@kannan19302/shared`, symbols this same session's own
+earlier G01 work independently confirmed do not exist on that package — a true FAIL-first result the fix
+itself produced, not a staged one. Re-recorded fresh expectations for all 12 consumers (committed
+separately in each consumer repo: `unierp-web`, `unierp-console`, `unierp-api`, `unierp-extensions` × 4).
+Proven via break/restore against the live mechanism: temporarily removed `ThemeProvider`'s export from
+`unierp-design-system`'s built `dist/index.d.ts` (gitignored, confirmed via `git check-ignore`, no source
+touched), confirmed the harness correctly reports the exact consumer and symbol and exits 1, restored,
+confirmed exit 0 again. Added `.github/workflows/cdc-gate.yml`, a reusable workflow any provider can call
+(checking out `unierp-workspace` plus every sibling provider/consumer repo, with the calling repo checked
+out under its own real name so the commit/PR under test is what gets verified, not a stale clone of main),
+wired into `unierp-design-system`'s own `ci.yml` as the first live example.
+
+**Not fixed — the honest remaining gap.** Only `unierp-design-system`'s CI was wired with the new gate, as
+the concrete proven example — the other 9 providers each need the same one-line addition to their own
+`ci.yml`, not done for all of them in this pass. `@kannan19302/database`'s provider surface remains "open"
+(a pre-existing, documented limitation of the harness's own re-export-following logic, unchanged by this
+pass) — misses against it stay warnings, not hard failures. The reusable workflow was authored and reviewed
+but not executed in a real GitHub Actions environment (this session cannot trigger a live CI run);
+correctness was validated by running the exact script it calls locally against the exact real repo
+checkouts, a strong but not identical proof to an actual CI execution.

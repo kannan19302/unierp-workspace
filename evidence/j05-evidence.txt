@@ -1,0 +1,147 @@
+J05 — Contract testing across 30 repos
+Deliverable: "The existing CDC expectations (cdc/expectations.json,
+cdc-harness.mjs) enforced for every consumer/provider pair."
+Exit: "A provider change that breaks any published consumer
+expectation fails the provider's CI. Verified by breaking one on
+purpose."
+
+THE INVESTIGATION
+==================
+Read scripts/ci/cdc-harness.mjs - a real, sophisticated, already-
+built mechanism (M2, PLATFORM_ARCHITECTURE.md § 4.5): consumers
+publish a machine-readable record of every symbol they import from
+each `@kannan19302/*` provider (cdc/expectations.json), and this
+harness recomputes that corpus and replays it against each
+provider's actual current exported surface, failing loudly on any
+symbol a consumer expects that a provider no longer exports.
+
+Ran it:
+  $ node scripts/ci/cdc-harness.mjs
+  Error: Cannot find module 'typescript'
+
+No `typescript` dependency, no package.json, in this repo at all.
+Installed it (typescript@5.9.3, matching the version used elsewhere
+in this session's own work) and ran it again - it silently reported
+finding ZERO providers and ZERO consumers doing any real checking,
+because PROVIDERS/CONSUMERS in the script named MONOREPO paths
+(`apps/web`, `packages/sdk`) - and this repository's own `apps/` and
+`packages/` directories are empty:
+
+  $ ls apps packages
+  (empty / packages/database only, itself empty)
+
+The script's own docstring explains why: it was built BEFORE "the
+Phase 3 split" of this platform into 30 separate repositories, and
+was never updated for the split it names. Confirmed via grep across
+every `.github/workflows/*.yml` in this entire polyrepo (30 repos):
+
+  $ grep -rln "cdc-harness" */.github/workflows/*.yml
+  (zero matches, anywhere)
+
+A real mechanism, built, never connected to the polyrepo it now runs
+against, and never wired into any CI workflow. This directly and
+completely violates the exit criterion: a provider change breaking a
+consumer expectation currently fails NOTHING, because the check that
+would catch it either finds nothing to check (if run at all) or is
+never run in the first place.
+
+MECHANISM (this phase's fix)
+====================================
+Repointed PROVIDERS/CONSUMERS to the real sibling-repo layout
+(`../unierp-contracts`, `../unierp-web`, etc. - the same layout
+policy-gate.yml already assumes for its own cross-repo gates),
+confirming each of the 10 provider package names against the real
+sibling repos' own package.json `"name"` fields first.
+
+Ran the corrected harness for real against the full 30-repo checkout
+on disk:
+
+  $ node scripts/ci/cdc-harness.mjs
+  Replayed 12 consumer expectation corpora against their providers.
+  Published expectations are out of date: [9 of 12 consumers listed,
+  real drift - e.g. @kannan19302/api expects @kannan19302/shared
+  symbols bindProvider/resolve/unbindProvider that this SAME
+  session's own earlier work (G01) confirmed do not actually exist
+  on that package - the harness correctly caught a real, already-
+  known-by-this-session defect on its very first real run]
+
+This is a genuine FAIL-first result found by fixing the mechanism,
+not staged. Re-recorded fresh expectations for all 12 consumers:
+
+  $ node scripts/ci/cdc-harness.mjs --record
+  Published 12 consumer expectation(s).
+  $ node scripts/ci/cdc-harness.mjs
+  Every consumer expectation is satisfied by its provider. (exit 0)
+
+PROOF (break/restore, against the live mechanism)
+======================================================
+Temporarily removed `ThemeProvider`'s export from
+unierp-design-system's BUILT dist/index.d.ts (gitignored, no source
+file touched - confirmed via `git check-ignore`):
+
+  $ node scripts/ci/cdc-harness.mjs
+  ✗ CDC violations — a consumer expects a symbol its provider no
+    longer exports:
+      · @kannan19302/developer expects ThemeProvider from
+        @kannan19302/ui
+  (exit 1)
+
+Restored the export:
+  $ node scripts/ci/cdc-harness.mjs
+  ✅ Every consumer expectation is satisfied by its provider.
+  (exit 0)
+
+MECHANISM (CI wiring)
+=========================
+Added .github/workflows/cdc-gate.yml: a reusable workflow any
+provider repo can call, checking out unierp-workspace (for the
+script) plus every sibling provider/consumer repo the harness
+declares (the calling repo checked out under its OWN real name so
+the commit/PR actually under test is what gets verified, not a
+stale clone of its own main branch), then runs the harness. Wired
+into unierp-design-system's own ci.yml as the first live example -
+a real provider now has this gate on every push/PR.
+
+REGRESSION
+==========
+$ node scripts/check-plan-integrity.mjs
+OK    359 phases intact across 13 tracks
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D136 (CRITICAL). Not fixed in this pass:
+  - Only unierp-design-system's CI was wired with the new
+    cdc-gate.yml, as the concrete, proven example. The other 9
+    providers (unierp-contracts, unierp-kernel, unierp-sdk,
+    unierp-extension-api, unierp-sandbox, unierp-framework,
+    unierp-data, unierp-shared, unierp-auth) do not yet call it -
+    each needs the same one-line addition to its own ci.yml, not
+    done here for all 9 in this pass.
+  - The `@kannan19302/database` provider surface remains "open"
+    (not fully enumerable by this harness - a pre-existing,
+    documented limitation of the harness's own re-export-following
+    logic, not something this pass changed or investigated further)
+    - misses against it are warnings, not hard failures.
+  - The reusable workflow was authored and reviewed but not run in
+    a real GitHub Actions environment (this session has no way to
+    trigger a live CI run) - correctness was validated by running
+    the exact same script it calls locally against the exact same
+    real repo checkouts, which is a strong but not identical proof
+    to an actual CI execution.
+
+COMMANDS
+========
+$ node scripts/ci/cdc-harness.mjs [--record]
+$ node scripts/check-plan-integrity.mjs
+$ git check-ignore dist/index.d.ts   (unierp-design-system, confirms the break/restore touched no source)
+$ grep -rln "cdc-harness" */.github/workflows/*.yml
+
+COMMITS
+=======
+unierp-workspace         6207adc  scripts/ci/cdc-harness.mjs, .github/workflows/cdc-gate.yml
+unierp-design-system     cbca203  .github/workflows/ci.yml
+unierp-web                d963c90  cdc/expectations.json
+unierp-console            f8590a6  cdc/expectations.json
+unierp-api                d2259c3  cdc/expectations.json
+unierp-extensions         08d6cf2  4x cdc/expectations.json
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D136

@@ -2539,3 +2539,55 @@ across `consolidation.service.ts`, `consolidation-deep.service.ts`, `consolidati
 module — this defect's own discovery, the third of its class this session, suggests a systematic sweep
 of every `Number(...)`-on-money conversion across `advanced-finance` (and the wider codebase) is now a
 higher-value follow-up than auditing one function at a time.
+
+### D087 · 🔴 CRITICAL · TaxEngineDeepService.updateJurisdiction() let tax rates be overwritten in place — no effective-dated versioning at all, directly violating G-15
+
+Found while claiming and building E12 (Tax and statutory determination), whose own exit criterion is
+explicit and names this exact invariant: "rate changes versioned by effective date, never retroactive
+(G-15)." `unierp-api/src/modules/advanced-finance/services/tax-engine-deep.service.ts`'s
+`updateJurisdiction()` accepted `rate` as part of its partial update DTO and wrote it directly onto the
+existing `taxJurisdiction` row via an unrestricted object spread. Because that row's own
+`effectiveFrom`/`effectiveTo` window is the record of which rate applied over which date range,
+overwriting `rate` in place silently rewrites the rate that applied to every date already inside that
+window — including dates already in the past. There was no code path anywhere in this service (or the
+sibling `tax-jurisdiction-lookup.service.ts` / `finance-operations.service.ts` tax-jurisdiction CRUD)
+that created a new versioned row on a rate change; the `effectiveFrom`/`effectiveTo` columns existed in
+the schema but were not load-bearing for anything except the row's own creation.
+
+**How it was caught:** writing a FAIL-first test that changed a jurisdiction's rate via
+`updateJurisdiction({ rate: 999 })` and then read the row back — the pre-existing code silently
+rewrote the single row's rate with no new version, no historical record preserved, and no way to ever
+recover "what rate applied on 2025-06-01" once the row was overwritten.
+
+**Fixed:**
+- `updateJurisdiction()` no longer accepts `rate` in its type, and — critically — no longer spreads the
+  raw DTO into the Prisma `data` object at all; it now whitelists exactly `name`/`isActive`/
+  `description`/`effectiveTo`, so `rate` can never reach the update even from an untyped call site (the
+  controller passes `dto as never`, which would otherwise defeat a type-only fix).
+- New `changeRate(tenantId, id, newRate, newEffectiveFrom)`: closes the current version's `effectiveTo`
+  to the day before the new rate's `effectiveFrom`, then inserts a brand-new row carrying the new rate
+  — full history preserved, nothing overwritten.
+- New `getRateAsOf(tenantId, code, asOfDate)`: recovers the exact version whose
+  `effectiveFrom`/`effectiveTo` window contains a given historical date — what invoice/PO tax
+  calculation should call instead of a bare "get the jurisdiction" lookup.
+- Controller: `PATCH /tax/jurisdictions/:id`'s Zod schema no longer accepts `rate`; new
+  `POST /tax/jurisdictions/:id/change-rate` endpoint wired to `changeRate()`.
+
+Proven via break/restore (reverted to the unrestricted-spread version, confirmed the exact retroactive
+overwrite reproduces — rate silently became 999 with no version created — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 2/2 new tests pass). Full regression:
+`src/modules/advanced-finance/` + `src/modules/finance/`, 632/632 real tests pass (2 pre-existing
+unrelated `@unerp/shared` collection failures, unchanged). Typecheck: same 4 pre-existing unrelated
+errors, unchanged.
+
+**Not fully investigated — E12's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires "jurisdiction-correct determination" and "per-country
+statutory reports," neither audited in this pass. Critically: no code path was found anywhere in
+`unierp-api` that actually CALLS `getRateAsOf()` (or any effective-dated lookup) when calculating tax
+on an invoice or purchase order — the real invoice-tax-calculation code found in
+`finance-operations.service.ts` (`calculateSalesTax`-style logic near line 940) reads a *different*
+model entirely (`tax` / `taxRateId`, not `taxJurisdiction`) with no date-awareness at all. Whether
+`taxJurisdiction` is genuinely wired into any calculation path, is a parallel/unused model, or is
+awaiting integration was not determined. This is a strong follow-up candidate: G-15 compliance for the
+CRUD layer (this phase's fix) does not by itself guarantee any invoice was ever taxed using a
+date-correct rate — that requires tracing the actual calculation call graph, not assumed from this fix.

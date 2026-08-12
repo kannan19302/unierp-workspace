@@ -3437,3 +3437,58 @@ it through to an actual Ollama request. The storage/audit mechanism is real and 
 call site (all 15 services in the `ai` module) to actually resolve and use the tenant's pinned model
 before calling `rawChat()` is the real remaining integration work this phase's own exit criterion implies,
 not attempted at scale in this pass.
+
+### D105 · 🔴 CRITICAL · The AI copilot's natural-language data query had zero permission scoping — any user with the generic "ai.create" permission could retrieve HR/payroll data via AI even without any direct-access permission
+
+Found while claiming and building E46 (AI guardrails and provenance), whose own exit criterion names
+this exact scenario: "retrieval is permission-scoped so RAG cannot surface what the user may not read."
+`unierp-api/src/modules/ai/ai-copilot.service.ts`'s `askData(tenantId, question)` — the natural-language-
+to-report feature — translates a question into a structured query against the reporting engine's
+semantic layer and executes it, correctly scoped by `tenantId`, but with **no check of any kind** against
+the requesting user's own role-based permissions. The semantic layer (`reporting-engine.service.ts`)
+exposes an `"employees"` entity carrying HR/payroll fields. The controller endpoint (`POST /ai/ask`) is
+gated only by the broad `ai.create` permission — a user who could never see employee data directly in
+the UI (lacking `hr.employee.read`) could ask the AI copilot "what is the average salary in finance?" and
+receive a real, accurate answer pulled straight from the `Employee` table, entirely bypassing the direct-
+access permission that would have blocked the same data through any other endpoint.
+
+**How it was caught:** reading `askData()` in full and confirming it receives only `tenantId`, never the
+caller's permissions; confirmed the semantic layer's `employees` entity has no access-control metadata at
+all; confirmed via the controller that `POST /ai/ask` is gated only by the generic `ai.create`
+permission, not anything entity-specific.
+
+**Fixed:** added `requiredPermission?: string` to `ReportingSemanticEntity` (the semantic layer's own
+type), marked the `employees` entity with `requiredPermission: "hr.employee.read"` — the same permission
+string real HR endpoints (`hr-enterprise.controller.ts`) already require. `askData()` now accepts the
+caller's permission array and, before executing any query, checks whether the planned entity carries a
+`requiredPermission` the caller lacks — throwing `ForbiddenException` before the query ever runs if so.
+`ai.controller.ts`'s `askData` handler now threads `req.user.permissions` through. Proven via break/
+restore (reverted the permission check, confirmed the exact original bypass reproduces — the query
+proceeded past the point it should have refused, hitting a downstream database call instead of stopping
+— restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 7/7 tests pass, including one proving
+non-gated entities like `invoices` remain unaffected). Full regression: `src/modules/ai/` +
+`src/modules/reporting/` + `src/common/integrations/`, all 19 test files / 75 tests pass cleanly.
+Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Implementation note:** the permission check deliberately does NOT import `hasPermission` from
+`@kannan19302/auth` (the mechanism `RbacGuard` itself uses) — that package fails to resolve at all in
+this test environment (`Cannot find package '@unerp/shared'`, the same pre-existing, environment-wide
+issue documented throughout this session's evidence files, e.g. `rbac.guard.spec.ts` itself fails to even
+collect for the identical reason). A minimal local exact-match check was used instead; this is
+functionally adequate for this call site (a single resolved permission string, not a wildcard pattern to
+match), but means this check's semantics could silently drift from `RbacGuard`'s own wildcard-aware
+logic if that logic is ever extended — worth reconciling once the underlying package-resolution issue is
+fixed.
+
+**Not fully investigated — E46's own deliverable is much larger than this pass.** Only the `employees`
+entity was marked as permission-gated; the semantic layer's other entities (`salesOrders`,
+`purchaseOrders`, `products`, `leads`) were not individually reviewed for whether they also warrant a
+`requiredPermission` — `employees` was fixed as the single clearest, most sensitive example, not because
+it is necessarily the only one that needs it. This phase's other two named requirements — "no AI write
+reaches a financial or clinical record without an explicit human accept" and "every AI-derived field is
+traceable to its prompt, model version and approver" — were not investigated at all in this pass; a
+targeted search found no AI service in the codebase currently writes directly to journal entries or
+clinical notes (the one real business-critical AI write path, `workflow-engine.service.ts`'s risk
+assessment, only emits a notification and never posts anything itself), so the first requirement appears
+not to be actively violated today, but this was not exhaustively verified across all 15 `ai` module
+services.

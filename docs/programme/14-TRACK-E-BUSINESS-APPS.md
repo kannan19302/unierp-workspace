@@ -93,7 +93,7 @@ non-negotiables.
 | **E10** | Receivables, payables and cash | `finance` | E09 | Ageing, dunning, allocation, part-payment, write-off, bank reconciliation; every posting traceable to a source document | DONE |
 | **E11** | Advanced finance | `advanced-finance` | E09 | Budgets, cost centres, allocations, consolidation, intercompany, deferred revenue, accruals — each reconciling to the GL | DONE |
 | **E12** | Tax and statutory determination | `finance`, `localization` | E09 | Jurisdiction-correct determination; per-country statutory reports; rate changes versioned by effective date, never retroactive (**G-15**) | DONE |
-| **E13** | Fixed assets | `fixed-assets` | E09 | Acquisition, depreciation schedules, revaluation, impairment, insurance, transfer, disposal — every event posting to the GL | OPEN |
+| **E13** | Fixed assets | `fixed-assets` | E09 | Acquisition, depreciation schedules, revaluation, impairment, insurance, transfer, disposal — every event posting to the GL | WIP |
 
 ### Supply chain and operations
 

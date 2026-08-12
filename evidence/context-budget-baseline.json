@@ -1,0 +1,238 @@
+{
+  "budget": 10000,
+  "moduleCount": 46,
+  "overBudgetCount": 16,
+  "perModule": {
+    "admin": {
+      "codeLines": 5211,
+      "testLines": 29375,
+      "totalLines": 34586
+    },
+    "advanced-finance": {
+      "codeLines": 49075,
+      "testLines": 25944,
+      "totalLines": 75019
+    },
+    "advanced-hr": {
+      "codeLines": 4741,
+      "testLines": 20930,
+      "totalLines": 25671
+    },
+    "ai": {
+      "codeLines": 2836,
+      "testLines": 761,
+      "totalLines": 3597
+    },
+    "analytics": {
+      "codeLines": 4098,
+      "testLines": 4037,
+      "totalLines": 8135
+    },
+    "api-platform": {
+      "codeLines": 4054,
+      "testLines": 1667,
+      "totalLines": 5721
+    },
+    "blockchain": {
+      "codeLines": 4492,
+      "testLines": 112,
+      "totalLines": 4604
+    },
+    "communication": {
+      "codeLines": 10511,
+      "testLines": 9528,
+      "totalLines": 20039
+    },
+    "crm": {
+      "codeLines": 54646,
+      "testLines": 42591,
+      "totalLines": 97237
+    },
+    "devops": {
+      "codeLines": 4184,
+      "testLines": 1154,
+      "totalLines": 5338
+    },
+    "documents": {
+      "codeLines": 4329,
+      "testLines": 4500,
+      "totalLines": 8829
+    },
+    "drive": {
+      "codeLines": 4271,
+      "testLines": 56,
+      "totalLines": 4327
+    },
+    "ecommerce": {
+      "codeLines": 4108,
+      "testLines": 1079,
+      "totalLines": 5187
+    },
+    "education": {
+      "codeLines": 2339,
+      "testLines": 847,
+      "totalLines": 3186
+    },
+    "ext-gateway": {
+      "codeLines": 3926,
+      "testLines": 666,
+      "totalLines": 4592
+    },
+    "extension-registry": {
+      "codeLines": 854,
+      "testLines": 418,
+      "totalLines": 1272
+    },
+    "field-service": {
+      "codeLines": 3241,
+      "testLines": 902,
+      "totalLines": 4143
+    },
+    "finance": {
+      "codeLines": 13275,
+      "testLines": 4682,
+      "totalLines": 17957
+    },
+    "fixed-assets": {
+      "codeLines": 6105,
+      "testLines": 630,
+      "totalLines": 6735
+    },
+    "healthcare": {
+      "codeLines": 2297,
+      "testLines": 800,
+      "totalLines": 3097
+    },
+    "hr": {
+      "codeLines": 4481,
+      "testLines": 1333,
+      "totalLines": 5814
+    },
+    "hr-advanced": {
+      "codeLines": 11742,
+      "testLines": 0,
+      "totalLines": 11742
+    },
+    "inventory": {
+      "codeLines": 34988,
+      "testLines": 23516,
+      "totalLines": 58504
+    },
+    "localization": {
+      "codeLines": 4436,
+      "testLines": 787,
+      "totalLines": 5223
+    },
+    "manufacturing": {
+      "codeLines": 8919,
+      "testLines": 14600,
+      "totalLines": 23519
+    },
+    "marketplace": {
+      "codeLines": 5336,
+      "testLines": 5985,
+      "totalLines": 11321
+    },
+    "notifications": {
+      "codeLines": 4704,
+      "testLines": 3129,
+      "totalLines": 7833
+    },
+    "org-structure": {
+      "codeLines": 339,
+      "testLines": 278,
+      "totalLines": 617
+    },
+    "outbox": {
+      "codeLines": 3758,
+      "testLines": 452,
+      "totalLines": 4210
+    },
+    "people": {
+      "codeLines": 3681,
+      "testLines": 360,
+      "totalLines": 4041
+    },
+    "pos": {
+      "codeLines": 5252,
+      "testLines": 10014,
+      "totalLines": 15266
+    },
+    "procurement": {
+      "codeLines": 9722,
+      "testLines": 9003,
+      "totalLines": 18725
+    },
+    "projects": {
+      "codeLines": 8824,
+      "testLines": 7516,
+      "totalLines": 16340
+    },
+    "pwa": {
+      "codeLines": 3208,
+      "testLines": 900,
+      "totalLines": 4108
+    },
+    "real-estate": {
+      "codeLines": 3306,
+      "testLines": 901,
+      "totalLines": 4207
+    },
+    "reporting": {
+      "codeLines": 5454,
+      "testLines": 2512,
+      "totalLines": 7966
+    },
+    "saas": {
+      "codeLines": 16702,
+      "testLines": 4480,
+      "totalLines": 21182
+    },
+    "saas-portal": {
+      "codeLines": 5919,
+      "testLines": 960,
+      "totalLines": 6879
+    },
+    "sales": {
+      "codeLines": 18837,
+      "testLines": 6457,
+      "totalLines": 25294
+    },
+    "saved-views": {
+      "codeLines": 3492,
+      "testLines": 314,
+      "totalLines": 3806
+    },
+    "search": {
+      "codeLines": 3598,
+      "testLines": 260,
+      "totalLines": 3858
+    },
+    "service-management": {
+      "codeLines": 3198,
+      "testLines": 0,
+      "totalLines": 3198
+    },
+    "storage": {
+      "codeLines": 3135,
+      "testLines": 1432,
+      "totalLines": 4567
+    },
+    "subscriptions": {
+      "codeLines": 4736,
+      "testLines": 551,
+      "totalLines": 5287
+    },
+    "supply-chain": {
+      "codeLines": 18728,
+      "testLines": 2760,
+      "totalLines": 21488
+    },
+    "workflow": {
+      "codeLines": 4036,
+      "testLines": 2695,
+      "totalLines": 6731
+    }
+  },
+  "recordedAt": "2026-08-12T05:04:07.825Z"
+}

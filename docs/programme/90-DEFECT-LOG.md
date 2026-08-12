@@ -2364,3 +2364,30 @@ barrel), or in any other shared package this polyrepo has (`unierp-contracts`, `
 text search, not an AST-aware import-graph analysis — it will miss usage where a consumer aliases
 the import to a different local name (`import { ComboBox as Combo } from ...`), so the true orphan
 count could be lower than 7, never higher.
+
+### D082 · 🟡 MEDIUM · 16 of 46 modules exceed a 10,000-line "must load to change safely" context budget — worst is crm at 97,237 lines
+
+Found while building L16 (Context-window budget per unit of work). Measured directly: total lines
+of module code + tests (all `.ts` files under `unierp-api/src/modules/<name>/`) per module. 16 of
+46 modules exceed a stated 10,000-line budget — `crm` at 97,237 lines is nearly ten times over;
+`advanced-finance` (75,019), `inventory` (58,504), `admin` (34,586), and `advanced-hr` (25,671)
+follow. An agent asked to "safely change one module" in any of these 16 cannot load the module's
+own full code into a working context alongside the conversation, other files, and its own output —
+exactly the risk `CODE_STANDARDS § 4`'s own reasoning names ("a file it cannot load alongside the
+code it must integrate with is a file it will modify blindly").
+
+**How it was caught:** this phase's own real measurement, run directly against the actual codebase
+rather than assumed from the plan's framing.
+
+**Not fixed — this phase's own exit criterion says so explicitly.** "A module that exceeds it is a
+decomposition task, not a documentation task" — the fix is the same controller/service/page
+decomposition work L07-L09 already started (proving one file each, filing the rest as D077/D078/
+D079). This defect exists to make the connection explicit: those three phases' own remaining scope
+IS what would bring these 16 modules under budget, not a new, separate effort.
+
+**Not fully investigated:** the schema-slice and cross-repo-contract portions of the "must load"
+set named in this phase's own deliverable text were NOT measured — `core.prisma` (31,092 lines) has
+no reliable per-module boundary to extract mechanically, and `unierp-contracts` has no per-module
+directory structure to match against. The true "must load" size for any of these 16 modules is
+LARGER than the 10,000-line code-plus-tests figure reported here, not smaller — this measurement is
+a floor, not a ceiling.

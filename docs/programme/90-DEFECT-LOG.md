@@ -3877,3 +3877,42 @@ pass fixed the GATE measuring one specific defect class, not the full coverage/r
 deliverable names. Only unierp-api's baseline was regenerated and committed — `unierp-data`, `unierp-web`,
 and `unierp-idp` are equally affected by the same shared-baseline bug and each needs its own
 `.decimal-arithmetic-baseline.json` generated and committed the same way, not attempted here.
+
+### D115 · 🔴 CRITICAL · Three independent CommandPalette implementations existed in unierp-web, two of them registering competing global Cmd/Ctrl+K listeners — a single keystroke could nondeterministically open a hardcoded, record-blind placeholder instead of the real search-wired palette
+
+Found while claiming and building E40 (Command palette and quick actions), whose exit criterion is directly
+about this feature: "Any record is reachable in under three keystrokes plus a query, from any screen."
+Investigating the palette directly found `src/components/CommandPalette.tsx` — mounted globally in
+`app/layout.tsx` (wraps every route) — whose own comment reads "Placeholder navigation items": a hardcoded
+5-entry array (Finance/HR/CRM/Studio/Settings), filtered client-side, no API call whatsoever, with its own
+independent Cmd/Ctrl+K keydown listener. Separately, `src/components/shell/CommandPalette.tsx` — mounted in
+`app/(dashboard)/layout.tsx` — is the real implementation: it queries `GET /search/global` (E39's real,
+permission-filtered cross-module search) and navigates to actual records, but registers its OWN independent
+Cmd/Ctrl+K listener. Because the root layout wraps the dashboard layout as an ancestor, both listeners were
+live simultaneously on every dashboard screen — a single keystroke could open either palette
+nondeterministically, and the placeholder could never reach a real record no matter what was typed, silently
+breaking the exit criterion on an unpredictable fraction of keystrokes. A third file,
+`src/components/builder/StudioCommandPalette.tsx`, was a complete third palette with its own baked-in Cmd+K
+handler, confirmed via repo-wide grep to be imported nowhere — fully orphaned dead code and a landmine for a
+future third competing listener.
+
+**Fixed:** deleted the placeholder `CommandPalette.tsx` and removed its import/mount from `app/layout.tsx`,
+leaving the real, search-wired `shell/CommandPalette.tsx` as the sole global entry point. Deleted the orphaned
+`StudioCommandPalette.tsx` after confirming zero import sites anywhere. Added
+`scripts/check-command-palette-singleton.mjs` — a ratchet-style gate, same pattern as this session's
+`check-hardcoded-strings.mjs`/`check-decimal-arithmetic.mjs` — that scans `app/` and `src/` for the
+Cmd/Ctrl+K keydown-listener shape and asserts exactly one exists, failing if a second one is reintroduced or
+the last one removed. Proven directly against the live, unmodified repo before any fix (a true FAIL-first
+result — the gate's very first run reported the real 2-listener defect: exit 1); after the fix, the gate
+reports exactly 1 (exit 0). Break/restore: injected a synthetic third listener (marked "BROKEN FOR PROOF"),
+confirmed the gate reproduces the exact defect shape (exit 1), removed it, confirmed pass (exit 0). Typecheck:
+111 pre-existing errors, none referencing any file this phase touched.
+
+**Not fixed — the honest remaining gap.** This repo has zero component-level or e2e test infrastructure
+(no jsdom, no `@testing-library`, zero `.spec.tsx`/`.test.tsx` files repo-wide) — the singleton gate proves the
+entry-point defect is fixed and stays fixed, but no automated test exercises the actual
+"type a query → select a result → navigate to the real record" flow end-to-end; standing up that
+infrastructure from scratch was out of this phase's scope. The real palette is mounted only under the
+dashboard shell — screens outside it (marketing/auth) have no palette at all, and whether any records need to
+be reachable from those screens was not established. "Under three keystrokes plus a query" was not
+independently instrumented/measured.

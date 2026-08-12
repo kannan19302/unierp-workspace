@@ -2931,3 +2931,55 @@ implementation finding's own scope:
     field visible in this pass's inspection, but this was not conclusively verified.
   - Refunds (`processReturn()` exists in `pos.service.ts`), offline sync, and store/online inventory
     unification were not investigated at all.
+
+### D095 · 🔴 CRITICAL · AdvancedHrService.runPayroll() had no guard against re-running an already-PAID period — double-pays every employee if called twice
+
+Found while claiming and building E21 (Payroll and compensation), whose own exit criterion opens with
+"Statutory-correct payroll per jurisdiction." `unierp-api/src/modules/advanced-hr/advanced-hr.service.ts`'s
+`runPayroll(tenantId, { periodStart, periodEnd })` created a new `PayrollRun` and its `PayrollSlip`s,
+computed `totalGross`/`totalDeductions`/`totalNet`, and set `status: "PAID"` — with **no check anywhere**
+for whether a payroll run had already been created and paid for the exact same period. Calling
+`runPayroll()` a second time with identical `periodStart`/`periodEnd` (a plausible operator mistake — a
+double-click, a retried request after a timeout, a scheduler firing twice) silently creates a second,
+fully independent `PayrollRun` with its own complete set of `PayrollSlip`s — every employee is paid
+twice, with no relationship between the two runs and nothing to catch or prevent it.
+
+**How it was caught:** writing a FAIL-first test that seeds an existing `PayrollRun` with
+`status: "PAID"` for `2026-01-01`–`2026-01-31`, then calls `runPayroll()` again for the identical period
+— the pre-existing code proceeded to create a second run successfully instead of rejecting.
+
+**Fixed:** `runPayroll()` now queries for an existing `PayrollRun` with the same `tenantId`/
+`periodStart`/`periodEnd` and `status: "PAID"` before doing any work, and throws `BadRequestException`
+naming the period if one is found. Also converted the function's gross/deduction/net arithmetic from
+plain `number` to `Prisma.Decimal` throughout, matching `CODE_STANDARDS`' money-arithmetic rule already
+enforced elsewhere this session (D084/D085/D086) — defensive hardening, **though this function's
+specific multiply/subtract/sum pattern was explicitly verified NOT to produce a business-observable
+reconciliation failure at realistic payroll sizes** (accumulation drift stays below `1e-10` even at 1000
+employees for this arithmetic shape, unlike the equality/threshold-check bugs in D084/D085/D086, which
+did have concrete, larger, observable consequences). This is noted honestly rather than overclaimed —
+several attempts to construct a genuine FAIL-first proof of a reconciliation failure in `runPayroll()`'s
+own summation were made and each one, on close inspection, turned out to be an artifact of the test's
+own JavaScript arithmetic reintroducing float noise rather than a real production defect.
+
+Proven via break/restore (reverted the duplicate-run check, confirmed the exact original defect
+reproduces — a second run created successfully for an already-paid period — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 2/2 tests pass). Full regression: `src/modules/advanced-hr/` +
+`src/modules/hr-advanced/`, 132/132 real tests pass (1 pre-existing unrelated `@unerp/shared` collection
+failure, unchanged; `hr-advanced` module has **zero** test files at all — noted, not created in this
+pass). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E21's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires retro-pay, arrears, payslips, GL posting, a 100%-covered
+calculation engine, and — explicitly — consolidating the two overlapping advanced-HR modules
+(`advanced-hr` and `hr-advanced`) into one. None of these were attempted:
+  - **GL posting is completely absent**, matching the same total-absence pattern as D089/D092: a
+    repo-wide search found zero references to "journal" in either `advanced-hr.service.ts` or
+    `hr-advanced.service.ts`. `PayrollRun`/`PayrollSlip` have no GL account or `journalId` fields in the
+    schema, so — as with D092's manufacturing finding — closing this gap requires a schema migration in
+    the separate `unierp-data` repository, out of reach for this pass.
+  - Retro-pay and arrears: not located or investigated.
+  - The two-module consolidation this phase's own exit criterion explicitly names is a large structural
+    task not attempted; this defect's own discovery that `hr-advanced` has zero tests while
+    `advanced-hr` has extensive (if partly coverage-padded) test coverage is itself evidence for which
+    module is the more likely system of record, worth citing when that consolidation work begins.
+  - "100%-covered calculation engine": `payroll-tax.service.ts` exists separately and was not audited.

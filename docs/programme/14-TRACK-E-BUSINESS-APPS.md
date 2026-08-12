@@ -128,7 +128,7 @@ non-negotiables.
 | ID | Phase | Modules | Depends | Non-negotiables at exit | Status |
 | :- | :---- | :------ | :------ | :---------------------- | :----- |
 | **E27** | Content, documents and storage | `documents`, `drive`, `storage` | E04 | Versioning, permissions, retention (D12), preview, full-text search, quota, virus scanning, and attachment lifecycle tied to records | DONE |
-| **E28** | Workflow, AI and platform services | `workflow`, `ai`, `analytics`, `notifications`, `outbox`, `saved-views`, `admin`, `pwa`, `devops`, `blockchain`, `api-platform`, `ext-gateway`, `extension-registry`, `marketplace`, `saas`, `saas-portal`, `subscriptions`, `communication`, `localization`, `reporting`, `search` | E05–E08 | Each scored against the rubric and taken to its E03 target, or given a logged exemption. **This phase is a container: split it into `E28a…` per module as work is picked up** — it is deliberately the one place the plan expects subdivision | OPEN |
+| **E28** | Workflow, AI and platform services | `workflow`, `ai`, `analytics`, `notifications`, `outbox`, `saved-views`, `admin`, `pwa`, `devops`, `blockchain`, `api-platform`, `ext-gateway`, `extension-registry`, `marketplace`, `saas`, `saas-portal`, `subscriptions`, `communication`, `localization`, `reporting`, `search` | E05–E08 | Each scored against the rubric and taken to its E03 target, or given a logged exemption. **This phase is a container: split it into `E28a…` per module as work is picked up** — it is deliberately the one place the plan expects subdivision | WIP |
 
 ---
 

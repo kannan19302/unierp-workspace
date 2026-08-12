@@ -3033,3 +3033,51 @@ Filed here rather than attempted shallowly:
     a schema migration to fix properly.
   - WBS, budget vs actual, and resourcing (the exit criterion's other three named requirements) were not
     investigated in this pass.
+
+### D097 · 🔴 CRITICAL · closeTicket() never evaluated SLA compliance — the only automatic breach-detection path a ticket ever passes through was missing it
+
+Found while claiming and building E25 (Service management and field service), whose own exit criterion
+names "SLA-driven tickets" first among its non-negotiables. `unierp-api/src/modules/field-service/
+field-service-tickets.service.ts` has a real, correctly-implemented `evaluateTicketSla(tenantId,
+ticketId)` method that compares `now > ticket.slaDeadline` and sets `slaBreached: true` when it is —
+the mechanism itself is sound. But nothing calls it automatically: it is reachable only via a dedicated
+`GET /field-service/tickets/:id/evaluate-sla`-style endpoint that a caller must remember to hit
+per-ticket, and there is no cron/scheduled job anywhere in the module that sweeps tickets for breaches.
+Critically, `closeTicket()` — the one code path every ticket unavoidably passes through — never called
+it and never wrote `slaBreached` at all. A ticket resolved three days after its SLA deadline closed
+with `slaBreached` permanently `false`, exactly as if it had been resolved on time, unless some external
+caller separately, deliberately evaluated that specific ticket before or after closing it. Every
+SLA-compliance report and stats aggregate in this module (`getTicketStats()`'s `slaBreached` count,
+`checkSlaCompliance()`'s `complianceRate`) reads this same field, so this silently inflates SLA
+compliance reporting for any ticket resolved through the normal close flow without a separate manual
+evaluation.
+
+**How it was caught:** writing a FAIL-first test that closes a ticket whose `slaDeadline` is one hour in
+the past — the pre-existing code's `update()` call never included `slaBreached` in its data at all.
+
+**Fixed:** `closeTicket()` now computes `slaBreached` (comparing the actual completion time against
+`slaDeadline`, or preserving a prior `true` value) and includes it in the same update that sets
+`status: "CLOSED"` — SLA compliance is now evaluated at the one guaranteed trigger point every ticket
+passes through, with no dependency on a separate manual call. Proven via break/restore (reverted to
+omitting `slaBreached` from the close update entirely, confirmed both new tests fail — the field never
+appears in the `update()` call regardless of deadline — restored, confirmed 0 `BROKEN FOR PROOF` markers
+remain, 11/11 tests pass). Full regression: `src/modules/field-service/` + `src/modules/service-
+management/`, all 7 test files / 60 tests pass cleanly. Typecheck: same 4 pre-existing unrelated errors,
+unchanged.
+
+**Not fully investigated — E25's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires scheduling and dispatch, mobile-first execution (Track I),
+parts consumption, warranties, and expenses — none independently audited. Specifically:
+  - `assignTicket()`/dispatch and `field-service-scheduling.service.ts` were not re-audited for
+    correctness beyond confirming they exist.
+  - **Parts consumption is not wired to inventory at all**: a repo-wide search for `consumePart`,
+    `partUsage`, or `usedQuantity` in the `field-service` module found nothing — `field-service-parts.
+    service.ts` manages `VanStock` (technician-carried inventory) CRUD and reorder alerts, but there is
+    no code path that decrements van stock (or the main warehouse) when a part is actually consumed on
+    a ticket. This is the same total-absence pattern as D089 (negative-stock policy) and worth a
+    dedicated follow-up: parts consumption is a named non-negotiable and appears to not exist as a
+    mechanism at all.
+  - Warranties and expenses were not located or investigated in this pass.
+  - Whether a periodic/scheduled sweep for SLA breaches on STILL-OPEN tickets (not just at close) is
+    needed for real-time dashboards and alerting — this fix only guarantees correctness at close time,
+    not proactive breach notification while a ticket is still in progress — was not addressed.

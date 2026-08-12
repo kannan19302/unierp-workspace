@@ -1,0 +1,128 @@
+E25 — Service management and field service
+Non-negotiables at exit: "SLA-driven tickets, scheduling and
+dispatch, mobile-first execution (Track I), parts consumption,
+warranties, expenses."
+
+SCOPE NOTE
+==========
+E25's full scope (scheduling/dispatch, mobile-first execution, parts
+consumption, warranties, expenses) is far larger than this session's
+remaining budget. Investigated "SLA-driven tickets" directly - the
+first-named non-negotiable - and found a real, critical gap: a
+correctly-implemented SLA-breach detector exists but nothing calls it
+automatically, and critically closeTicket() - the one code path every
+ticket unavoidably passes through - never evaluated it. Fixed
+completely and correctly, and files the honest remaining scope,
+including a second total-absence finding (parts consumption not wired
+to any inventory decrement at all) surfaced along the way.
+
+THE INVESTIGATION
+==================
+Found evaluateTicketSla(tenantId, ticketId) in field-service-tickets.
+service.ts: correctly compares now > ticket.slaDeadline and sets
+slaBreached: true. Searched for all callers:
+
+  $ grep -rn "evaluateTicketSla" src/modules/field-service/*.ts
+  field-service-tickets.service.ts: definition
+  field-service.controller.ts: GET .../:id/evaluate-sla (manual, per-
+    ticket endpoint only)
+
+No cron/scheduled job found. Read closeTicket() in full - it updates
+status to CLOSED, sets completedDate, resolution, costs - and never
+touches slaBreached at all.
+
+THE BUG, CONFIRMED
+====================
+A ticket with slaDeadline one hour in the past, closed via
+closeTicket(), was marked CLOSED with slaBreached never set (absent
+from the update() call entirely) - identical to how an on-time ticket
+would be closed. Every SLA-compliance report/stat in this module reads
+this same field, so this silently inflates reported SLA compliance for
+any ticket resolved through the normal close flow.
+
+MECHANISM (this phase's own fix)
+====================================
+closeTicket() now computes slaBreached (comparing the actual
+completion time against slaDeadline, or preserving any prior true
+value) and includes it in the same update that sets status: "CLOSED" -
+SLA compliance is evaluated at the one guaranteed trigger point every
+ticket passes through.
+
+PROOF
+=====
+$ npx vitest run src/modules/field-service/field-service-tickets.service.spec.ts
+
+New test 1 - "closeTicket marks slaBreached when closed after the SLA
+deadline has passed": slaDeadline 1 hour in the past.
+FAILED against the pre-existing code before the fix - confirmed
+update() was called with no slaBreached field at all. Real FAIL-first
+proof.
+PASSES after the fix.
+
+New test 2 - "closeTicket does not mark slaBreached when closed before
+the SLA deadline": slaDeadline 1 hour in the future (positive-path
+regression).
+Also FAILED against the pre-existing code (same reason - field absent
+regardless of deadline).
+PASSES after the fix.
+
+All 11 tests in the file pass (9 pre-existing + 2 new).
+
+BREAK/RESTORE
+=============
+Reverted closeTicket() to the original version that never touches
+slaBreached (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run field-service-tickets.service.spec.ts
+  2 failed | 9 passed (11)
+  (exactly the 2 new tests - reproducing the original gap on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" field-service-tickets.service.ts
+  (no matches — 0)
+  $ npx vitest run field-service-tickets.service.spec.ts
+  11/11 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/field-service/ src/modules/service-management/
+Test Files  7 passed (7)
+     Tests  60 passed (60)
+Clean pass - no pre-existing collection failures in these modules.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E24 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D097 (CRITICAL). Not investigated/fixed in this pass:
+  - Scheduling and dispatch, mobile-first execution - assignTicket()
+    and field-service-scheduling.service.ts exist but were not
+    re-audited beyond confirming presence.
+  - PARTS CONSUMPTION IS NOT WIRED TO INVENTORY AT ALL: a repo-wide
+    search for consumePart/partUsage/usedQuantity across field-service
+    found nothing. field-service-parts.service.ts manages VanStock
+    (technician-carried inventory) CRUD and reorder alerts, but no
+    code path decrements van stock or the main warehouse when a part
+    is actually consumed on a ticket. Same total-absence pattern as
+    D089 (negative-stock policy) - "parts consumption" is a named
+    non-negotiable that appears to not exist as a mechanism at all.
+  - Warranties and expenses - not located or investigated.
+  - Whether a periodic/scheduled sweep is needed for real-time SLA-
+    breach dashboards on STILL-OPEN tickets (not just at close) - this
+    fix guarantees correctness at close time only, not proactive
+    breach notification during an in-progress ticket.
+
+COMMANDS
+========
+$ npx vitest run src/modules/field-service/field-service-tickets.service.spec.ts
+$ npx vitest run src/modules/field-service/ src/modules/service-management/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  20fe66e  field-service-tickets.service.ts,
+                     field-service-tickets.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D097

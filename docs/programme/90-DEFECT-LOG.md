@@ -4241,3 +4241,35 @@ investigated at all. A genuine follow-up needs: a provisioned Postgres/Docker en
 `rehearse-restore.mjs` for real and establish a genuine committed RPO/RTO measurement; wiring the freshness
 gate into `ci.yml` once that first rehearsal passes; per-tenant PITR rehearsal coverage; and publishing the
 resulting numbers wherever this deliverable expects them.
+
+### D124 · 🔴 CRITICAL · Per-extension invocation usage/error data was collected on every call but had zero read path anywhere — write-only telemetry indistinguishable from not collecting it at all
+
+Found while claiming and building G04 (Observability for customer code), whose exit criterion is "An author
+debugs a failing handler from the portal without our involvement. A tenant sees what an installed extension
+is doing." The Prisma schema already has a real, well-designed model — `ExtensionInvocationUsage`
+(`prisma/schema/extensions.prisma`) — recording `cpuMs`, `queries`, `httpCalls`, `failed`, `errorKind` per
+tenant/extension/hook on every invocation, confirmed live and called from
+`ExtensionRegistryService.recordUsage()`. Grepping the whole repo for any endpoint reading this table back
+found only the write site — zero `GET` endpoints exposed it to anyone. The per-invocation resource/error data
+the exit criterion asks for existed, was correctly collected on every single invocation, and was completely
+unreachable — not by the tenant who installed the extension, not by its author, not by any internal tool.
+Write-only telemetry nobody can ever read is functionally identical to not collecting it at all; currently
+neither half of the exit criterion was possible.
+
+**Fixed:** added `ExtensionRegistryService.getInvocationUsage(tenantId, extensionId, limit)` — tenant-scoped
+(reuses the existing `require()` installation check, so a tenant can never see another tenant's usage and the
+call cleanly refuses for an extension not installed for that tenant), newest-first, capped at 200 rows.
+Wired `GET /extensions/:id/usage`, gated by the same `admin.extensions.read` permission the extension list
+endpoint already requires. Proven via break/restore: removed the tenant-installation check and the tenant
+filter from the query (marked "BROKEN FOR PROOF"), confirmed all 3 new tests fail — reproducing both the
+missing-installation guard and the cross-tenant isolation guard broken on purpose — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 12/12 relevant tests pass. Typecheck: 0 errors.
+
+**Not fixed — the honest remaining gap.** Only "resource consumption" and coarse "errors" are now readable.
+"Logs" (a message/stack-trace record of what a handler actually printed or threw) and "traces" (span-level
+execution detail within an invocation) — two of the five items the deliverable names — do not exist anywhere
+in this codebase at all, confirmed by the same grep sweep; there is no write path for either, not just a
+missing read path. The fix built here is tenant-scoped only — an extension AUTHOR (potentially across many
+tenants' installations of their extension) has no separate, cross-tenant view; no publisher-scoped identity
+concept was confirmed to exist to build this against, and it was not investigated. No portal UI was checked
+for whether it actually calls this new endpoint.

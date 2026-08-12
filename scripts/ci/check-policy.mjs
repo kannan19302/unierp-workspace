@@ -640,6 +640,21 @@ const RATCHET = [
       const targets = [
         ...files("apps/web/app", [".tsx", ".ts", ".css"]),
         ...files("apps/web/src", [".tsx", ".ts", ".css"]),
+        // H01/D138: this rule only ever named unierp-web's monorepo path
+        // (apps/web/...), so it delegated away — never scanned — the
+        // token gate for every OTHER app with real UI code, including
+        // unierp-corporate-website (Next.js App Router, its own `app/`
+        // at repo root, no OWNERSHIP entry of its own). Root-relative
+        // `app`/`src` naturally resolve to THIS repo's own tree (no
+        // OWNERSHIP prefix matches a bare "app"), so scanning them too
+        // extends the same check to any repo that has one, without
+        // touching unierp-web's existing apps/web/-prefixed targets.
+        ...(SELF_REPO !== "unierp-web"
+          ? [
+              ...files("app", [".tsx", ".ts", ".css"]),
+              ...files("src", [".tsx", ".ts", ".css"]),
+            ]
+          : []),
       ];
       for (const f of targets) {
         read(f)
@@ -668,6 +683,10 @@ const RATCHET = [
       const targets = [
         ...files("apps/web/app", [".css"]),
         ...files("apps/web/src", [".css"]),
+        // H01/D138: see the identical note in hardcodedColors above.
+        ...(SELF_REPO !== "unierp-web"
+          ? [...files("app", [".css"]), ...files("src", [".css"])]
+          : []),
       ];
       // Counted per declaration, not per line, and this is load-bearing.
       //

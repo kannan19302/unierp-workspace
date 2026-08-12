@@ -3836,3 +3836,44 @@ against that jurisdiction's specification" half for the two markets nominally ma
 real jurisdiction-specific field-level schemas, a content/schema-modeling project per market. Also not
 attempted: versioning of filing specs by effective date, and a documented annual-update process — the
 deliverable's other two named requirements.
+
+### D114 · 🔴 CRITICAL · The decimal-arithmetic ratchet's baseline was resolved relative to the gate script's own repository, not the repo actually being scanned — every caller of the reusable policy gate shared one global number, letting a repo with real headroom add new float-drift bugs without ever tripping the gate
+
+Found while claiming and building J11 (Financial arithmetic certification), whose exit criterion names the
+gate directly: "`check-decimal-arithmetic.mjs` blocking with a zero baseline." Running the gate as its own
+exit criterion demands (`POLICY_ROOT=<unierp-api> ... node scripts/ci/check-decimal-arithmetic.mjs`) reported
+"658 site(s), below the baseline of 703" — but reading the script's own path-resolution logic found `BASELINE`
+was computed as `path.join(ROOT, "scripts", "ci", "decimal-arithmetic-baseline.json")` where `ROOT` resolves
+relative to **the script's own file location** (`unierp-workspace/scripts/ci/`), never to `TARGET`
+(`POLICY_ROOT`, the repository actually being scanned). Every caller of the reusable
+`.github/workflows/policy-gate.yml` workflow — confirmed via grep across all four consuming repos
+(`unierp-api`, `unierp-data`, `unierp-web`, `unierp-idp`) — points `POLICY_ROOT` at its own checkout but reads
+and compares against the exact same single `maxSites: 703` file, checked out fresh and throwaway in CI's
+`gate/` directory on every run. unierp-api's real, current count is 658 — **45 below** the shared number, an
+unearned gap borrowed from wherever 703 was actually calibrated, not evidence of this repo's own progress. A
+developer could add up to 45 new `sum + Number(x.decimalField)` sites — each one a real financial-arithmetic
+correctness bug of the exact class this session already found and fixed repeatedly this session (D084/D085/
+D086/D095) — and the gate would still report "below baseline, PASS." The exit criterion's own phrase,
+"blocking with a zero baseline," cannot be honestly claimed by a gate whose per-repo blocking threshold
+silently floats up to 45 sites above reality.
+
+**Fixed:** `BASELINE` now resolves to `<TARGET>/.decimal-arithmetic-baseline.json` — the repo actually being
+scanned — mirroring the sibling `.quality-policy-baseline.json` convention already committed at each target
+repo's own root. Regenerated and committed unierp-api's own baseline at its true current count (658). Deleted
+the now-orphaned shared file after confirming nothing else in `unierp-workspace` referenced it. Proven with a
+LIVE break/restore against the real gate and the real repo (not a synthetic mock): injected a genuine new
+`sum + Number(r.taxAmount)` site against the real Prisma schema, confirmed the corrected gate fails
+(`659 site(s) ..., baseline is 658`, exit 1), removed it, confirmed it passes again (`658 site(s), at the
+baseline`, exit 0). `prove-gates.mjs`'s full break-it suite still reports 11/11 CI gates PROVEN able to fail,
+including this one, confirming the fix did not disturb the harness's own synthetic-break proof or any of the
+other 10 gates. `check-plan-integrity.mjs` clean.
+
+**Not fixed — the honest remaining gap.** The 658 real float-drift sites themselves remain unfixed — closing
+the exit criterion's literal "zero baseline" requires migrating each one from `Number(x.decimalField)`
+accumulation to `Prisma.Decimal` arithmetic, a large mechanical multi-session migration this pass could not
+honestly claim to have done. The deliverable's larger half — "100% branch coverage plus reconciliation tests
+on every money path: rounding, currency conversion, tax, depreciation, payroll" — was not attempted; this
+pass fixed the GATE measuring one specific defect class, not the full coverage/reconciliation program the
+deliverable names. Only unierp-api's baseline was regenerated and committed — `unierp-data`, `unierp-web`,
+and `unierp-idp` are equally affected by the same shared-baseline bug and each needs its own
+`.decimal-arithmetic-baseline.json` generated and committed the same way, not attempted here.

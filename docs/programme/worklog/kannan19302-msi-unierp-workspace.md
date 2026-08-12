@@ -20690,3 +20690,12 @@ status → BLOCKED
 This environment has no Docker/Postgres to run scripts/rehearse-restore.mjs for real and establish a genuine committed RPO/RTO measurement - the exit criterion's first half cannot be satisfied here, the same class of blocker as E38/E44/I11. Built and proved the tractable second half instead: scripts/check-rehearsal-freshness.mjs, a gate catching a silently-disabled backup-restore.yml schedule (G-11's 'fails loudly if skipped'), proven via FAIL-first/PASS/break-restore against synthetic log states. Deliberately not wired into live push/PR CI since it would fail every future commit with no way to establish a passing baseline here. Findings filed as D123.
 ```
 
+### G04 · CLAIMED · 2026-08-12T15:06:27Z · kannan19302@MSI/unierp-workspace
+
+```
+wave      0
+branch    autopilot/d01-plane2-boundary
+selected  explicitly requested
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

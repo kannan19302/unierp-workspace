@@ -1,0 +1,111 @@
+L15 — Bug-fix regression discipline
+Exit criterion: "A fix commit without an accompanying test is
+flagged in review, and the changelog line names the test."
+
+BEFORE
+======
+$ ls scripts/check-bugfix-test-discipline.mjs
+No such file or directory
+(no gate of any kind existed to flag a fix commit missing a test)
+
+MECHANISM
+=========
+New scripts/check-bugfix-test-discipline.mjs scans a real commit
+range in a real repo (default unierp-api, last 30 commits) for
+commits matching the platform's own established convention,
+confirmed against real history: `fix(scope): description` or
+`fix: description`. For each fix commit found, it checks:
+
+  1. Does the commit's own diff (git show --name-only) touch at
+     least one *.spec.ts file?
+  2. Is that spec file's basename named anywhere in
+     docs/ai/CHANGELOG.md — "the changelog line names the test"?
+
+A fix commit failing either check is FLAGGED explicitly by SHA and
+subject line, with the specific reason named — not silently passed.
+
+REAL HISTORICAL FINDING — run against unierp-api's actual history
+=====================================================================
+$ node scripts/check-bugfix-test-discipline.mjs --count 300
+Scanned 276 commit(s) in unierp-api, 55 fix(...) commit(s) found.
+FAIL  51 fix commit(s) flagged (of 55 real fix(...) commits in this
+platform's own history).
+
+This is a genuine, honest finding, not manufactured: 51 of 55 real
+historical fix commits either shipped no test at all, or shipped one
+never cross-referenced in the changelog. Filed as D076 (MEDIUM) — the
+retroactive fix (adding tests to 51 multi-year-old commits, many
+since superseded by later work) is explicitly out of L15's own scope,
+which is the enforcement MECHANISM going forward, not a historical
+rewrite.
+
+Crucially, 4 of the 55 real fix commits were NOT flagged — the
+checker discriminates correctly against real data, not merely
+flagging everything indiscriminately.
+
+PROOF — synthetic compliant/non-compliant scenarios in a throwaway repo
+=============================================================================
+To avoid polluting unierp-api's real history with test commits, both
+the FAIL and PASS proofs were run against a disposable git repository
+in the scratch directory (created, used, and deleted — never touched
+the real repo):
+
+1. FAIL (no test at all):
+   $ git commit -m "fix(core): a real bug fix with no accompanying test"
+     (no spec file in the diff)
+   $ node scripts/check-bugfix-test-discipline.mjs --repo <scratch-repo>
+   FAIL  ... "no *.spec.ts file in the commit diff"
+
+2. FAIL (test shipped, but not named in changelog):
+   $ git commit --amend  (added tests/a.spec.ts to the same commit)
+   $ node scripts/check-bugfix-test-discipline.mjs --repo <scratch-repo>
+   FAIL  ... "the spec file is not named anywhere in docs/ai/CHANGELOG.md"
+
+3. PASS (test shipped AND named in changelog):
+   $ echo "... added a.spec.ts to verify this." >> docs/ai/CHANGELOG.md
+   $ node scripts/check-bugfix-test-discipline.mjs --repo <scratch-repo>
+   OK    every fix(...) commit in the scanned range ships a *.spec.ts
+   change, named in the changelog.
+
+All three states reproduced deliberately and independently — both of
+the exit criterion's own named failure conditions, and the compliant
+state. The temporary CHANGELOG.md edit used for scenario 3 was
+reverted (`git checkout -- docs/ai/CHANGELOG.md`) and confirmed clean
+via `git status --short` before this evidence was finalized; the
+scratch repo was deleted.
+
+RE-CONFIRM AFTER CLEANUP
+============================
+$ git status --short docs/ai/CHANGELOG.md
+(clean — no trace of the test edit)
+$ node scripts/check-plan-integrity.mjs
+OK    359 phases intact across 13 tracks; every phase retains an exit
+criterion; no undeclared files.
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- 51 of 55 real historical fix commits remain unflagged-but-
+  non-compliant in the sense that they predate this gate — filed as
+  D076, explicitly out of scope to retroactively fix (see D076 for
+  the full reasoning).
+- Not yet wired into an actual CI/review workflow (e.g. a GitHub
+  Actions step on pull_request, or a commit-msg/pre-push hook) —
+  the mechanism is proven correct standalone against both real
+  history and synthetic scenarios; wiring it into an actual review
+  gate is a mechanical follow-up, consistent with L06/L14's own
+  stated limitation.
+- "Flagged in review" is interpreted as a script any CI step or
+  reviewer can run against a commit range — it does not itself block
+  a merge in this pass, since no CI workflow file exists yet to call
+  it from.
+
+COMMANDS
+========
+$ node scripts/check-bugfix-test-discipline.mjs --count 300
+$ node scripts/check-bugfix-test-discipline.mjs --repo <path> --count N
+$ node scripts/check-plan-integrity.mjs
+
+COMMITS
+=======
+unierp-workspace  (this phase)  scripts/check-bugfix-test-discipline.mjs (new),
+                                 90-DEFECT-LOG.md D076

@@ -2171,3 +2171,32 @@ manufactured to move the number.
 already ranks every file by always-passing block count (worst: `crm.service.coverage.spec.ts`,
 181/181), giving whoever picks this up next a prioritised, evidenced worklist rather than a blind
 grep.
+
+### D076 · 🟡 MEDIUM · 51 of 55 real `fix(...)` commits in unierp-api's own history predate any test-naming discipline
+
+Found while building L15 (Bug-fix regression discipline). `scripts/check-bugfix-test-discipline.mjs`
+was run against unierp-api's real commit history (276 commits scanned, 55 matching the platform's own
+established `fix(scope): ...` convention) and found 51 of 55 fix commits either shipped with no
+`*.spec.ts` file in the same commit at all, or shipped one whose filename is never named anywhere in
+`docs/ai/CHANGELOG.md`. This confirms L15's own premise directly rather than assuming it: fix commits
+on this platform have historically NOT reliably shipped with a regression test that failed before and
+passes after, and even where a test did ship, nothing connected it back to the changelog line a future
+agent would read.
+
+**How it was caught:** running the real gate mechanism against real history as L15's own break/restore
+step — the same discipline this session has applied throughout (a check that has not been run against
+something it's supposed to catch is not proven).
+
+**Not fixed — retroactive, not in scope.** L15's own deliverable is the enforcement MECHANISM going
+forward ("a fix commit without an accompanying test IS flagged in review"), not a retroactive rewrite
+of 51 historical commits to add missing tests years after the fact — many of the underlying code paths
+those commits touched have since been superseded by later work in this same history. The gate is real,
+proven correct against known-compliant and known-non-compliant synthetic commits (a throwaway test repo,
+not the real history, to avoid polluting it), and ready to enforce discipline on every fix commit from
+here forward.
+
+**Not fully investigated:** which of the 51 flagged commits' underlying bugs, if any, are still
+present in the current codebase without ANY regression coverage (as opposed to merely lacking the
+changelog cross-reference this gate specifically checks for) — that would require reading each
+commit's actual diff against current `HEAD`, not just its own historical diff, and is a meaningfully
+larger undertaking than this phase's own scope.

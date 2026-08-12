@@ -2983,3 +2983,53 @@ calculation engine, and — explicitly — consolidating the two overlapping adv
     `advanced-hr` has extensive (if partly coverage-padded) test coverage is itself evidence for which
     module is the more likely system of record, worth citing when that consolidation work begins.
   - "100%-covered calculation engine": `payroll-tax.service.ts` exists separately and was not audited.
+
+### D096 · 🔴 CRITICAL · generateProjectInvoice() re-billed every already-invoiced completed milestone on every call — no idempotency guard, and milestone/hour prices were entirely fabricated flat rates
+
+Found while claiming and building E24 (Projects and professional services), whose own exit criterion
+names "milestone and progress billing" explicitly. `unierp-api/src/modules/projects/projects.service.ts`'s
+`generateProjectInvoice()` billed every `Milestone` with `isCompleted: true` on **every call**, with no
+check for whether that milestone had already appeared on a prior invoice. `Milestone` has no `isBilled`
+flag in the schema — nothing about this function is idempotent. Calling it twice for the same project
+(a plausible operator retry, a duplicate button click, a re-triggered automation) re-bills every already-
+invoiced completed milestone a second time.
+
+**A second, related fabrication was also found but NOT fixed in this pass** (see "not fixed" below):
+every completed milestone is billed at a hardcoded flat `unitPrice: 1000.00` regardless of its real
+contracted value, and every billable hour at a hardcoded flat `unitPrice: 100.00` regardless of the
+task's or employee's real bill rate — numbers with no connection to the project's actual budget or
+contract terms, similar in kind to D090's fabricated three-way-match report, though `Milestone` has no
+schema field to store a real contracted value to fix this properly without a migration.
+
+**How it was caught:** writing a FAIL-first test that seeds a completed milestone already referenced in
+a prior non-void invoice's line items, then calls `generateProjectInvoice()` again — the pre-existing
+code billed it a second time (created a new invoice with a duplicate milestone line item) instead of
+recognizing it as already billed.
+
+**Fixed (the double-billing gap):** `generateProjectInvoice()` now queries existing non-void invoices
+for the project, extracts the set of milestone names already billed by matching the exact line-item
+description prefix this function itself writes (`"Project Milestone Completed: "`), and excludes those
+milestones from the current billing run. Proven via break/restore (reverted to unconditional re-billing,
+confirmed the exact original defect reproduces — the already-billed milestone was billed a second time
+with no rejection — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 9/9 tests pass). Full
+regression: `src/modules/projects/`, all 8 test files / 72 tests pass cleanly. Typecheck: same 4
+pre-existing unrelated errors, unchanged.
+
+**Not fixed — the fabricated flat-rate pricing, and the same double-billing gap for billable hours.**
+Filed here rather than attempted shallowly:
+  - Milestone billing at a hardcoded $1000 and hourly billing at a hardcoded $100/hr, both unrelated to
+    any real contract value or employee bill rate, is a genuine fabrication requiring new schema fields
+    (a milestone contract value, a per-employee or per-task bill rate) — out of reach without a
+    migration in the separate `unierp-data` repository, matching this session's now-familiar
+    schema-migration-blocked pattern (D092, D095).
+  - The billable-hours line item (`Project Timesheet Logged Hours...`) has the SAME idempotency gap as
+    milestones did, and was NOT fixed in this pass: `Timesheet` has no `billed` flag, and the
+    description-prefix-matching technique used for milestones can't cleanly dedupe individual timesheet
+    entries the way it can dedupe named milestones (the hours line item aggregates ALL of a project's
+    logged hours into one line with no per-entry identifier). A real fix needs either a `billed` boolean
+    on `Timesheet` or billing by explicit period/date-range rather than "all hours ever logged."
+  - GL posting ("revenue recognition to the GL") is completely absent — zero references to "journal"
+    anywhere in the `projects` module, the same total-absence pattern as D089/D092/D095, also requiring
+    a schema migration to fix properly.
+  - WBS, budget vs actual, and resourcing (the exit criterion's other three named requirements) were not
+    investigated in this pass.

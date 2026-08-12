@@ -21962,3 +21962,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### H05 · RELEASED · 2026-08-12T15:53:25Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+The public pricing page (unierp-corporate-website/app/(site)/pricing/page.tsx) is 100% hardcoded static data, completely disconnected from C13's real SaaSPlan/SaaSPlanPrice billing model and the real GET /saas/plans endpoint that exposes it. Closing this requires a live unierp-api instance backed by a live database with real seeded plan/price rows to fetch from and prove a sync against - this environment has no DATABASE_URL, the same blocker as E38/E44/I11/J25/G05. Findings and what a real fix needs filed as D133.
+```
+

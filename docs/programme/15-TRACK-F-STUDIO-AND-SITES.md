@@ -42,7 +42,7 @@ is the only alternative)**, F needs E19 for commerce inventory truth. **Blocks:*
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **F01** | Site data model and tenancy | A03, A05 | Sites, pages, sections, collections, entries, menus, assets, redirects, locales — every table tenant-scoped and RLS-policied | `check-rls-verify.mjs` passes over every new table. A site provably cannot reference another tenant's content | OPEN |
+| **F01** | Site data model and tenancy | A03, A05 | Sites, pages, sections, collections, entries, menus, assets, redirects, locales — every table tenant-scoped and RLS-policied | `check-rls-verify.mjs` passes over every new table. A site provably cannot reference another tenant's content | WIP |
 | **F02** | Published-projection boundary | F01 | An explicit publish step producing a read-only projection that the public renderer reads. **The renderer never queries plane-3 data directly** | A test proves the public renderer cannot reach an unpublished record or any plane-3 table, even with a crafted request. This is the phase that makes the whole track safe | OPEN |
 | **F03** | Headless content model | F01 | Tenant-defined content types with fields, relations, validation, localisation and versioning — reusing D13's schema vocabulary rather than inventing a second one | A tenant defines a `CaseStudy` type with 12 fields and localises it into three languages, with no code | OPEN |
 | **F04** | Content workflow | F03, E05 | Draft → review → scheduled → published → archived, with preview links, approvals and scheduled publication | A scheduled post publishes at its time in the tenant's timezone. A reviewer approves from a preview link that expires | OPEN |

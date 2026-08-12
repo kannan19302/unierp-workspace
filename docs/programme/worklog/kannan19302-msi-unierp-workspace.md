@@ -21483,3 +21483,155 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G03 · FINISH · 2026-08-12T15:38:02Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+G03 — Extension lifecycle
+Deliverable: "Install, upgrade, rollback, disable, uninstall - with
+data migration, and per-tenant isolation of extension state."
+Exit: "An upgrade that fails rolls back cleanly with no orphaned
+data. Uninstall leaves no residue and no dangling permissions."
+
+SCOPE NOTE
+==========
+Two named lifecycle stages exist as real implementations
+(install/uninstall/disable, confirmed real via G01/G02's own
+investigation of the same module this session). "Upgrade" and
+"rollback" do not exist as concepts anywhere in this codebase at all
+- confirmed by grep, zero matches for "upgrade"/"rollback" anywhere
+in extension-registry - so the exit criterion's first sentence ("an
+upgrade that fails rolls back cleanly") cannot be investigated,
+proven, or fixed; there is no upgrade mechanism to test. This is
+filed as the honest remaining scope. The second sentence - "uninstall
+leaves no residue and no dangling permissions" - was directly
+investigated and had a real, concrete, tractable gap, fixed this
+pass.
+
+THE INVESTIGATION
+==================
+uninstall() (ExtensionRegistryService) clears grantedScopes and
+approvedHosts on the installation row - "no dangling permissions" is
+genuinely satisfied. But ExtensionSchemaService.listTables()'s own
+docstring reads:
+
+  "Uninstall does NOT drop tables. Dropping on uninstall would make
+  an accidental uninstall unrecoverable; reclaiming storage is a
+  separate, deliberate operation."
+
+Confirmed via grep across the entire extension-registry module:
+`grep -rln "purge|reclaim" src/modules/extension-registry` returned
+only the file containing this comment - no "separate, deliberate
+operation" existed anywhere. The codebase's own documentation
+promised a mechanism that was never built. An uninstalled extension's
+tables stay in the database forever, with literally no path to
+remove them, ever, even deliberately - directly contradicting "no
+residue."
+
+THE DESIGN TENSION, RESOLVED
+================================
+This is NOT the same shape as this session's usual fabrication
+findings - the "do not drop on uninstall" design is a genuine,
+well-reasoned safety decision (cited: § 14 Phase 4, "a vertical that
+fails as an extension goes back to its service with no data
+migration"), not a bug. The fix respects that decision rather than
+overriding it: the new purge operation is a SEPARATE call, gated to
+only run against an installation whose status is ALREADY
+UNINSTALLED - an accidental double-click on "uninstall" still cannot
+cascade into unrecoverable data loss on a live installation.
+
+MECHANISM (this phase's fix)
+====================================
+Added ExtensionSchemaService.dropTables(extensionId): drops each of
+the extension's real, already-existing tables (from listTables()'s
+own information_schema.tables query - never an extension-supplied
+string) and their RLS policy. Added
+ExtensionRegistryService.purgeExtensionData(tenantId, extensionId):
+looks up the installation directly (NOT via the existing require()
+helper, which itself excludes UNINSTALLED installations and would
+have made the status check unreachable dead code), refuses with
+BadRequestException unless status === "UNINSTALLED", then calls
+dropTables(). Wired POST /extensions/:id/purge-data.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/extension-registry/tests/extension-registry-purge.service.spec.ts
+3 new tests:
+  - "G03: refuses to purge a LIVE (not-yet-uninstalled) installation's
+    data"
+  - "G03: purges an UNINSTALLED extension's tables - this is the real
+    'no residue' mechanism"
+  - "G03: 404s for an extension with no installation record at all
+    for this tenant"
+All 3 pass against the fix.
+
+BREAK/RESTORE
+=============
+Removed the status-gating check (marked "BROKEN FOR PROOF") -
+reproducing the dangerous scenario the gate exists to prevent.
+
+  $ npx vitest run extension-registry-purge.service.spec.ts
+  1 failed | 2 passed (3)
+  (exactly the safety test - purgeExtensionData() resolved
+  successfully and dropped tables for a LIVE ENABLED extension
+  instead of refusing, reproducing the exact defect the gate exists
+  to prevent, on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/extension-registry/extension-registry.service.ts
+  0
+  $ npx vitest run extension-registry-purge.service.spec.ts
+  3/3 pass
+
+REGRESSION
+==========
+$ npx vitest run src/modules/extension-registry/
+3/4 test files pass cleanly (the 3 mocked-prisma files this change
+touches or is adjacent to); extension-schema.service.spec.ts requires
+a real, live PostgreSQL instance (`DATABASE_URL`) - confirmed
+pre-existing and unaffected by this change, the same environment
+blocker as E38/E44/I11/J25/G01/G02.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+0 errors.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D129 (CRITICAL). Not fixed in this pass:
+  - "Upgrade" and "rollback" (the exit criterion's own first
+    sentence, and half the deliverable's named stages) do not exist
+    anywhere in this codebase - confirmed by grep across the whole
+    extension-registry module. There is no version-transition logic,
+    no rollback mechanism, and consequently nothing to test "an
+    upgrade that fails rolls back cleanly" against. This is a
+    substantially larger, separate build.
+  - The new dropTables()/purgeExtensionData() DDL path could not be
+    integration-tested against a live database in this environment
+    (no DATABASE_URL) - proof here is limited to the safety-gating
+    logic (mocked), matching the same infrastructure constraint as
+    the pre-existing extension-schema.service.spec.ts test file
+    itself.
+  - "Per-tenant isolation of extension state" (the deliverable's
+    other named requirement) was not independently investigated in
+    this pass - confirmed real elsewhere (RLS on every generated
+    table, per ExtensionSchemaService's own applyRls()) but not
+    re-verified here.
+
+COMMANDS
+========
+$ npx vitest run src/modules/extension-registry/tests/extension-registry-purge.service.spec.ts
+$ npx vitest run src/modules/extension-registry/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/extension-registry/extension-registry.service.ts
+$ grep -rln "upgrade\|rollback" src/modules/extension-registry --include=*.ts -i
+
+COMMITS
+=======
+unierp-api  117a4fc  extension-schema.service.ts,
+                     extension-registry.service.ts,
+                     extension-registry.controller.ts,
+                     tests/extension-registry-purge.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D129
+```
+

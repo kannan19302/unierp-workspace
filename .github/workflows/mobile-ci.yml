@@ -1,25 +1,28 @@
 name: Mobile CI
 
-# Phase 0.0 prerequisite (.ai/MULTI_CLIENT_MASTER_PLAN.md § 7): apps/mobile
-# builds and analyzes cleanly before any module's cross-platform Parity
-# Phase (§ 4) can claim mobile/desktop credit. Android + Windows first (no
-# code-signing complexity); iOS/macOS added once Apple signing is set up;
-# Linux last.
+# Phase 0.0 prerequisite (.ai/MULTI_CLIENT_MASTER_PLAN.md § 7): the mobile
+# client builds and analyzes cleanly before any module's cross-platform
+# Parity Phase (§ 4) can claim mobile/desktop credit. Android + Windows
+# first (no code-signing complexity); iOS/macOS added once Apple signing is
+# set up; Linux last.
+#
+# I01/D137: this workflow used to filter on `apps/mobile/**` and run with
+# `working-directory: apps/mobile` — a monorepo path from before the
+# platform split into 30 repositories. unierp-mobile is now its own
+# top-level repo (lib/, test/, android/, etc. live at ITS OWN root), so
+# every trigger path and working-directory below assumed a directory that
+# has not existed since the split — this workflow could never have fired
+# correctly for the repo it exists to protect. Confirmed separately that
+# unierp-mobile's own ci.yml never called this workflow at all; it called
+# the generic Node/pnpm `reusable-ci.yml` instead, which has nothing to act
+# on in a repo with no package.json — so this Flutter client had no real CI
+# coverage of any kind before this phase, from either angle.
+#
+# Reusable so unierp-mobile's own ci.yml can call it directly — the same
+# pattern already used by every other repo's ci.yml in this platform.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile/**"
-      - ".github/workflows/mobile-ci.yml"
-  pull_request:
-    paths:
-      - "apps/mobile/**"
-      - ".github/workflows/mobile-ci.yml"
-
-defaults:
-  run:
-    working-directory: apps/mobile
+  workflow_call: {}
 
 env:
   FLUTTER_VERSION: "3.27.0"
@@ -78,10 +81,11 @@ jobs:
       - run: flutter pub get
       - run: flutter build ios --no-codesign --debug
 
-  # macOS/Linux platform folders are not yet scaffolded in apps/mobile
+  # macOS/Linux platform folders are not yet scaffolded in unierp-mobile
   # (flutter create --platforms=macos,linux . must be run locally — the
-  # Flutter SDK isn't available in this repo's sandboxed dev environment).
-  # Uncomment these jobs once the platform folders land.
+  # Flutter SDK is not available in any sandboxed dev environment this
+  # platform's agents have run in so far). Uncomment these jobs once the
+  # platform folders land.
   #
   # build-macos:
   #   name: Build macOS

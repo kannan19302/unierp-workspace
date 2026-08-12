@@ -4745,3 +4745,43 @@ now points at real, existing paths and is actually called — was verified by di
 correctness was not. Also confirmed exactly one existing analyzer suppression exists in `lib/` (a cosmetic
 line-length ignore) but was not removed, since verifying `flutter analyze`'s actual state requires the
 missing SDK. macOS/Linux platform folders remain unscaffolded, an already-documented, unchanged gap.
+
+### D138 · 🔴 CRITICAL · The token gate (hardcoded-hex/pixel ratchet) only ever recognized unierp-web's monorepo path — every other repo with real UI code, including the public marketing site, was silently delegated away and never scanned, hiding 431 real, unmeasured violations
+
+Found while claiming and building H01 (Content architecture and design refresh), whose exit criterion names
+its own mechanism directly: "the token gate (B15) passes on this repo." `hardcodedColors`/`hardcodedSpacing`
+(`unierp-workspace/scripts/ci/check-policy.mjs`) hardcoded `files("apps/web/app", ...)`/`files("apps/web/src",
+...)` as their scan targets — a monorepo path. Tracing `resolvePath()`'s `OWNERSHIP`-prefix logic: for
+`POLICY_REPO=unierp-web`, the `apps/web/` prefix correctly strips to that repo's own real root, so the rule
+genuinely works for the one repo it already covers. But `unierp-corporate-website` (this phase's own repo)
+has no entry in `OWNERSHIP` at all, so `files()` reported the rule as "delegated to unierp-web" and scanned
+literally nothing locally — forever. Ran the corrected rule for real against the actual repo and found 222
+hardcoded hex colours and 209 hardcoded pixel values, entirely unmeasured before this pass — directly
+contradicting "the token gate passes on this repo": it had never even run.
+
+**Fixed:** added a fallback to both rules — for any `SELF_REPO` other than `unierp-web`, also scan its own
+root-relative `app`/`src` directories directly (a bare `"app"`/`"src"` has no `OWNERSHIP` prefix match, so it
+naturally resolves to "local to this repo," extending the check without touching `unierp-web`'s existing,
+already-correct behavior). Wired the gate live: added `unierp-corporate-website/.github/workflows/
+policy-gate.yml` (the exact pattern `unierp-web` already uses) and committed
+`.quality-policy-baseline.json` at the real, measured baseline (222/209). Proven via a real FAIL-first run
+(the first genuine scan found the 431 sites), then `--report` establishing the baseline, then a clean pass,
+then break/restore: added one new hardcoded colour, confirmed the ratchet catches the increase (222→223,
+exit 1), restored, confirmed pass (exit 0). `prove-gates.mjs` confirms all 11 existing CI gates remain
+unaffected; typecheck clean.
+
+**Incidental fix — a self-matching false positive found while proving this.** Running the corrected gate
+against this repo's own CI config tripped an unrelated HARD rule: `guard.yml`'s own "No gate bypasses"
+detection line literally contained the substring `--no-verify` inside its own grep pattern, which
+`check-policy.mjs`'s separate "Gate bypass" rule then flagged as itself being a bypass — a pre-existing
+false positive, not caused by this phase, directly blocking a clean demonstration. Rewrote the pattern from
+concatenated string pieces so the detection line no longer contains the literal banned substrings.
+
+**Not fixed — the honest remaining gap.** The 222+209 real violations remain unfixed — the gate now measures
+and ratchets them (they cannot increase without failing CI), but "zero hardcoded colours or spacing" is far
+from met; migrating 431 call sites to the design system is a large, separate mechanical effort. "Core Web
+Vitals green on every top-level page" was not investigated — requires a live deployed URL and Lighthouse/
+PageSpeed tooling this session cannot run. Information architecture across the 20 sections was not
+independently reviewed. Only `unierp-corporate-website` was fixed and wired; the same `OWNERSHIP`-gap
+pattern likely affects any other repo with real UI source that isn't `unierp-web` (e.g. `unierp-console`,
+`unierp-developer`) — not investigated, named as a real risk.

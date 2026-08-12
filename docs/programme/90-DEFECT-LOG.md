@@ -3573,3 +3573,59 @@ filter pattern — this defect's own discovery (the identical gap independently 
 methods in one file) strongly suggests more instances are plausible elsewhere in the codebase, following
 this session's now-repeated experience that a bug found once in isolation is rarely isolated (D084/D085/
 D086, D088/D092, D097/D099 all showed the same "found once, more likely elsewhere" pattern).
+
+### D108 · 🔴 CRITICAL · Scheduled-report "execution" was entirely fabricated (hardcoded fake success metrics, no delivery, no recipient validation) and had a cross-tenant IDOR
+
+Found while claiming and building E36 (Scheduled delivery and subscriptions), whose own exit criterion
+names the exact scenario this defect breaks: "A scheduled report delivers to 100 recipients with
+per-recipient permission filtering applied." Two separate services in the `reporting` module implement a
+"run this scheduled report" action — `scheduled-reports.service.ts`'s `runScheduledReport()` (which only
+updates `lastRunAt` and returns a hardcoded `"Report execution triggered"` message, never generating or
+sending anything) and `reporting-scheduled-jobs-deep.service.ts`'s `executeJob()`, investigated in depth
+here. `executeJob(id, tenantId)`:
+
+- **Never checked the job belonged to the caller's tenant** — `prisma.reportingScheduledJobDeep.update({
+  where: { id } })` had no `tenantId` in its where-clause at all, an IDOR letting any tenant execute or
+  relabel (via `lastRunAt`) another tenant's scheduled report job.
+- **Never validated, resolved, or delivered to a single recipient** — the `recipients` array on the job
+  was never even read.
+- **Unconditionally fabricated a "SUCCESS" execution log** with **hardcoded fake metrics**
+  (`executionMs: 1240, fileSizeKb: 480`) regardless of whether the job even existed, whether any recipient
+  was real, or how long anything actually took — the exact D063-style fabrication pattern (a status/metric
+  reported as measured fact when it was never computed) found earlier this session in a different
+  subsystem.
+
+**How it was caught:** reading `executeJob()` in full; the hardcoded literal metric values on every call
+are self-evidently fabricated on inspection (a real measurement is never a fixed constant across every
+invocation). Confirmed via FAIL-first tests: a job belonging to another tenant executed successfully
+instead of being refused; a job with a recipient email that didn't correspond to any real tenant user
+still logged unconditional `SUCCESS`.
+
+**Fixed:** `executeJob()` now looks up the job scoped to `{ id, tenantId }` and throws
+`NotFoundException` if it doesn't belong to the caller's tenant. Each recipient email in `job.recipients`
+is resolved against real tenant users via `idpPrisma.user.findMany({ where: { tenantId, email: { in:
+recipientEmails } } })` — a recipient who is not a recognized member of the tenant is excluded from
+delivery, not silently included. Real execution time is measured (`Date.now()` delta, no more hardcoded
+constant); the execution log now reports `FAILED` when zero recipients were eligible, and an honest
+`errorMessage` naming the delivered/skipped counts when some were excluded. Proven via break/restore
+(reverted both the tenant-scoping check and the recipient-resolution logic separately, confirmed each of
+the 3 new FAIL-first tests reproduces its exact original defect — cross-tenant execution succeeding, and
+every email being treated as automatically eligible with no real lookup — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 5/5 tests pass). Full regression: `src/modules/reporting/`, all 13 test
+files / 36 tests pass cleanly. Typecheck: same 4 pre-existing unrelated errors, unchanged (the fix also
+corrected an initial typecheck error from using the wrong Prisma client — `prisma.user` does not exist in
+this schema; identity models live in a separate IDP-schema client, `idpPrisma`, imported via
+`@/common/idp-client`).
+
+**Not fully investigated — E36's own scope is larger than one of two "run this report" implementations.**
+`scheduled-reports.service.ts`'s sibling `runScheduledReport()` method has the identical class of defect
+(fabricates a success message, does nothing real) and was **not fixed in this pass** — only
+`reporting-scheduled-jobs-deep.service.ts`'s `executeJob()` was investigated and fixed, chosen because it
+was the more structurally complete of the two (it at least has a real `recipients` field and an execution-
+log model to write honest results to). Neither service actually **generates or delivers** a report file to
+any channel (email, webhook, etc.) — "per-recipient permission filtering" was implemented here at the
+tenant-membership level (is this email a real user of this tenant at all), not at the finer-grained
+content-permission level E46's own `requiredPermission` mechanism established for the AI copilot (D105) —
+reconciling these two into one consistent permission-filtering approach for report delivery is a real,
+unaddressed remaining gap. No actual delivery channel (SMTP, webhook, in-app notification) is wired up for
+either service — this fix proves recipients are correctly *scoped*, not that anything is actually *sent*.

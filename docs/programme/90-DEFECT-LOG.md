@@ -4204,3 +4204,40 @@ mutated" — no property test was built, and no investigation was done into whic
 whether immutability is enforced at all once a document reaches a posted/final status. `fast-check` is now a
 real, working, proven capability in this repo; it has been used against only one of the three named
 invariants.
+
+### D123 · 🔴 CRITICAL · A silently-disabled backup-restore rehearsal schedule would produce no error anywhere — nothing detected the "skipped" failure mode G-11 explicitly names, and this environment cannot produce a single committed RPO/RTO number
+
+Found while claiming and building J25 (Backup, restore and DR rehearsal), whose exit criterion is: "RPO and
+RTO are committed numbers proven by rehearsal, and the rehearsal is on a schedule that fails loudly if
+skipped (G-11)." `.github/workflows/backup-restore.yml` runs the real rehearsal (`scripts/rehearse-restore.mjs`,
+built in an earlier phase, A22) nightly via `schedule: cron`, and the rehearsal script itself fails loudly
+(non-zero exit) if a restore fails to verify — covering "fails loudly when it runs and fails." It did NOT
+cover "fails loudly if SKIPPED": a `schedule`-triggered GitHub Actions workflow can stop firing entirely,
+silently, with zero error anywhere — GitHub disables scheduled workflows in a repository after 60 days with
+no push/PR activity on the default branch, with no notification. If that occurred, the rehearsal guarantee
+would quietly evaporate and nothing in this repository would say so — exactly the failure mode G-11's own
+wording names, and nothing detected it before this phase.
+
+**Fixed:** added `scripts/check-rehearsal-freshness.mjs`, which reads the append-only rehearsal log
+(`var/backups/rehearsal-log.jsonl`, written by `rehearse-restore.mjs`) and fails loudly if no rehearsal has
+ever been logged, the most recent one is older than a 48h freshness window, or the most recent one did not
+verify. Deliberately designed to run on ordinary push/PR activity rather than another `schedule` trigger
+(which would share the exact silent-disable risk it exists to catch) — this workspace receives a push on
+every ADP phase completed, a far more reliable trigger than the cron it watches over. Proven via FAIL-first/
+PASS/break-restore against synthetic log states: no log file (genuine FAIL-first, exit 1); a fresh verified
+entry (exit 0); a stale 279h-old verified entry (exit 1, the exact "silently skipped schedule" scenario);
+a fresh but unverified entry (exit 1). All three failure modes and the passing case behave correctly.
+`prove-gates.mjs` confirms all 11 pre-existing CI gates remain unaffected; `check-plan-integrity.mjs` clean.
+
+**Released, not fixed — this environment provides no Docker/Postgres**, the same class of infrastructure
+blocker as E38/E44/I11. The exit criterion's first half — "RPO and RTO are committed numbers proven by
+rehearsal" — cannot be satisfied here at all: zero rehearsals have ever run, so zero committed numbers exist.
+The new freshness gate is deliberately NOT wired into any live, push/PR-triggered CI workflow: doing so would
+make it fail on every future commit to this real repository (since no rehearsal log exists to satisfy it, and
+this session has no way to establish that initial passing state) — a real, consequential, hard-to-reverse
+action affecting every future commit, correctly withheld rather than taken unilaterally without a way to
+resolve the resulting failure. Per-tenant PITR (the deliverable's other named requirement) was not
+investigated at all. A genuine follow-up needs: a provisioned Postgres/Docker environment to run
+`rehearse-restore.mjs` for real and establish a genuine committed RPO/RTO measurement; wiring the freshness
+gate into `ci.yml` once that first rehearsal passes; per-tenant PITR rehearsal coverage; and publishing the
+resulting numbers wherever this deliverable expects them.

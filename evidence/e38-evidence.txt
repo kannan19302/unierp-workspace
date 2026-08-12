@@ -1,0 +1,73 @@
+E38 — Analytics warehouse and history
+Deliverable: "Historical and aggregate store so analytical load does
+not sit on the transactional database."
+Exit: "A year-over-year query does not degrade transactional p95.
+Verified under load."
+
+WHY THIS PHASE IS RELEASED RATHER THAN CLAIMED DONE
+=====================================================
+This phase's own exit criterion is a strict, mechanical performance
+bar requiring a live PostgreSQL instance under realistic concurrent
+transactional load to measure a genuine p95 degradation. This
+environment has no DATABASE_URL configured - confirmed directly, the
+same finding as E44 (D100). No load-testing tool, no read-replica, no
+separate warehouse schema, and no p95 instrumentation exists anywhere
+in this codebase to build on even hypothetically.
+
+Unlike several of this session's other findings, there was no
+tractable, schema-migration-free mechanism available to build and
+prove via mocked unit tests as meaningful partial progress - the
+entire deliverable (a separate historical/aggregate store, populated
+by some ETL or CDC mechanism, queried instead of the transactional
+tables for analytical workloads) is itself a database-infrastructure
+project, not an application-code change one session can meaningfully
+advance without provisioning real infrastructure.
+
+THE INVESTIGATION
+==================
+$ grep -rln "analyticsWarehouse\|AnalyticsWarehouse\|materialized" src/modules --include="*.ts"
+(zero real matches - one unrelated false positive)
+
+No analytics warehouse, materialized view, or separate historical
+datastore exists anywhere in the codebase.
+
+Concretely, this session's own E34 investigation (D107, earlier in
+this pass) already confirmed getTrialBalance(), getProfitLoss(), and
+getBalanceSheet() each query prisma.journalEntry.findMany() directly
+against the LIVE TRANSACTIONAL TABLE with no lower date bound at all -
+getTrialBalance("t1", "2026-12-31") reads every journal entry the
+tenant has ever created since inception, not a bounded historical
+window, growing unboundedly as the tenant ages. This is precisely the
+"analytical load sitting on the transactional database" pattern this
+phase's own deliverable names as the thing to eliminate - a real,
+concrete, already-identified example of the problem this phase exists
+to solve, even though it cannot be load-tested here.
+
+WHAT WOULD BE NEEDED TO ACTUALLY CLOSE THIS PHASE
+====================================================
+1. A provisioned database instance (disposable or otherwise) to
+   establish baseline transactional p95 under representative
+   concurrent load.
+2. A design decision on the warehouse mechanism itself: a replicated
+   read model, a scheduled ETL into aggregate tables, or a CDC-based
+   streaming approach.
+3. Migrating the already-identified unbounded historical queries
+   (getTrialBalance/getProfitLoss/getBalanceSheet, D107) to read from
+   that warehouse instead of the live transactional journalEntry
+   table - the most obvious first target once the infrastructure
+   exists.
+4. A real load test firing concurrent transactional writes alongside
+   year-over-year analytical queries, measuring p95 before and after
+   the warehouse migration.
+
+None of these four steps are attemptable without real database
+infrastructure this environment does not provide.
+
+COMMANDS
+========
+$ grep -rln "analyticsWarehouse\|AnalyticsWarehouse\|materialized" src/modules --include="*.ts"
+$ node -e "console.log(process.env.DATABASE_URL || 'NOT SET')"
+
+COMMITS
+=======
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D111

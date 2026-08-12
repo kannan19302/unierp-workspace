@@ -3722,3 +3722,40 @@ investigated: whether any real dashboard-tile UI in `unierp-web` actually calls 
 whether dashboards are rendered from an entirely separate, unaudited code path — this fix makes the
 endpoint itself correct but does not confirm end-to-end wiring from a rendered dashboard tile to this
 specific call.
+
+### D111 · 🔴 CRITICAL · No analytics warehouse or historical store exists anywhere — every financial report queries the full, unbounded transactional journal-entry history directly, and no load-verification infrastructure exists to measure the impact
+
+Found while claiming and building E38 (Analytics warehouse and history), whose own exit criterion is an
+unusually strict, mechanical performance bar: "A year-over-year query does not degrade transactional p95.
+Verified under load." A repo-wide search confirmed no analytics warehouse, materialized view, or separate
+historical datastore exists anywhere in the codebase (`grep -rln "analyticsWarehouse\|AnalyticsWarehouse\|
+materialized" src/modules` returns only an unrelated false-positive match). Concretely, this session's own
+E34 investigation (D107) already confirmed `getTrialBalance()`, `getProfitLoss()`, and `getBalanceSheet()`
+each query `prisma.journalEntry.findMany()` directly against the live transactional table with **no lower
+date bound at all** — `getTrialBalance("t1", "2026-12-31")` reads every journal entry the tenant has ever
+created since inception, not a bounded historical window, growing unboundedly as the tenant ages. This is
+precisely the "analytical load sitting on the transactional database" pattern this phase's own deliverable
+names as the thing to eliminate.
+
+**This phase's own literal hard exit criterion could not be attempted, let alone met, in this
+environment**, for the same underlying reason as E44 (D100): "verified under load" requires a live
+PostgreSQL instance under realistic concurrent transactional traffic to measure a genuine p95 degradation
+— this environment has no `DATABASE_URL` configured (confirmed directly, same finding as E44). No load-
+testing tool, no read-replica, no separate warehouse schema, and no p95 instrumentation exists anywhere in
+this codebase to build on even hypothetically. Unlike several of this session's other findings, there was
+no tractable, schema-migration-free mechanism available to build and prove via mocked unit tests as
+partial progress — the entire deliverable (a separate historical/aggregate store, populated by some ETL
+or CDC mechanism, queried instead of the transactional tables for analytical workloads) is itself a
+database-infrastructure project, not an application-code change a single session can meaningfully advance
+without provisioning real infrastructure this environment cannot provide.
+
+**Not attempted — stated plainly rather than forcing an artificial or unverifiable claim of progress.**
+Following this session's own precedent set by E44 (D100): rather than either (a) building something
+unrelated and calling it partial progress, or (b) fabricating a claim that the exit criterion was
+verified, this phase is released with the honest architectural finding on record. A genuine follow-up
+needs, at minimum: a provisioned database instance (disposable or otherwise) to establish baseline
+transactional p95 under representative concurrent load; a design decision on the warehouse mechanism itself
+(a replicated read model, a scheduled ETL into aggregate tables, or a CDC-based streaming approach); and
+only then can the "does not degrade p95, verified under load" bar be meaningfully tested. The concrete,
+already-identified unbounded-historical-query pattern in `getTrialBalance()`/`getProfitLoss()`/
+`getBalanceSheet()` (D107) is the most obvious first target once that infrastructure exists.

@@ -4446,3 +4446,39 @@ originally-committed state via `git status --short`.
 separate, deliberate step not attempted here, the same pattern as G01. "A tenant admin sees them at install
 and consents" (the deliverable's other named requirement) was not investigated — whether any install UI
 actually displays the manifest's requested scopes to an admin before installation was not checked.
+
+### D129 · 🔴 CRITICAL · An uninstalled extension's data tables stayed in the database forever with no path to ever remove them — the codebase's own docstring promised a "separate, deliberate" reclaim operation that was never built
+
+Found while claiming and building G03 (Extension lifecycle), whose exit criterion's second sentence is:
+"Uninstall leaves no residue and no dangling permissions." `ExtensionRegistryService.uninstall()` correctly
+clears `grantedScopes` and `approvedHosts` — "no dangling permissions" holds. But
+`ExtensionSchemaService.listTables()`'s own docstring states: "Uninstall does NOT drop tables... reclaiming
+storage is a separate, deliberate operation" — and `grep -rln "purge|reclaim" src/modules/extension-registry`
+found no such operation existed anywhere in the codebase. An uninstalled extension's tables stayed in the
+database permanently with literally no path to ever remove them, even deliberately — the codebase's own
+documentation promised a mechanism that was never built, directly contradicting "no residue." Unlike this
+session's usual fabrication findings, the underlying "don't auto-drop on uninstall" design is a genuine,
+well-reasoned safety decision (cited: § 14 Phase 4, preventing an accidental uninstall from becoming
+unrecoverable data loss) — not a bug to override, but a promised follow-up operation that was simply never
+built.
+
+**Fixed:** added `ExtensionSchemaService.dropTables(extensionId)` (drops each of the extension's real,
+already-existing tables — sourced from `listTables()`'s own `information_schema.tables` query, never an
+extension-supplied string — and their RLS policy) and
+`ExtensionRegistryService.purgeExtensionData(tenantId, extensionId)`, deliberately gated to only run against
+an installation whose status is already `UNINSTALLED` (looked up directly rather than via the existing
+`require()` helper, which itself excludes `UNINSTALLED` installations and would have made the gate
+unreachable dead code) — an accidental double-click on "uninstall" still cannot cascade into unrecoverable
+data loss on a live installation. Wired `POST /extensions/:id/purge-data`. Proven via break/restore: removed
+the status-gating check (marked "BROKEN FOR PROOF"), confirmed the exact safety test reproduces "purges a
+live, `ENABLED` extension's data" — the dangerous scenario the gate exists to prevent — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 3/3 tests pass. Typecheck: 0 errors.
+
+**Not fixed — the honest remaining gap.** "Upgrade" and "rollback" — the exit criterion's own first sentence,
+and half the deliverable's named lifecycle stages — do not exist anywhere in this codebase at all, confirmed
+by grep across the whole module; there is no version-transition logic, no rollback mechanism, and
+consequently nothing to test "an upgrade that fails rolls back cleanly" against — a substantially larger,
+separate build. The new DDL path could not be integration-tested against a live database in this environment
+(no `DATABASE_URL`, the same infrastructure constraint as E38/E44/I11/J25/G01/G02 and this module's own
+pre-existing `extension-schema.service.spec.ts`); proof here is limited to the mocked safety-gating logic.
+"Per-tenant isolation of extension state" was not independently re-verified in this pass.

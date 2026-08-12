@@ -2088,3 +2088,30 @@ all three entity types (LEAD/CONTACT/CUSTOMER). Proven via break/restore.
    trades a `take: 10` query for a full-table fetch — acceptable for this fix's correctness-first scope, but
    worth revisiting if audience sizes grow large (a `NOT IN (subquery)` at the database layer would avoid
    this, once perf work funds it).
+
+### D073 · 🟠 HIGH · StorageService never enforced a tenant's storageLimit — quota was a settable, displayed number with zero effect
+
+Found while claiming and building E27 (Content, documents and storage), whose own exit criterion names
+"quota" explicitly. `StorageQuota.storageLimit` (a real `BigInt` column, 1GB default, settable via
+`updateQuota()` and readable via `getQuota()`) was never consulted by `registerFile()` — the only place new
+uploads are recorded. Every upload was registered and `storageUsed` incremented unconditionally, regardless
+of how far over the configured limit a tenant already was. A tenant's quota setting had no operational
+effect whatsoever; it was purely a number in a settings screen.
+
+Also noted but not fixed in this pass: `createFileVersion()` (new file versions — the "versioning"
+non-negotiable this same phase names) also never touches `StorageQuota` at all, so adding new versions of an
+existing file is entirely free against quota — a second, related bypass path.
+
+**How it was caught:** writing the FAIL-first test for E27's own "quota" non-negotiable and confirming an
+upload that would push a tenant well past their configured 1GB limit was registered successfully, with no
+refusal, before any fix was written.
+
+**Fixed:** `registerFile()` now fetches the tenant's quota and refuses (`BadRequestException`, naming the
+exact byte counts) before creating the file row if the upload would push `storageUsed` past `storageLimit`.
+Proven via break/restore.
+
+**Not fixed — explicitly out of this pass's scope:** `createFileVersion()`'s identical gap (new versions
+bypass quota entirely) was identified but not fixed here, since it is a second, separate call site with its
+own considerations (should a version's size count against the SAME quota as a new file, or a distinct
+"version storage" allocation? — a product decision this phase should not make unilaterally). Filed here so
+it is not silently left unaddressed.

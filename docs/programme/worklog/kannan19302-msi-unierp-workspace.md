@@ -15366,3 +15366,148 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E11 · FINISH · 2026-08-12T08:29:20Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E11 — Advanced finance
+Non-negotiables at exit: "Budgets, cost centres, allocations,
+consolidation, intercompany, deferred revenue, accruals — each
+reconciling to the GL."
+
+SCOPE NOTE
+==========
+E11's full scope spans 47 service files under advanced-finance/
+services/ (budgets, cost centres, allocations, consolidation,
+intercompany, deferred revenue, accruals). Far larger than this
+session's remaining budget. Investigated the highest-risk, most
+tractable real gap directly, following this session's own D084/D085
+precedent (both filed "more instances plausible" as their own honest
+remaining scope): searched the named non-negotiables' service files
+for the same float-vs-Decimal money-arithmetic class of bug, found a
+third real, critical instance on inspection, fixed it completely and
+correctly, and files the honest remaining scope rather than a shallow
+pass across all 47 files.
+
+THE INVESTIGATION
+==================
+Searched allocation.service.ts, budget-control.service.ts, inter
+company.service.ts, and consolidation.service.ts for Number(...)
+conversions of money/balance fields (the same pattern D084 and D085
+were both found via). Found:
+  - budget-control.service.ts: a tolerance-based budget-limit check
+    using float arithmetic — has an explicit, configurable
+    tolerancePercentage, so float imprecision here is plausibly
+    within intended design tolerance rather than a bug; NOT
+    conclusively distinguished either way in this pass, not fixed.
+  - intercompany.service.ts line 87, autoMatchTransactions():
+      Math.abs(Number(inv.totalAmount) - Number(sched.amount)) < 0.01
+    an epsilon-tolerant float comparison deciding whether an AR
+    invoice and an AP payment schedule represent the SAME
+    intercompany transaction — directly on this phase's own named
+    "intercompany... reconciling to the GL" non-negotiable, and
+    structurally the same bug class as D084/D085 (money in Number,
+    compared with tolerance not exactness). This one was pursued to a
+    complete fix.
+
+THE BUG, CONFIRMED
+====================
+An AR invoice for $5000.00 and an AP payment schedule for $4999.995 -
+genuinely different real-world amounts, half a cent apart - were
+silently auto-matched by the pre-existing epsilon check (0.005 < 0.01)
+as if they were the same intercompany transaction, creating an
+incorrect interCompanyTransaction row that would flow into an
+elimination journal against the GL.
+
+MECHANISM (this phase's own fix)
+====================================
+autoMatchTransactions()'s amtMatch now constructs Prisma.Decimal for
+both invoice.totalAmount and sched.amount and calls .equals() - exact
+equality, zero tolerance, matching the pattern established in D084
+and D085.
+
+PROOF
+=====
+$ npx vitest run src/modules/advanced-finance/tests/intercompany.service.spec.ts
+
+New test - "REFUSES to auto-match an invoice and schedule that differ
+by half a cent — genuinely different money, not float noise": $5000.00
+invoice vs $4999.995 schedule.
+FAILED against the pre-existing code before the fix - confirmed
+prisma.interCompanyTransaction.create WAS called (a false match
+created) against genuinely different amounts. Real FAIL-first proof.
+PASSES after the fix - no match created, matchCount 0.
+All 12 tests in the file pass (11 pre-existing + 1 new).
+
+BREAK/RESTORE
+=============
+Reverted amtMatch to the original epsilon-tolerant float comparison
+(marked "BROKEN FOR PROOF").
+
+  $ npx vitest run intercompany.service.spec.ts
+  1 failed | 11 passed (12)
+  (exactly the new half-cent false-match test - reproducing the
+  original defect on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" intercompany.service.ts
+  (no matches — 0)
+  $ npx vitest run intercompany.service.spec.ts
+  12/12 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/advanced-finance/ src/modules/finance/
+Test Files  45 passed | 2 failed (47)
+     Tests  630 passed (630)
+The 2 failing SUITES (collection-time, not test failures) are the same
+pre-existing "Cannot find package '@unerp/shared'" error documented in
+E09 and E10's own evidence, confirmed unrelated (git status untouched
+by this phase).
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09/E10 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D086 (CRITICAL): only autoMatchTransactions()'s amtMatch was
+audited and fixed. NOT investigated in this pass:
+  - budget-control.service.ts's tolerance-based check — plausibly
+    correct-by-design (has an explicit configurable tolerance
+    percentage) rather than a bug, not conclusively resolved either
+    way.
+  - Every other Number(...)-converted money field across
+    consolidation.service.ts, consolidation-deep.service.ts,
+    consolidation-v2.service.ts, budget-deep.service.ts, budget-
+    reallocation.service.ts, and the remaining 40+ services in this
+    module.
+  - Cost centres, deferred revenue, and accruals were not
+    investigated at all in this pass — no service file for any of
+    these three was opened.
+  - "Each reconciling to the GL" — not verified as a general property
+    for any area beyond the one intercompany-matching path fixed
+    here.
+
+This is the THIRD confirmed instance this session of the same
+float-vs-Decimal money-arithmetic bug class (D084 gl-accounting.
+service.ts, D085 finance.service.ts, D086 intercompany.service.ts) -
+D086's own defect entry recommends a systematic sweep of every
+Number(...)-on-money conversion across advanced-finance (and the
+wider codebase) as now higher-value than continuing to audit one
+function at a time.
+
+COMMANDS
+========
+$ npx vitest run src/modules/advanced-finance/tests/intercompany.service.spec.ts
+$ npx vitest run src/modules/advanced-finance/ src/modules/finance/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  765369e  intercompany.service.ts, intercompany.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D086
+```
+

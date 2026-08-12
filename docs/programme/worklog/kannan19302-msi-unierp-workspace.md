@@ -14313,3 +14313,125 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### L04 · FINISH · 2026-08-12T04:58:51Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+L04 — TODO discipline gate
+Exit criterion: "A bare TODO fails CI. The 15 existing markers are
+each converted into a phase, an issue, or deleted."
+
+BEFORE
+======
+No TODO-discipline rule existed. A direct search for the exit
+criterion's own claim ("15 existing markers") was run first, per
+this session's discipline of never trusting a plan's cited number
+without re-measuring:
+
+$ grep -rn "// TODO\|/\* TODO" unierp-api/src (Grep tool)
+No files found.
+
+Repeated across every other JS/TS repo in this checkout
+(unierp-web, unierp-design-system, unierp-contracts, unierp-shared,
+unierp-console, unierp-auth, unierp-idp, unierp-developer): zero real
+`// TODO` or `/* TODO` comment markers found anywhere. The plan's
+"15 existing markers" figure is stale — resolved by earlier work in
+this same 30-repo programme, not by this phase. Reported as measured,
+not assumed still true (2 false-positive `"TODO"` string LITERALS —
+task-status enum values, not comments — were found and correctly
+excluded from this count).
+
+MECHANISM
+=========
+New custom rule code-standards/no-bare-todo (added to unierp-api's
+eslint.config.mjs, syntax-only) scans every comment in a file via
+sourceCode.getAllComments() and flags any TODO whose parenthesized
+group — if present at all — does not contain an issue reference
+matching `#\d+`. This encodes CODE_STANDARDS § 7's exact required
+format: "TODO(#123): ..." is accepted; a bare "TODO: ..." or
+"TODO ..." with no parenthesized reference is rejected.
+
+PROOF — synthetic examples verified before touching real code
+===================================================================
+  // TODO: fix this properly          -> FLAGGED (no issue reference)
+  // TODO(#412): Replace with ...     -> NOT flagged (correct format)
+  // TODO fix later                   -> FLAGGED (no issue reference)
+
+All three outcomes matched intent exactly.
+
+REAL RESULT — whole repo
+=============================
+$ node scripts/check-todo-discipline.mjs --update-baseline
+Baseline recorded: 0 bare-TODO violation(s) across 0 file(s) (2095 scanned).
+
+Confirms the direct grep result mechanically: the real ESLint rule,
+run across all 2,095 real files in unierp-api, finds zero bare TODOs
+— consistent with, not contradicting, the earlier direct search.
+
+$ node scripts/check-todo-discipline.mjs
+0 bare-TODO violation(s) now vs 0 at baseline, 2095 file(s) scanned.
+OK    no new bare-TODO violations.
+
+DETERMINISM
+============
+Re-run (clean state) reports identically: "0 ... vs 0 at baseline ...
+2095 file(s) scanned. OK."
+
+BREAK/RESTORE
+=============
+Added a genuine bare TODO comment to hr.service.ts (backed up first):
+`// TODO: BROKEN FOR PROOF, a bare TODO with no issue reference`.
+
+  $ node scripts/check-todo-discipline.mjs
+  1 bare-TODO violation(s) now vs 0 at baseline, 2095 file(s) scanned.
+  FAIL  1 file(s) regressed past their own baseline:
+    src/modules/hr/hr.service.ts: 1 > 0 (baseline)
+
+Exactly the intended failure. Restored from backup:
+
+  $ grep -c "BROKEN FOR PROOF" hr.service.ts
+  0
+  $ node scripts/check-todo-discipline.mjs
+  0 bare-TODO violation(s) now vs 0 at baseline, 2095 file(s) scanned.
+  OK    no new bare-TODO violations.
+
+Also reconfirmed L02's and L03's own gates still pass correctly with
+this third rule now sharing the same config (all three gates coexist
+without interfering):
+
+  $ node scripts/check-error-handling.mjs
+  22 error-handling violation(s) now vs 22 at baseline, 2095 file(s) scanned. OK.
+  $ node scripts/check-naming-convention.mjs
+  5 naming-convention violation(s) now vs 5 at baseline, 30 file(s) scanned. OK.
+
+TYPECHECK
+=========
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from L03's own evidence (same
+@kannan19302/shared module-resolution issue, unrelated files this
+phase never touched).
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- "The 15 existing markers are each converted into a phase, an issue,
+  or deleted" is satisfied by the measured real state (0 markers
+  found) rather than by this phase performing 15 individual
+  conversions — the work was already done by an earlier phase in this
+  programme, not invented or claimed falsely here.
+- The rule's own coverage is comments only, syntax-only — a TODO
+  written as a string literal or in a non-.ts file (markdown, JSON)
+  is not scanned by this gate.
+
+COMMANDS
+========
+$ node scripts/check-todo-discipline.mjs
+$ node scripts/check-todo-discipline.mjs --update-baseline
+
+COMMITS
+=======
+unierp-api  5d1b042  eslint.config.mjs (1 new custom rule)
+unierp-workspace  (this phase)  scripts/check-todo-discipline.mjs (new),
+                                 evidence/todo-discipline-baseline.json (new)
+```
+

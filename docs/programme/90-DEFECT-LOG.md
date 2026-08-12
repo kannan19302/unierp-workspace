@@ -3492,3 +3492,46 @@ clinical notes (the one real business-critical AI write path, `workflow-engine.s
 assessment, only emits a notification and never posts anything itself), so the first requirement appears
 not to be actively violated today, but this was not exhaustively verified across all 15 `ai` module
 services.
+
+### D106 · 🔴 CRITICAL · ArDeepService.getCollectionsStats() reported an AR balance inflated by every draft, void, and cancelled invoice — two definitions of "outstanding" within the same function
+
+Found while claiming and building E33 (Semantic layer), whose own exit criterion states directly: "Every
+metric has one definition." `unierp-api/src/modules/finance/ar-deep.service.ts`'s `getCollectionsStats()`
+computes two related figures from the same `invoices` array in the same function — `totalOverdue` (from
+an `overdue` subset correctly filtered to `status !== "PAID" && status !== "CANCELLED"`) and
+`totalOutstanding` (summed from the **entire unfiltered** `invoices` array, with no status exclusion at
+all). Two different definitions of "how much does this tenant have outstanding" existed side by side in
+one function, and the one actually reported as the headline AR-balance figure (`totalOutstanding`) was
+the wrong one: it included `DRAFT` invoices (never sent to a customer — not yet a real receivable) and
+`VOID`/`CANCELLED` invoices (will never be collected), summing their full `totalAmount` as if they were
+genuine outstanding receivables.
+
+**How it was caught:** writing a FAIL-first test with one real `SENT` invoice ($1,000 outstanding)
+alongside a `CANCELLED` ($5,000), `VOID` ($3,000), and `DRAFT` ($2,000) invoice — the pre-existing code
+reported `totalOutstanding: 11000` instead of the correct `1000`, an 11x inflation entirely attributable
+to invoices that were never real receivables.
+
+**Fixed:** `totalOutstanding` now sums from the same real-receivable population as `overdue`
+(`status !== "DRAFT" && status !== "VOID" && status !== "CANCELLED"`), giving both figures in this
+function one consistent definition of "outstanding." Proven via break/restore (reverted to summing the
+unfiltered `invoices` array, confirmed the exact original defect reproduces — `11000` instead of `1000`
+— restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 5/5 tests pass). Full regression: `src/modules/
+finance/`, 164/164 real tests pass (1 pre-existing unrelated `@unerp/shared` collection failure,
+unchanged). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E33's own scope is much larger than this pass.** This phase's own deliverable
+names "a governed metric and dimension layer over the 1,836 models, so reports and dashboards do not
+hand-write SQL and break on the next migration." A repo-wide search found many other files independently
+computing "outstanding balance"-style figures (`budget-deep.service.ts`, `financial-reporting.service.ts`,
+`tax-engine.service.ts`, `ap-deep.service.ts`, `finance-enterprise.service.ts`, `invoice-engine.service.ts`
+in `saas`, `subscription.service.ts` in `saas-portal`) — only `ar-deep.service.ts`'s own internal
+inconsistency was investigated and fixed as proof-of-technique; whether any of these OTHER independent
+"outstanding"/"AR balance" calculations agree with each other or with the now-fixed definition here was
+not checked. This phase's other named requirement — "a dashboard survives a schema migration that renames
+a column" — was not investigated at all: the semantic layer built in E46's own pass
+(`reporting-engine.service.ts`) still maps field names directly 1:1 to Prisma model field names with no
+indirection layer, meaning a renamed column would still break any dashboard built on it exactly as before
+this phase. Building the "governed metric layer" itself — a single source of truth every one of these
+independent "outstanding balance" calculations could be migrated to consume, instead of each
+re-implementing its own definition — is the real, large remaining scope this phase's own exit criterion
+implies and was not attempted at scale in this pass.

@@ -3127,3 +3127,52 @@ below the "next level" threshold — Documents (0, no print path), Integrations 
 no six-state components referenced by any of 10 pages), Accessibility (0), Performance (0, unmeasured) —
 none of which were addressed in this pass; each is a legitimate target for a future `E28a`-style
 sub-phase.
+
+### D099 · 🔴 CRITICAL · Signature completion produced no tamper-evident record at all, and the entire e-signature service is not wired to any controller
+
+Found while claiming and building E31 (E-signature and document workflow), whose own exit criterion is
+explicit: "A signed document's integrity is verifiable after the fact, and the trail is admissible."
+`unierp-api/src/modules/documents/services/signature-workflow.service.ts`'s `signDocument()` set
+`Document.signatureStatus = "COMPLETED"` when the last signature arrived and did nothing else — no hash,
+checksum, or certificate of any kind was computed or stored over the completed signature set. A status
+flag proves a document was marked complete; it proves nothing about whether the recorded signatures were
+later altered. There was no mechanism anywhere in the module capable of detecting tampering after the
+fact — the phase's own named deliverable ("tamper-evident completion certificate") did not exist.
+
+**A second, structural finding**: the entire `SignatureWorkflowService` (`createSignatureRequest`,
+`signDocument`, `getDocumentSignatures`) is registered in `documents.module.ts` but is not referenced by
+any controller anywhere in the repo (`grep -rln "SignatureWorkflowService" src/modules/documents/*.ts`
+returns only the module file). The whole e-signature feature, not just the certificate, is unreachable
+over HTTP — filed as part of this defect rather than a separate one, since fixing the certificate
+mechanism without exposing it changes nothing observable.
+
+**How it was caught:** writing a FAIL-first test that completes a document's signatures and calls a new
+`verifyDocumentIntegrity()` method — against the pre-existing code, no completion-certificate record
+existed at all, so verification could never succeed regardless of whether tampering had occurred.
+
+**Fixed (the certificate mechanism):** added `computeCompletionHash()` — a deterministic SHA-256 digest
+over every signature's `id`/`signerEmail`/`status`/`signedAt`/`ipAddress`/`signatureData`, sorted by id
+so row ordering can't affect it — computed once at completion and persisted as a `DocumentAuditLog` entry
+(`action: "SIGNATURE_COMPLETION_CERTIFICATE"`, `details: { algorithm, hash, signatureIds }`). No schema
+migration was needed: `DocumentAuditLog.details` is already a JSON column, an existing, real audit-trail
+model. New `verifyDocumentIntegrity(tenantId, documentId)` recomputes the hash from the current signature
+state and compares it to the certified hash, returning `{ verified, certifiedHash, currentHash,
+certifiedAt }` — `verified: false` if any signature row has been altered since completion, and throws if
+no certificate exists (document never completed). Proven via break/restore (reverted to the bare status
+flag, confirmed both integrity tests fail — the certificate lookup throws unconditionally, exactly the
+original defect — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 3/3 tests pass). Full
+regression: `src/modules/documents/`, the new spec file's 3 tests pass cleanly; 2 pre-existing,
+already-failing spec files (schema-validation and real-DB-dependent) confirmed pre-existing and
+unrelated via `git stash` (same failure count with or without this change). Typecheck: same 4
+pre-existing unrelated errors, unchanged.
+
+**Not fixed — the controller-wiring gap.** The service (including the new `verifyDocumentIntegrity`
+method) remains unreachable via any HTTP endpoint. Wiring it up requires deciding on route paths,
+permission decorators, and DTOs consistent with the rest of `documents.controller.ts` — a real but
+separate task from the certificate mechanism itself, not attempted in this pass to avoid guessing
+conventions without a clear existing pattern to follow in this specific orphaned service.
+
+**Not fully investigated — E31's full scope.** "Signature request, routing, reminders" (the phase's
+other named deliverables) were not audited: `createSignatureRequest()`'s sequential-routing notification
+logic and reminder mechanism (if any exists) were read but not verified for correctness beyond
+confirming they exist.

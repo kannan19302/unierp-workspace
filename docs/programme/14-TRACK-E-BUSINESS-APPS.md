@@ -89,7 +89,7 @@ non-negotiables.
 
 | ID | Phase | Modules | Depends | Non-negotiables at exit | Status |
 | :- | :---- | :------ | :------ | :---------------------- | :----- |
-| **E09** | General ledger and core accounting | `finance` | E05–E08, L08 | Double-entry provably balanced; multi-currency with revaluation; period close (E06); trial balance, P&L and balance sheet reconciling to the ledger; **100 %** coverage on all arithmetic | OPEN |
+| **E09** | General ledger and core accounting | `finance` | E05–E08, L08 | Double-entry provably balanced; multi-currency with revaluation; period close (E06); trial balance, P&L and balance sheet reconciling to the ledger; **100 %** coverage on all arithmetic | WIP |
 | **E10** | Receivables, payables and cash | `finance` | E09 | Ageing, dunning, allocation, part-payment, write-off, bank reconciliation; every posting traceable to a source document | OPEN |
 | **E11** | Advanced finance | `advanced-finance` | E09 | Budgets, cost centres, allocations, consolidation, intercompany, deferred revenue, accruals — each reconciling to the GL | OPEN |
 | **E12** | Tax and statutory determination | `finance`, `localization` | E09 | Jurisdiction-correct determination; per-country statutory reports; rate changes versioned by effective date, never retroactive (**G-15**) | OPEN |

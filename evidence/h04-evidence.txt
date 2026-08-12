@@ -1,0 +1,162 @@
+H04 — Auth, RBAC and audit review for the site's admin
+Deliverable: "The site's independent auth reviewed to the same
+standard as the platform's: session policy, MFA, RBAC, audit, rate
+limiting, and secret handling."
+Exit: "The site's admin passes the same security checklist as plane
+1. Findings filed in 90-DEFECT-LOG.md. The duplication stays,
+deliberately — but it is now reviewed."
+
+SCOPE NOTE
+==========
+This is a review phase — the exit criterion asks for the checklist to
+be run and findings filed, not for the site's auth to be rebuilt.
+Read every file in the review scope (lib/auth.ts, the login route,
+lib/rbac.ts, lib/audit.ts, and every app/api/admin/* route) against
+each of the six named checklist items. One item (RBAC) had a genuinely
+severe, concretely provable server-side enforcement gap and was fixed
+in this pass, proven via break/restore. The other five items' findings
+are filed as the honest review result — some are real gaps (MFA, rate
+limiting, failed-login audit), some are confirmed adequate (session
+policy, most of secret handling), consistent with what a checklist
+review is supposed to produce: not "everything is broken," not
+"everything is fine," but a graded, evidenced verdict per item.
+
+THE REVIEW, ITEM BY ITEM
+==========================
+
+1. SESSION POLICY — lib/auth.ts, app/api/admin/login/route.ts
+   JWT (HS256), 8h expiry (SignJWT .setExpirationTime('8h')), httpOnly
+   + secure (prod) + sameSite=lax cookie. getAdminSession() verifies
+   signature and requires tenantId in the payload.
+   requireAdminTenant() re-resolves the tenant from the request's Host
+   header and rejects if it does not match the session's tenantId -
+   real defense-in-depth against a stolen token being replayed against
+   a different tenant's subdomain, not just a comment claiming it.
+   VERDICT: adequate. No session revocation mechanism (a logged-out or
+   demoted admin's existing token remains valid until its 8h natural
+   expiry) - filed as a minor finding, not blocking.
+
+2. MFA — grep across app/api/admin/**, lib/auth.ts, lib/rbac.ts
+   No MFA of any kind - no TOTP, no WebAuthn, no email/SMS step-up, no
+   `mfaEnabled`/`totpSecret` field on the User model. Login is
+   password-only.
+   VERDICT: GAP. Filed as D116 alongside the RBAC finding (see below).
+
+3. RBAC — lib/rbac.ts, RbacField.tsx, every app/api/admin/* route
+   FOUND AND FIXED THIS PASS: FIELD_PERMISSIONS declares erpAppUrl,
+   erpLoginPath, erpRegisterPath, siteUrl, chatSystemPrompt, and
+   others SUPER_ADMIN-only, but canEdit() was called ONLY from
+   RbacField.tsx (a UI lock-icon component) - confirmed via
+   `grep -rln canEdit\|FIELD_PERMISSIONS app lib` returning exactly
+   those two files. No admin API route enforced it. Concretely: POST
+   /api/admin/content/site-settings accepted and persisted every one
+   of those SUPER_ADMIN-only fields with zero role check - an ADMIN
+   (non-SUPER_ADMIN) could bypass the UI entirely and overwrite
+   erpAppUrl (redirecting the platform's login CTA to an attacker
+   URL) or chatSystemPrompt (the field's own comment: "can change
+   product perception" - full prompt-injection exposure).
+   Cross-checked every sibling admin route for the same pattern:
+   app/api/admin/users/[id]/route.ts and app/api/admin/settings/
+   route.ts BOTH already have real server-side
+   `session.role !== 'SUPER_ADMIN'` checks - the gap was specific to
+   site-settings, not systemic across every route.
+   FIXED: added getDisallowedFields(role, fieldIds) to lib/rbac.ts,
+   wired into the site-settings POST route to reject (403) any field
+   the caller's role cannot write.
+   VERDICT: was a GAP, now fixed and proven (see PROOF below).
+
+4. AUDIT — lib/audit.ts, every mutating admin route
+   logAudit() exists and is called from every mutating route checked
+   (users, site-settings, settings, leads, content). It requires an
+   already-authenticated AdminSession, so it CANNOT log a failed login
+   attempt (no session exists yet at that point) - failed/brute-force
+   login attempts leave zero audit trail.
+   VERDICT: partial GAP. Successful admin actions are audited; failed
+   authentication attempts are not. Filed as D116.
+
+5. RATE LIMITING — app/api/admin/login/route.ts
+   No rate limiting, no lockout, no attempt counter of any kind on the
+   login endpoint. Unlimited password guesses per email/IP.
+   VERDICT: GAP. Filed as D116.
+
+6. SECRET HANDLING — lib/auth.ts, login route, lib/settings.ts
+   JWT_SECRET read from process.env, with an explicit presence check
+   at the top of the login route (returns 500 rather than proceeding
+   with an undefined secret - real fail-closed behavior, not just
+   optimistic access). Passwords hashed with bcrypt (bcryptjs,
+   bcrypt.compare against a stored hash, never compared in plaintext).
+   Integration secrets (RESEND_API_KEY etc.) go through
+   lib/settings.ts's getMaskedSettings()/setSetting(), gated by the
+   already-verified SUPER_ADMIN check in app/api/admin/settings/
+   route.ts.
+   VERDICT: adequate.
+
+PROOF — the RBAC fix (item 3), FAIL-first
+============================================
+$ npx tsx --test lib/rbac.test.ts
+4 new tests:
+  - "an ADMIN cannot write SUPER_ADMIN-only fields"
+  - "a SUPER_ADMIN can write every field, including SUPER_ADMIN-only ones"
+  - "an unauthenticated (null) role cannot write anything"
+  - "an ADMIN can write fields with no declared restriction"
+All 4 pass against the fix (getDisallowedFields in lib/rbac.ts).
+
+BREAK/RESTORE
+=============
+Reverted getDisallowedFields() to always return [] (marked "BROKEN
+FOR PROOF") - reproducing "nothing is ever rejected, every role can
+write every field."
+
+  $ npx tsx --test lib/rbac.test.ts
+  2 failed | 2 passed (4)
+  (exactly the 2 tests asserting a restriction actually applies -
+  reproducing the original enforcement gap on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" lib/rbac.ts
+  0
+  $ npx tsx --test lib/rbac.test.ts
+  4/4 pass
+
+REGRESSION
+==========
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit
+Clean, exit 0. No pre-existing errors in this repo at all (unlike
+unierp-api/unierp-web, which carry known pre-existing debt this
+session has repeatedly confirmed unrelated to its own changes).
+
+This repo has no test framework installed (no vitest/jest in
+package.json, zero existing spec files) - the new lib/rbac.test.ts
+uses Node's built-in test runner (`node:test`) via `npx tsx --test`,
+which needed no new dependency, consistent with keeping this fix
+proportionate to a review-phase pass.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D116 (CRITICAL). Not fixed in this pass:
+  - No MFA exists anywhere in the site's admin auth (item 2).
+  - No rate limiting or lockout on the login endpoint - unlimited
+    password guesses per email/IP (item 5).
+  - Failed login attempts are not audited at all - logAudit() requires
+    an authenticated session that does not exist yet at that point
+    (item 4, partial).
+  - No session revocation - a token issued before a role change or
+    account deactivation remains valid until its natural 8h expiry
+    (item 1, minor).
+These four are real, unfixed gaps against "the same security checklist
+as plane 1" and are named explicitly rather than left implied by an
+otherwise-clean-looking review, per this phase's own exit criterion
+("the duplication stays, deliberately — but it is now reviewed").
+
+COMMANDS
+========
+$ grep -rln "canEdit\|FIELD_PERMISSIONS" app lib
+$ npx tsx --test lib/rbac.test.ts
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit
+$ grep -c "BROKEN FOR PROOF" lib/rbac.ts
+
+COMMITS
+=======
+unierp-corporate-website  906f609  lib/rbac.ts, lib/rbac.test.ts,
+                          app/api/admin/content/site-settings/route.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D116

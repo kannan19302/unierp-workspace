@@ -3916,3 +3916,45 @@ infrastructure from scratch was out of this phase's scope. The real palette is m
 dashboard shell — screens outside it (marketing/auth) have no palette at all, and whether any records need to
 be reachable from those screens was not established. "Under three keystrokes plus a query" was not
 independently instrumented/measured.
+
+### D116 · 🔴 CRITICAL · The site admin's field-level RBAC was never enforced server-side — any ADMIN could bypass the UI's lock icon and overwrite SUPER_ADMIN-only fields directly; plus confirmed real gaps in MFA, login rate limiting, and failed-login auditing
+
+Found while claiming and building H04 (Auth, RBAC and audit review for the site's admin), whose exit
+criterion names a six-item checklist directly: session policy, MFA, RBAC, audit, rate limiting, secret
+handling — "reviewed to the same standard as the platform's." Reviewing item 3 (RBAC) found
+`lib/rbac.ts`'s `FIELD_PERMISSIONS` declares `erpAppUrl`, `erpLoginPath`, `erpRegisterPath`, `siteUrl`,
+`chatSystemPrompt`, and others `SUPER_ADMIN`-only, but `canEdit()` was called ONLY from `RbacField.tsx` — a
+UI lock-icon component, confirmed via `grep -rln "canEdit\|FIELD_PERMISSIONS" app lib` returning exactly
+that one file plus `rbac.ts` itself. No admin API route enforced it server-side. Concretely: `POST
+/api/admin/content/site-settings` accepted and persisted every one of those `SUPER_ADMIN`-only fields with
+zero role check — an `ADMIN` (non-super) could bypass the UI entirely and directly POST to overwrite
+`erpAppUrl` (redirecting the platform's login CTA to an attacker-controlled URL — a real phishing/
+credential-theft vector) or `chatSystemPrompt` (the field's own comment: "can change product perception" —
+full prompt-injection exposure on the public-facing AI chat). Cross-checked every sibling admin route:
+`app/api/admin/users/[id]/route.ts` and `app/api/admin/settings/route.ts` both already have real
+`session.role !== 'SUPER_ADMIN'` server-side checks — the gap was specific to `site-settings`, not systemic
+across every route.
+
+**Fixed:** added `getDisallowedFields(role, fieldIds)` to `lib/rbac.ts` (reusing the existing `canEdit()`
+logic rather than a second, potentially-drifting check), wired into the `site-settings` POST route to reject
+with 403 any field the caller's role cannot write. Proven via `node:test` (`npx tsx --test lib/rbac.test.ts`
+— this repo has no test framework installed, so the new test file uses Node's built-in runner, no new
+dependency needed): 4 tests. Break/restore: reverted `getDisallowedFields()` to always return `[]` (marked
+"BROKEN FOR PROOF"), confirmed the exact 2 tests asserting a restriction applies fail, restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 4/4 pass. Typecheck clean (this repo carries no pre-existing errors,
+unlike `unierp-api`/`unierp-web`).
+
+**Reviewed and confirmed adequate — items 1 and 6.** Session policy (8h JWT, httpOnly+secure+sameSite=lax
+cookie, real tenant-Host re-resolution defense-in-depth in `requireAdminTenant()`) and secret handling
+(fail-closed `JWT_SECRET` presence check, bcrypt password hashing, integration secrets gated behind an
+already-verified `SUPER_ADMIN` check) both passed direct inspection against the checklist.
+
+**Not fixed — the honest remaining gaps, items 2, 4 (partial), 5, and a minor item-1 gap.** No MFA exists
+anywhere in the site's admin auth (item 2) — login is password-only. No rate limiting or lockout on the
+login endpoint — unlimited password guesses per email/IP (item 5). Failed login attempts are not audited at
+all — `logAudit()` requires an already-authenticated `AdminSession` that does not exist yet at that point in
+the flow, so brute-force attempts leave zero trail (item 4, partial — successful admin actions ARE audited).
+No session revocation exists — a token issued before a role change or account deactivation remains valid
+until its natural 8h expiry (item 1, minor). These are named explicitly per this phase's own exit criterion
+("the duplication stays, deliberately — but it is now reviewed"), not left implied by an otherwise-clean-
+looking review.

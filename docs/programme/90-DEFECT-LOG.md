@@ -4545,3 +4545,40 @@ were spot-checked against K03's existing patterns but not exhaustively re-read f
 what the two new gate patterns catch. The gate itself is a denylist of the exact shape found, not a general
 detector — a differently-worded fabrication (e.g. a founder bio in prose rather than a `TEAM` array) would not
 be caught.
+
+### D132 · 🔴 CRITICAL · No mechanism existed anywhere to check the marketing site's feature claims against what is actually shipped — a claim could be added, changed, or left stale indefinitely with nothing catching it
+
+Found while claiming and building H03 (Claim-verification gate), whose exit criterion is: "Adding a feature
+claim with no corresponding capability entry fails CI." Confirmed by grep across `unierp-corporate-website`
+that no capability-manifest concept or claim-checking script existed anywhere before this pass — the site's
+own track documentation (`17-TRACK-H-MARKETING.md`) explicitly names the reason this phase exists: "this
+project has a documented history of claims outliving their mechanisms, and a marketing site is the costliest
+place for that to recur." `app/(site)/features/FeaturesClient.tsx`'s `MODULES` array already declared feature
+claims as structured data rather than free prose, but nothing verified that data against reality — a claim
+for a module group that was never actually shipped, or one whose backing module was later removed, would sit
+on the live site indefinitely with no gate to catch it.
+
+**Fixed:** added `capability-manifest.json`, mapping each of the 4 top-level `MODULES` group claims to the
+real `unierp-api` backend module directories that back them (confirmed to exist via direct inspection of
+`unierp-api/src/modules`), and `scripts/ci/check-feature-claims.mjs`, which extracts the current module-group
+claims from `FeaturesClient.tsx`'s own source and fails if a claim has no manifest entry, or if a manifest
+entry names a backend directory that does not actually exist — checking out `unierp-api` as a sibling in CI,
+the same "the gate comes to the code" pattern already reused this session (J11/D114). Proven via two separate
+break/restore cycles against the real gate: (1) added a fabricated fifth module group with no manifest
+entry — while proving this, discovered the first version of the extraction regex was itself fragile
+(inserting a one-line comment between a claim's opening brace and its `name:` field silently made the fake
+claim invisible), fixed the extraction to search a small lookahead window, then re-confirmed the same fake
+claim WITH the comment present is still caught; (2) temporarily pointed a manifest entry at a nonexistent
+backend directory, confirmed the gate catches it. Both restored (confirmed via `git status --short` showing
+zero diff on `FeaturesClient.tsx`); the gate passes cleanly (4/4 real claims mapped) and is wired into
+`guard.yml`. Typecheck clean, 0 errors.
+
+**Not fixed — the honest remaining gap.** Deliberately scoped to the ~4 top-level module-GROUP claims, not
+every one of the ~40 individual feature line items inside them (e.g. "General Ledger," "2FA / Authenticator
+App") — mapping each of those to a specific, verifiable backend endpoint is a much larger effort; this gate
+verifies "this module group is a real, shipped module," not that every individual line item under it is
+independently proven. Only `/features`' structured `MODULES` data is covered — other pages may make feature
+claims in free prose, which this gate cannot check, and the deliverable's "declared as data" premise does not
+yet hold for the rest of the site. The gate's directory check confirms a backend module directory exists; it
+does not verify the specific claimed feature is actually implemented inside it, only that the module itself
+is real.

@@ -1,0 +1,138 @@
+E18 — Manufacturing
+Non-negotiables at exit: "BOM versioning, routing, work orders,
+capacity, WIP valuation to the GL, scrap and yield, quality gates."
+
+SCOPE NOTE
+==========
+E18's full scope covers BOM versioning, routing, work orders,
+capacity, WIP-to-GL valuation, scrap/yield, and quality gates. Far
+larger than this session's remaining budget. Investigated "WIP
+valuation to the GL" directly - the exit criterion's own most
+finance-critical named requirement, matching this session's now-
+familiar pattern of auditing GL-posting completeness (D088, D089) -
+and found a two-part defect: (1) GL posting for manufacturing is
+completely absent (no schema mechanism exists to fix without a
+cross-repo migration, filed not attempted), and (2) the ONE real
+inventory-mutation path for work-order completion was itself non-
+atomic, a real, fixable, and fixed bug. Files the honest remaining
+scope (BOM versioning, routing, capacity, quality gates, and the
+schema-migration-dependent GL posting) rather than a shallow pass.
+
+THE INVESTIGATION
+==================
+$ grep -rln "journal" src/modules/manufacturing/*.ts
+(zero matches across all 15 manufacturing service files)
+
+Read manufacturing.service.ts's updateWorkOrderStatus(): correctly
+computes actualCost/costVariance on work order completion (material
+cost roll-up + scrap penalty), stores them on the WorkOrder row, and
+emits manufacturing.workorder.completed. Traced the listener:
+inventory.event-handler.ts's handleWorkOrderCompleted() moves
+inventory quantities but ALSO creates no journal entry.
+
+Checked the WorkOrder/BOM prisma schema (field-service.prisma) for GL
+account fields analogous to FixedAssetCategory's (D088's fix target) -
+none exist. Closing this gap requires adding schema fields in the
+separate unierp-data repository - a cross-repo schema migration, a
+materially larger and riskier undertaking than this session's
+established single-repo, break/restore-provable scope.
+
+Pivoted to a real, tractable, fixable bug in the SAME code path: read
+handleWorkOrderCompleted() in full and found the raw-material
+decrement and finished-goods increment were two separate, unwrapped
+top-level prisma calls inside one try/catch that only logs failures -
+no prisma.$transaction anywhere.
+
+THE BUG, CONFIRMED (Part 2, fixed)
+====================================
+If the finished-goods increment failed after raw-material decrements
+had already committed (a plausible real DB failure mid-loop), the
+warehouse would be left with materials silently vanished and no
+finished goods produced - a permanent WIP integrity gap, logged but
+never rolled back or surfaced.
+
+MECHANISM (this phase's own fix, Part 2)
+====================================
+Both the raw-material consumption loop and the finished-goods
+increment now run inside a single prisma.$transaction(), so a failure
+anywhere rolls back everything written in that transaction so far.
+Reorder-threshold checks (best-effort, may create a new PO) now run
+AFTER the transaction commits, intentionally outside the atomicity
+boundary since they're not part of WIP correctness.
+
+PROOF
+=====
+$ npx vitest run src/modules/inventory/tests/inventory.event-handler.workorder-completed.spec.ts
+
+Test 1 - "never commits a raw-material decrement if the finished-goods
+production step fails - atomic via $transaction": simulates the tx
+client's second upsert call failing, asserts prisma.$transaction was
+called exactly once (proving atomicity is delegated to a real
+transaction).
+FAILED against the pre-existing code before the fix - confirmed
+prisma.$transaction was called ZERO times (the old code used two
+independent top-level calls). Real FAIL-first proof.
+
+Test 2 - "performs raw-material consumption and finished-goods
+production inside the same prisma.$transaction call": asserts both
+writes ran through the same tx client in one $transaction call.
+Also FAILED against the pre-existing code (same reason).
+
+Both PASS after the fix.
+
+BREAK/RESTORE
+=============
+Reverted handleWorkOrderCompleted() to the original two-unwrapped-
+calls version (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run inventory.event-handler.workorder-completed.spec.ts
+  2 failed (2)
+  (both new tests - reproducing the original non-atomicity on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" inventory.event-handler.ts
+  (no matches — 0)
+  $ npx vitest run inventory.event-handler.workorder-completed.spec.ts
+  2/2 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/inventory/ src/modules/manufacturing/
+Test Files  53 passed (53)
+     Tests  827 passed (827)
+Clean pass - no pre-existing collection failures in these modules.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E16 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D092 (CRITICAL). NOT fixed in this pass:
+  - WIP-to-GL posting itself (Part 1) - genuinely absent, requires a
+    schema migration in the separate unierp-data repo to add GL
+    account mapping fields (analogous to FixedAssetCategory's, D088's
+    fix target) before a postDepreciation()-style fix can be built.
+    Explicitly filed as the higher-priority remaining item, not
+    attempted shallowly.
+  - BOM versioning - not investigated.
+  - Routing - not investigated.
+  - Capacity - not investigated.
+  - Scrap and yield - logScrapAndOee() exists and was read (uses a
+    flat $10/unit scrap-overhead heuristic) but not audited for
+    correctness or fixed.
+  - Quality gates - createQualityPlan()/logInspection()/NCR handling
+    exist but were not audited.
+
+COMMANDS
+========
+$ npx vitest run src/modules/inventory/tests/inventory.event-handler.workorder-completed.spec.ts
+$ npx vitest run src/modules/inventory/ src/modules/manufacturing/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  2a8a769  inventory.event-handler.ts,
+                     inventory.event-handler.workorder-completed.spec.ts (new)
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D092

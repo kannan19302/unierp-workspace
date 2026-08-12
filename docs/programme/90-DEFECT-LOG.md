@@ -2789,3 +2789,54 @@ quote→order→fulfilment→invoice chain. Not investigated in this pass:
     in other controllers across the codebase, was not searched for — this is a distinct and
     security-relevant sub-pattern of this session's broader "a real check exists but has a bypass"
     findings (D089's bin-level gap, D090's fabricated report) worth a dedicated permission-model audit.
+
+### D092 · 🔴 CRITICAL · Manufacturing has no WIP-to-GL posting anywhere, and its one real inventory-mutation path was non-atomic — raw materials could vanish with no finished goods produced and no rollback
+
+Found while claiming and building E18 (Manufacturing), whose own exit criterion is explicit: "BOM
+versioning, routing, work orders, capacity, WIP valuation to the GL, scrap and yield, quality gates."
+
+**Part 1 — total absence of GL posting.** A repo-wide search (`grep -rln "journal" src/modules/
+manufacturing/*.ts`) across all 15 manufacturing service files returned zero matches. `manufacturing.
+service.ts`'s `updateWorkOrderStatus()` correctly computes `actualCost` and `costVariance` on work
+order completion (material cost roll-up plus a scrap penalty) and stores them on the `WorkOrder` row,
+but this value is **never posted to the GL** — no journal entry, anywhere, for any manufacturing event.
+The completion event (`manufacturing.workorder.completed`) is consumed by
+`unierp-api/src/modules/inventory/inventory.event-handler.ts`'s `handleWorkOrderCompleted()`, which
+moves inventory quantities (raw materials out, finished goods in) but also creates no journal entry.
+Unlike D088 (fixed-assets depreciation), no GL account mapping fields exist anywhere in the
+`WorkOrder`/`BOM` schema to hang a fix on — closing this gap properly requires a schema migration in
+the separate `unierp-data` repository, out of reach for this pass without a larger, riskier cross-repo
+change than this session's established scope.
+
+**Part 2 — the one real inventory-mutation path was non-atomic (fixed in this pass).**
+`handleWorkOrderCompleted()` performed the raw-material decrement and finished-goods increment as two
+separate, unwrapped top-level `prisma.inventoryItem.upsert()` calls inside a single `try/catch` that
+only logged failures. If the finished-goods increment failed after some raw-material decrements had
+already committed (a plausible DB-level failure — constraint violation, connection drop mid-loop), the
+warehouse was left with materials silently vanished and no finished goods to show for them — a
+permanent, silent WIP integrity gap, with the failure logged but never surfaced or rolled back.
+
+**How it was caught:** writing a FAIL-first test asserting the handler delegates atomicity to a single
+`prisma.$transaction()` call wrapping both writes — the pre-existing code called `prisma.$transaction`
+zero times, using two independent top-level calls instead.
+
+**Fixed (Part 2 only):** both the raw-material consumption loop and the finished-goods increment now
+run inside one `prisma.$transaction()`, so a failure at either step rolls back everything written so
+far in that transaction. Reorder-threshold checks (best-effort, may create a new PO) intentionally run
+after the transaction commits, outside the atomicity boundary — they are not part of WIP correctness.
+Proven via break/restore (reverted to the two unwrapped calls, confirmed both new tests fail —
+`prisma.$transaction` called zero times — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 2/2
+tests pass). Full regression: `src/modules/inventory/` + `src/modules/manufacturing/`, all 53 test
+files / 827 tests pass cleanly (no collection failures). Typecheck: same 4 pre-existing unrelated
+errors, unchanged.
+
+**Not fixed — Part 1 (WIP-to-GL posting) requires a schema migration outside this session's scope.**
+Filed here rather than attempted shallowly. This is arguably the more severe half of this defect: E18's
+own exit criterion names "WIP valuation to the GL" specifically, and it does not exist as a mechanism
+at all, matching the D089-style "total absence" pattern rather than a partial implementation. A
+follow-up needs: (1) GL account fields on `BOM` or a manufacturing-specific cost-center mapping,
+analogous to `FixedAssetCategory`'s account fields; (2) a journal-posting call in either
+`updateWorkOrderStatus()` (debiting Finished Goods / crediting WIP for `actualCost`) or a new listener
+on `manufacturing.workorder.completed`, following the exact `postDepreciation()`-style pattern proven
+in D088; (3) the same style of break/restore proof. Also not investigated in this pass: BOM versioning,
+routing, capacity, and quality gates — none of E18's other four named non-negotiables were audited.

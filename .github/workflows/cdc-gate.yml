@@ -51,9 +51,9 @@ jobs:
       # (not actions/checkout — a matrix would fan this step out into
       # separate parallel JOBS, each with only one repo, when this gate
       # needs all of them present together in one job) into the same
-      # sibling layout the harness's own path resolution expects.
-      # `|| true` per repo: a repo that has since been renamed or removed
-      # should not fail every OTHER provider's CI — the harness itself
+      # sibling layout the harness's own path resolution expects. A repo
+      # that has since been renamed or removed logs a warning below and
+      # does not fail every OTHER provider's CI — the harness itself
       # already reports an "open surface" warning, not a hard failure, for
       # a provider it cannot find.
       - name: Check out the other CDC providers and consumers
@@ -66,8 +66,10 @@ jobs:
             if [ "$repo" = "${{ github.event.repository.name }}" ]; then
               continue
             fi
-            git clone --depth 1 "https://github.com/kannan19302/${repo}.git" \
-              "unierp-workspace-siblings/${repo}" || true
+            if ! git clone --depth 1 "https://github.com/kannan19302/${repo}.git" \
+              "unierp-workspace-siblings/${repo}"; then
+              echo "::warning::could not clone ${repo} — the harness reports it as an open surface, not a hard failure"
+            fi
           done
 
       - uses: actions/setup-node@v4

@@ -4714,3 +4714,34 @@ pass) — misses against it stay warnings, not hard failures. The reusable workf
 but not executed in a real GitHub Actions environment (this session cannot trigger a live CI run);
 correctness was validated by running the exact script it calls locally against the exact real repo
 checkouts, a strong but not identical proof to an actual CI execution.
+
+### D137 · 🔴 CRITICAL · The mobile client had no real CI coverage — the workflow named for it filtered on a monorepo path that hasn't existed since the platform split, and the repo's own CI called a Node/pnpm workflow with nothing to act on
+
+Found while claiming and building I01 (Mobile repo hygiene and CI), whose deliverable names
+`mobile-ci.yml` directly. Read `unierp-workspace/.github/workflows/mobile-ci.yml` and found every job
+filtered on `apps/mobile/**` and ran with `working-directory: apps/mobile` — a monorepo path.
+`unierp-mobile` is its own top-level repository (`lib/`, `test/`, `android/`, `ios/`, `windows/` all live at
+its own root); `apps/mobile` has not existed since the platform split into 30 repositories, so this workflow
+could never have fired correctly for the repo it exists to protect. Separately confirmed
+`unierp-mobile/.github/workflows/ci.yml` never called `mobile-ci.yml` at all — it called the generic
+Node/pnpm `reusable-ci.yml` instead, and `unierp-mobile` has no `package.json` anywhere, so that workflow's
+`pnpm install`/`build`/`lint`/`test` steps had nothing to act on. This Flutter client had no real CI coverage
+of any kind, from either angle — the workflow named for it was never called, and the workflow that was
+called does nothing meaningful for a Dart/Flutter project.
+
+**Fixed:** converted `mobile-ci.yml` to a reusable `workflow_call` workflow (the same pattern every other
+repo's `ci.yml` already uses) and removed the stale `apps/mobile` path prefix from every job, so
+`analyze`/`build-android`/`build-windows`/`build-ios` run against the repo root they are actually checked out
+to. Updated `unierp-mobile/.github/workflows/ci.yml` to call this fixed workflow instead of the ill-fitting
+`reusable-ci.yml`. Separately confirmed via `git ls-files` that the repo-hygiene half of this phase's
+deliverable (11 repair scripts, 3 error dumps) is already genuinely clean — zero matches for any stray/one-off
+file pattern anywhere in the tracked file list.
+
+**Released, not finished** — the same environment blocker as I04/I11: no Flutter/Dart SDK anywhere in this
+environment, so `flutter analyze exits 0 with no baseline suppressions` and "CI builds Android, iOS and
+Windows artefacts" cannot be executed or verified here; only a real GitHub Actions run (which this session
+cannot trigger) can confirm the fixed workflow's jobs actually pass. Structural correctness — the workflow
+now points at real, existing paths and is actually called — was verified by direct inspection; execution
+correctness was not. Also confirmed exactly one existing analyzer suppression exists in `lib/` (a cosmetic
+line-length ignore) but was not removed, since verifying `flutter analyze`'s actual state requires the
+missing SDK. macOS/Linux platform folders remain unscaffolded, an already-documented, unchanged gap.

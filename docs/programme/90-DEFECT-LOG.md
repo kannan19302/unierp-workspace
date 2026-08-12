@@ -2882,3 +2882,52 @@ none independently audited. Within `runMRP()`'s own scope:
     with no diagnostic trail, itself in tension with this phase's own "traceable" theme even though it
     is a different mechanism (run-level failure diagnostics, not suggestion-level input traceability).
   - Reorder policy and lead-time modeling were not located or investigated in this pass.
+
+### D094 · 🔴 CRITICAL · Two parallel, unreconciled POS register/shift implementations exist under the same base route — the primary, more discoverable one never computed cash-drawer variance
+
+Found while claiming and building E19 (Point of sale and retail), whose own exit criterion names "cash
+drawer" explicitly among its non-negotiables. The `pos` module contains **two entirely separate**
+register/shift implementations, both mounted under `@Controller("pos")`:
+
+- `pos.service.ts` / `pos.controller.ts`, using the `POSRegister`/`POSShift` Prisma models, exposed at
+  `PUT /pos/registers/:id/close` — the plain, more discoverable route.
+- `pos-expansion.service.ts` / `pos-expansion.controller.ts`, using **separate** `PosRegister`/
+  `PosShift` models, exposed at `PUT /pos/exp/registers/:id/close`.
+
+The `pos-expansion.service.ts` implementation correctly computes `cashVariance` /
+`closingDifference = actualCash - endingCash` on close. The `pos.service.ts` implementation — the
+plainer, non-`exp`-prefixed route a caller would reach for first — stored the caller-supplied
+`endingCash`/`actualCash` fields verbatim and **never computed any discrepancy at all**, leaving the
+`POSRegister.closingDifference` column (which exists in the schema specifically for this) permanently
+`null` for every register closed through this endpoint. A cashier's drawer could be short or over by
+any amount and the system would never surface it — "cash drawer" reconciliation, silently absent on
+one of two live, parallel code paths implementing the identical business concept.
+
+**How it was caught:** writing a FAIL-first test asserting `closeRegister()` returns a computed
+`closingDifference` for `endingCash: 300, actualCash: 285` — the pre-existing code returned `undefined`
+(`NaN` when coerced to `Number`).
+
+**Fixed:** `pos.service.ts`'s `closeRegister()` now computes `closingDifference` as
+`Prisma.Decimal(actualCash).sub(Prisma.Decimal(endingCash))` and persists it, matching the pattern
+already correct in the parallel `pos-expansion.service.ts` implementation. Proven via break/restore
+(reverted to storing the raw inputs with no computation, confirmed the exact original gap reproduces —
+`closingDifference` resolved to `undefined`/`NaN` — restored, confirmed 0 `BROKEN FOR PROOF` markers
+remain, 3/3 tests pass). Full regression: `src/modules/pos/`, both test files / 76 tests pass cleanly.
+Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E19's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires offline-capable POS with reconciled sync, shift management,
+refunds, and store/online inventory as one truth — none independently audited. Within the two-parallel-
+implementation finding's own scope:
+  - The existence of two independently-maintained, model-distinct implementations of the same core POS
+    concept (register/shift open-close, cash entries, payment methods — `pos-expansion.service.ts`
+    duplicates most of `pos.service.ts`'s surface) is itself an architectural finding worth a dedicated
+    follow-up: which one is the intended system of record, whether client apps are calling both
+    inconsistently, and whether `POSRegister`/`PosRegister` (and the equivalent Shift pair) should be
+    consolidated into one model. This defect only fixed the immediate reconciliation gap on one side of
+    the split, not the split itself.
+  - `pos.service.ts`'s `endShift()` (the shift-level equivalent of `closeRegister()`) was not checked
+    for the same missing-variance pattern — the schema shows `POSShift` doesn't have an equivalent
+    field visible in this pass's inspection, but this was not conclusively verified.
+  - Refunds (`processReturn()` exists in `pos.service.ts`), offline sync, and store/online inventory
+    unification were not investigated at all.

@@ -4160,3 +4160,47 @@ more) — none were audited in this pass. Given this session's own recurring pat
 bug class duplicated across sibling entities (D084-086, D088-092, D097-099, D107), it is a real, named risk
 that several of these have the exact same "one special-cased guard, everything else silently accepted" shape
 — not confirmed, but worth checking next rather than assumed fine.
+
+### D122 · 🔴 CRITICAL · `createJournal()`'s balance check accepted a genuinely unbalanced journal (real money mismatched by up to a cent) — the exact bug class already fixed in its sibling method `postJournalToBook()`, found via a property test on its first real use in this codebase
+
+Found while claiming and building J10 (Property-based and invariant testing), whose exit criterion is "Each
+invariant ... has a property test that has found at least one real edge case, recorded." Installed `fast-check`
+(not a dependency anywhere in this repo before this phase) and wrote a property test against
+`GlAccountingService.createJournal()`'s balance check — the sibling of `postJournalToBook()`, which this
+session's own earlier phase (E09) already fixed for the identical bug class. `createJournal()` still had the
+original pattern: `Math.abs(debits - credits) > 0.01` on raw float-summed debit/credit totals — a designed
+epsilon tolerance, not float-summation drift, that accepts any imbalance up to a full cent as "close enough."
+The property test searched the input space for genuinely unbalanced `[debit, credit]` pairs this check would
+wrongly accept and, within 500 generated runs (seed 42, reproducible), found and recorded a real edge case:
+`[1, 0.00009999999747378752]` — a debit of `1.0000` against a credit of `~0.9999`, a real Decimal(19,4)-
+precision discrepancy accepted as "balanced." This directly violates "a ledger always balances": real, wrong
+money would have been posted.
+
+**Fixed:** `createJournal()` now uses exact `Prisma.Decimal` arithmetic (accumulation via `.add()`, compared
+via `.equals()`), matching the sibling `postJournalToBook()` fix exactly rather than a second, independently-
+drifting mechanism. Proven via: (1) the property test itself — one sub-test asserts the ORIGINAL check's
+property is violated (a genuine FAIL-first result, the found edge case recorded via console output per the
+exit criterion's "recorded" requirement), a second asserts the FIXED check's property holds under the
+identical 500-run generator/seed; (2) a direct unit test reproducing the exact found edge case against the
+real service; (3) a live break/restore — reverted `createJournal()` to the original check (marked "BROKEN FOR
+PROOF"), confirmed the exact found edge case is posted as a real journal, restored, confirmed 0 `BROKEN FOR
+PROOF` markers remain, 4/4 tests pass. Incidentally required fixing two unrelated tests'
+(`opening-balance-migration.service.spec.ts`, `advanced-finance.service.spec.ts`) fake `Prisma.Decimal` mocks
+to implement real `.add()`/`.equals()` semantics, since both exercise `createJournal()` through call chains and
+their prior bare-bones mocks (one with a constructor whose `return Number(value)` was silently discarded per
+JS semantics, leaving instances with zero real properties) broke against the corrected shared code path. Full
+regression: `src/modules/advanced-finance/`, 35 test files / 539 tests pass cleanly. Typecheck: 0 errors (the
+4 pre-existing `@kannan19302/shared` errors observed in every prior phase this session are no longer present
+— most likely resolved incidentally by `pnpm add -D fast-check` relinking workspace packages during
+reinstall, not something this phase intentionally targeted).
+
+**Not fixed — the honest remaining gap.** Only the first of three invariants named in this phase's own
+deliverable ("a ledger always balances, stock never goes negative against policy, a posted document is never
+mutated") has a property test built against it. "Stock never goes negative against policy" — this session's
+own earlier E14 (D089) already fixed a real negative-stock defect via a hand-written example test, but a
+property-based search across a wider input space (concurrent decrements, mixed warehouse transfers, partial
+fulfilment) was not attempted and could plausibly find further edge cases. "A posted document is never
+mutated" — no property test was built, and no investigation was done into which documents this refers to or
+whether immutability is enforced at all once a document reaches a posted/final status. `fast-check` is now a
+real, working, proven capability in this repo; it has been used against only one of the three named
+invariants.

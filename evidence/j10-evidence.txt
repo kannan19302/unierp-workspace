@@ -1,0 +1,172 @@
+J10 — Property-based and invariant testing
+Deliverable: "Generative tests for the domain invariants: a ledger
+always balances, stock never goes negative against policy, a posted
+document is never mutated."
+Exit: "Each invariant from IMPLEMENTATION_PLAN § 2.7 has a property
+test that has found at least one real edge case, recorded."
+
+SCOPE NOTE
+==========
+IMPLEMENTATION_PLAN.md has no literal "§ 2.7" heading — the citation
+resolves to item 7 of the numbered Layer-1-Model checklist ("What
+must never happen to it? Write the invariant down; it becomes a
+test."), a general principle, not a fixed enumerated invariant list.
+The three concrete invariants named directly in this phase's own
+deliverable text ("a ledger always balances, stock never goes
+negative against policy, a posted document is never mutated") are
+the operative target list. This pass built a real, working
+property-testing capability (fast-check was not previously a
+dependency anywhere in this repo) and used it against the first
+invariant, finding and fixing a genuine, previously-undetected bug.
+The other two invariants are filed as the honest remaining scope,
+not attempted shallowly.
+
+INVARIANT 1 — "a ledger always balances"
+============================================
+Installed fast-check as a dev dependency (not present anywhere in
+this repo before this phase). Investigated
+GlAccountingService.createJournal() (src/modules/advanced-finance/
+services/gl-accounting.service.ts), the sibling of
+postJournalToBook() - which this session's own earlier phase (E09)
+already fixed for the identical bug class, confirmed via the existing
+gl-accounting-balance-check.service.spec.ts test file citing that
+history directly.
+
+createJournal() still had the ORIGINAL bug:
+
+  const debits = dto.entries.reduce((sum, e) => sum + e.debit, 0);
+  const credits = dto.entries.reduce((sum, e) => sum + e.credit, 0);
+  if (Math.abs(debits - credits) > 0.01) throw ...
+
+This is not float-summation drift - it is a designed epsilon
+tolerance that accepts ANY imbalance up to a full cent as "close
+enough." Wrote a fast-check property searching the input space for
+genuinely unbalanced [debit, credit] pairs (a real Decimal(19,4)
+discrepancy strictly greater than zero and at most one cent) that
+this check wrongly accepts as balanced.
+
+THE EDGE CASE FOUND (recorded)
+==================================
+Within 500 generated runs (seed 42, reproducible), fast-check found
+and the test records:
+
+  [1, 0.00009999999747378752]
+
+i.e. a debit of 1.0000 against a credit of ~0.9999 - a real,
+Decimal(19,4)-precision discrepancy of one hundredth of a cent to a
+tenth of a cent - accepted as "balanced" by the original check. This
+directly and provably violates "a ledger always balances": real,
+wrong money would be posted.
+
+MECHANISM (this phase's fix)
+====================================
+Fixed createJournal() to use exact Prisma.Decimal arithmetic
+(sum.add(new Prisma.Decimal(e.debit)) accumulation, compared via
+.equals()), matching the sibling postJournalToBook() fix exactly -
+not a new, independently-drifting mechanism.
+
+PROOF (FAIL-first, property-based)
+======================================
+$ npx vitest run gl-accounting-create-journal-balance.property.spec.ts
+2 tests:
+  - "D122, FAIL-first: the ORIGINAL float-epsilon check WRONGLY
+    ACCEPTS a genuinely unbalanced journal" - asserts the ORIGINAL
+    check's own property is violated (a genuine FAIL-first result,
+    recorded via console.log per the exit criterion's "recorded"
+    requirement)
+  - "D122, PASS after fix: the exact-Decimal check REJECTS every
+    unbalanced journal fast-check can construct" - asserts the FIXED
+    check's property holds under the same 500-run generator, same
+    seed
+Both pass (the first test's assertion IS that the property fails
+against the original code - that assertion itself passes, proving
+the bug was real).
+
+Also added a direct unit test reproducing the exact found edge case
+against the real service (gl-accounting-balance-check.service.spec.ts):
+"REFUSES the exact edge case a property test found: unbalanced by a
+tenth of a cent, silently accepted by the old epsilon check."
+
+BREAK/RESTORE (against the live service, not just the extracted
+property functions)
+========================================================================
+Reverted createJournal()'s check to the original float+epsilon logic
+(marked "BROKEN FOR PROOF").
+
+  $ npx vitest run gl-accounting-balance-check.service.spec.ts
+  1 failed | 3 passed (4)
+  (exactly the new direct-reproduction test - the exact found edge
+  case was posted as a real journal, reproducing the original defect
+  on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/advanced-finance/services/gl-accounting.service.ts
+  0
+  $ npx vitest run gl-accounting-balance-check.service.spec.ts
+  4/4 pass
+
+INCIDENTAL FIX REQUIRED — two unrelated tests' fake Decimal mocks
+=====================================================================
+opening-balance-migration.service.spec.ts and
+advanced-finance.service.spec.ts both mock @prisma/client's
+Prisma.Decimal with bare-bones fakes that had no .add()/.equals()
+methods (one even had a constructor that tried to `return Number(value)`,
+silently discarded per JS constructor semantics, leaving instances
+with zero real properties). Both files incidentally exercise
+createJournal() through TreasuryService.runCurrencyRevaluation() and
+OpeningBalanceMigrationService.importOpeningBalances(). Fixed both
+mocks to implement real .add()/.equals() Decimal semantics - a
+necessary, minimal fix to keep pre-existing, unrelated tests passing
+against the corrected shared code path, not a scope expansion.
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/advanced-finance/
+Test Files  35 passed (35)
+     Tests  539 passed (539)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+0 errors (the 4 pre-existing @kannan19302/shared errors observed in
+every prior phase this session are no longer present - most likely
+resolved incidentally by `pnpm add -D fast-check` relinking workspace
+packages during reinstall; not something this phase intentionally
+targeted or claims credit for fixing).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D122 (CRITICAL). Not fixed in this pass:
+  - Invariant 2, "stock never goes negative against policy" - no
+    property test was built. This session's own earlier E14 (D089)
+    already found and fixed a real negative-stock defect via a
+    hand-written example test; a property-based search across a wider
+    input space (concurrent decrements, mixed warehouse transfers,
+    partial fulfilment) was not attempted here and could plausibly
+    find further edge cases the hand-written test doesn't cover.
+  - Invariant 3, "a posted document is never mutated" - no property
+    test was built. No investigation was done into which documents
+    this refers to (journals, invoices, purchase orders) or whether
+    immutability is enforced at all once a document reaches a posted/
+    final status.
+  - fast-check is now a real, working capability in this repo (proven
+    by finding a genuine edge case on its first real use), but only
+    one of three named invariants has a property test built against
+    it.
+
+COMMANDS
+========
+$ npx vitest run src/modules/advanced-finance/services/tests/gl-accounting-create-journal-balance.property.spec.ts
+$ npx vitest run src/modules/advanced-finance/services/tests/gl-accounting-balance-check.service.spec.ts
+$ npx vitest run src/modules/advanced-finance/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/advanced-finance/services/gl-accounting.service.ts
+
+COMMITS
+=======
+unierp-api  22a0483  package.json, pnpm-lock.yaml,
+                     gl-accounting.service.ts,
+                     tests/gl-accounting-create-journal-balance.property.spec.ts,
+                     tests/gl-accounting-balance-check.service.spec.ts,
+                     tests/opening-balance-migration.service.spec.ts,
+                     tests/advanced-finance.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D122

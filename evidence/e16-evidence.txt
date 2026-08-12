@@ -1,0 +1,130 @@
+E16 — Sales and order management
+Non-negotiables at exit: "Quote -> order -> fulfilment -> invoice,
+with credit limits, backorders, allocation, returns and RMA."
+
+SCOPE NOTE
+==========
+E16's full scope covers the entire quote-to-invoice chain plus
+backorders, allocation, returns, and RMA. Far larger than this
+session's remaining budget. Investigated "credit limits" directly -
+the first-named control mechanism in the exit criterion, and one this
+session's D090 finding (a real check existing but being bypassable)
+made a natural next target to verify - and found exactly that pattern
+again: a real credit-hold gate exists, but a sibling endpoint under
+the identical permission can bypass it entirely. Fixed it completely
+and correctly, and files the honest remaining scope (backorders,
+allocation, returns, RMA) rather than a shallow pass across all of it.
+
+THE INVESTIGATION
+==================
+Read sales.service.ts's B2B credit-limit check in createSalesOrder():
+correctly computes initialStatus = "CREDIT_HOLD" when outstanding
+balance + new order total exceeds the customer's credit limit. Found
+a dedicated approveCreditHold() that re-validates so.status ===
+"CREDIT_HOLD" before releasing.
+
+Then read updateSalesOrderStatus() (the generic PATCH
+/orders/:id/status handler) and found it accepts ANY status string
+with zero transition validation:
+
+  const updated = await prisma.salesOrder.update({
+    where: { id }, data: { status },
+  });
+
+Checked sales.controller.ts's permission decorators:
+  PATCH /orders/:id/status         -> @Permissions("sales.order.update")
+  PATCH /orders/:id/approve-credit -> @Permissions("sales.order.update")
+
+Both endpoints require the IDENTICAL permission - the "dedicated"
+approval endpoint provides no additional authorization boundary.
+
+THE BUG, CONFIRMED
+====================
+Calling updateSalesOrderStatus(tenantId, "so-1", "CONFIRMED") directly
+on an order with status "CREDIT_HOLD" succeeded - the order was
+confirmed with no rejection, completely bypassing approveCreditHold()
+and the credit-limit gate the order was placed on hold for in the
+first place.
+
+MECHANISM (this phase's own fix)
+====================================
+updateSalesOrderStatus() now refuses any status transition AWAY from
+"CREDIT_HOLD" through the generic path, throwing BadRequestException
+that directs the caller to the dedicated approval endpoint. Only
+approveCreditHold() can release a held order.
+
+PROOF
+=====
+$ npx vitest run src/modules/sales/tests/sales.service.spec.ts
+
+New test - "E16: REFUSES to release an order from CREDIT_HOLD via the
+generic status endpoint - must go through approveCreditHold()": calls
+updateSalesOrderStatus with status "CONFIRMED" on an order whose
+status is "CREDIT_HOLD".
+FAILED against the pre-existing code before the fix - confirmed the
+call resolved successfully to { id: "so-1", status: "CONFIRMED" }
+instead of rejecting. Real FAIL-first proof.
+PASSES after the fix - rejects with the exact "credit hold" message,
+prisma.salesOrder.update never called.
+All 14 tests in the file pass (13 pre-existing + 1 new).
+
+BREAK/RESTORE
+=============
+Reverted updateSalesOrderStatus() to the original unguarded update
+(marked "BROKEN FOR PROOF").
+
+  $ npx vitest run sales.service.spec.ts
+  1 failed | 13 passed (14)
+  (exactly the new test - reproducing the original bypass on purpose:
+  promise resolved to a CONFIRMED order instead of rejecting)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" sales.service.ts
+  (no matches — 0)
+  $ npx vitest run sales.service.spec.ts
+  14/14 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/sales/
+Test Files  26 passed (26)
+     Tests  214 passed (214)
+Clean pass - no pre-existing collection failures in this module.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E15 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D091 (CRITICAL). Not investigated in this pass:
+  - Quote -> order -> fulfilment -> invoice chain integrity, beyond
+    the credit-hold transition audited here.
+  - Backorders: getBackorders() exists as a read-only report;
+    searched for a real "allocation" mechanism (reserving inventory
+    against a confirmed order before fulfillment) and found none by
+    that name anywhere in the sales module. Whether allocation
+    genuinely doesn't exist, exists under a different name, or lives
+    entirely in the inventory module (E14) was not determined.
+  - Returns and RMA - sales-returns-deep.service.ts exists but was not
+    audited.
+  - Whether the SAME permission-collision pattern found here
+    (identical permission guarding a generic mutation and a
+    dedicated approval-gated action) recurs elsewhere in the sales
+    controller or other controllers across the codebase was not
+    searched for - flagged as a distinct, security-relevant
+    sub-pattern worth a dedicated permission-model audit, related to
+    but distinct from this session's other "check exists but has a
+    gap" findings (D089, D090).
+
+COMMANDS
+========
+$ npx vitest run src/modules/sales/tests/sales.service.spec.ts
+$ npx vitest run src/modules/sales/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  bf7bd71  sales.service.ts, sales.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D091

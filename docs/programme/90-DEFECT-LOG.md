@@ -2741,3 +2741,51 @@ report itself was audited. Within this fix's own scope:
     signal to audit other "report"-shaped endpoints across the codebase for the same pattern, not just
     arithmetic bugs in otherwise-real logic (the D084/D085/D086/D088/D089 pattern). This is a materially
     different and more severe class of defect than this session's other findings.
+
+### D091 · 🔴 CRITICAL · SalesService.updateSalesOrderStatus() let any caller with plain order-update permission bypass the credit-limit hold entirely
+
+Found while claiming and building E16 (Sales and order management), whose own exit criterion names
+"credit limits" as a non-negotiable of the quote-to-invoice chain. `createSalesOrder()` correctly
+computes `initialStatus = "CREDIT_HOLD"` when a B2B order's outstanding balance plus the new order
+total would exceed the customer's credit limit, and a dedicated `approveCreditHold()` method exists
+that re-validates `so.status === "CREDIT_HOLD"` before releasing the hold. But
+`updateSalesOrderStatus(tenantId, id, status)` — the handler behind `PATCH /orders/:id/status` —
+accepted an arbitrary status string and wrote it directly with **zero transition validation**:
+
+```
+const updated = await prisma.salesOrder.update({ where: { id }, data: { status } });
+```
+
+Critically, `PATCH /orders/:id/status` and `PATCH /orders/:id/approve-credit` are both gated by the
+identical `@Permissions("sales.order.update")` decorator — the "dedicated" credit-hold-approval
+endpoint provides no additional authorization boundary at all. Any caller permitted to change a sales
+order's status for any ordinary reason (shipping status, fulfillment progress, etc.) could set
+`status: "CONFIRMED"` directly via the generic endpoint on a `CREDIT_HOLD` order, completely bypassing
+`approveCreditHold()`'s own re-check and the credit-limit gate enforced at order creation.
+
+**How it was caught:** writing a FAIL-first test calling `updateSalesOrderStatus()` directly with
+`status: "CONFIRMED"` on an order whose `status` is `"CREDIT_HOLD"` — the pre-existing code resolved
+successfully, confirming the order with no rejection.
+
+**Fixed:** `updateSalesOrderStatus()` now refuses any status transition away from `"CREDIT_HOLD"`
+through the generic path, throwing `BadRequestException` directing the caller to the dedicated
+approval endpoint; only `approveCreditHold()` can release a held order. Proven via break/restore
+(reverted to the unguarded update, confirmed the exact original bypass reproduces — the order resolved
+to `CONFIRMED` instead of rejecting — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 14/14
+tests pass). Full regression: `src/modules/sales/`, all 26 test files / 214 tests pass cleanly (no
+collection failures in this module). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E16's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires backorders, allocation, returns and RMA across the full
+quote→order→fulfilment→invoice chain. Not investigated in this pass:
+  - No dedicated "allocation" mechanism (reserving inventory against a confirmed order) was found
+    anywhere in the `sales` module by name — `getBackorders()` exists as a read-only report but there
+    is no evidence any code path actually reserves stock against a specific order before fulfillment.
+    Whether allocation genuinely doesn't exist, exists under a different name, or lives entirely in the
+    `inventory` module (E14) was not determined.
+  - Returns/RMA (`sales-returns-deep.service.ts` exists) was not audited for correctness.
+  - Whether the SAME permission-collision pattern found here (`sales.order.update` guarding both a
+    generic mutation and a dedicated approval-gated action) recurs elsewhere in the sales controller, or
+    in other controllers across the codebase, was not searched for — this is a distinct and
+    security-relevant sub-pattern of this session's broader "a real check exists but has a bypass"
+    findings (D089's bin-level gap, D090's fabricated report) worth a dedicated permission-model audit.

@@ -2591,3 +2591,48 @@ model entirely (`tax` / `taxRateId`, not `taxJurisdiction`) with no date-awarene
 awaiting integration was not determined. This is a strong follow-up candidate: G-15 compliance for the
 CRUD layer (this phase's fix) does not by itself guarantee any invoice was ever taxed using a
 date-correct rate — that requires tracing the actual calculation call graph, not assumed from this fix.
+
+### D088 · 🔴 CRITICAL · FixedAssetsService.postDepreciation() silently reduced an asset's book value with no GL journal when account mapping was incomplete — directly violating E13's "every event posting to the GL"
+
+Found while claiming and building E13 (Fixed assets), whose own exit criterion is explicit: "Acquisition,
+depreciation schedules, revaluation, impairment, insurance, transfer, disposal — every event posting to
+the GL." `unierp-api/src/modules/fixed-assets/fixed-assets.service.ts`'s `postDepreciation()` only
+created a GL journal `if (assetAcc && accumAcc && expenseAcc)` — three optional account-mapping fields
+on the asset or its category. If any one of them was unmapped (a highly plausible real-world state: a
+newly-onboarded asset category with incomplete GL setup), the method still created the
+`assetDepreciation` record with `status: "POSTED"` and `journalId: null`, and still called
+`fixedAsset.update()` to reduce `currentValue` by the depreciation amount — a real, permanent reduction
+in the asset's book value with zero corresponding GL journal ever created. This creates a silent,
+permanent, undetectable gap between the fixed-asset register and the general ledger — the asset register
+says the asset has been depreciated, the GL has no record of it, and nothing catches the divergence.
+
+**How it was caught:** writing a FAIL-first test for an asset whose category maps NO GL accounts at all
+and calling `postDepreciation()` — the pre-existing code returned a successful `{ id: "dep-1" }` result,
+called `fixedAsset.update()`, and created the `assetDepreciation` record, all with no GL journal.
+
+**Fixed:** `postDepreciation()` now checks GL account mapping completeness BEFORE any write happens
+(before the `$transaction` even opens) and throws `BadRequestException` naming the asset if any of the
+three required accounts is missing — depreciation can no longer be posted at all without a GL journal
+being created in the same transaction. Proven via break/restore (reverted to the original silent-skip
+logic, confirmed the exact original defect reproduces — `{ id: "dep-1" }` resolved instead of the
+expected rejection — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 7/7 tests pass). Full
+regression: `src/modules/fixed-assets/`, 16/16 real tests pass (1 pre-existing unrelated `@unerp/shared`
+collection failure, unchanged from E09-E12). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E13's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion names 7 distinct event types (acquisition, depreciation, revaluation,
+impairment, insurance, transfer, disposal), each required to post to the GL. Only `postDepreciation()`
+was audited and fixed. NOT investigated in this pass:
+  - `transferAsset()`, `logMaintenance()`, and `disposeAsset()` (all present in the same service) — not
+    checked for the same "silently succeeds without a GL journal when accounts are unmapped" pattern.
+  - Revaluation and impairment: no dedicated method for either was located in `fixed-assets.service.ts`
+    during this pass — `asset-lifecycle.service.ts` and `fixed-asset-deep.service.ts` in
+    `advanced-finance/services/` are more likely candidates and were not opened.
+  - Insurance: no dedicated method found or searched for.
+  - Whether `disposeAsset()`'s own GL posting (visible at a glance to construct a `gainLoss` via
+    `Prisma.Decimal`, correctly) is unconditional or has the same conditional-skip pattern as
+    `postDepreciation()` had was not verified — read only far enough to confirm `gainLoss` itself uses
+    correct Decimal arithmetic, not far enough to confirm the GL journal it produces is unconditional.
+This defect's own discovery pattern (an optional GL-account check silently degrading to "post the
+domain event, skip the GL journal") is a plausible systemic pattern worth checking across the other 6
+event types and, by extension, other GL-posting services outside `fixed-assets` entirely.

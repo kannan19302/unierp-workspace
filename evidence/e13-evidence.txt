@@ -1,0 +1,141 @@
+E13 — Fixed assets
+Non-negotiables at exit: "Acquisition, depreciation schedules,
+revaluation, impairment, insurance, transfer, disposal — every event
+posting to the GL."
+
+SCOPE NOTE
+==========
+E13's full scope (7 distinct event types, each required to post to the
+GL) is far larger than this session's remaining budget. Investigated
+depreciation directly (the exit criterion's second-named event, and
+the one this service's own postDepreciation() most directly
+implements) and found a real, critical bug on inspection: the GL
+journal posting was CONDITIONAL on account mapping being complete,
+while the domain event (reducing the asset's book value) was NOT -
+meaning depreciation could silently proceed with real financial effect
+and zero GL trace. Fixed it completely and correctly, and files the
+honest remaining scope (the other 6 event types) rather than a
+shallow pass across all of them.
+
+THE INVESTIGATION
+==================
+Read fixed-assets.service.ts's postDepreciation() in full. Found:
+
+  const assetAcc = asset.accountId || category?.assetAccountId;
+  const accumAcc = asset.accumDepAccountId || category?.depreciationAccountId;
+  const expenseAcc = category?.expenseAccountId;
+  if (assetAcc && accumAcc && expenseAcc) {
+    // ...create journal + 2 journalEntry rows...
+  }
+  // unconditionally, regardless of the above:
+  const depRecord = await tx.assetDepreciation.create({ ..., status: "POSTED", journalId, ... });
+  await tx.fixedAsset.update({ where: { id: assetId }, data: { currentValue: newBookValue, ... } });
+
+journalId can be null (no journal branch taken) while the
+assetDepreciation record is still marked POSTED and the asset's
+currentValue is still permanently reduced.
+
+THE BUG, CONFIRMED
+====================
+An asset (or its category) with incomplete GL account mapping - a
+plausible real onboarding state, not a contrived edge case - had
+postDepreciation() called against it. The call succeeded, returning a
+depreciation record, reducing the asset's book value by the computed
+depreciation amount, with NO GL journal ever created. The asset
+register and the GL silently diverge from that point forward, with
+nothing surfacing the gap.
+
+MECHANISM (this phase's own fix)
+====================================
+The GL-account-mapping completeness check now runs BEFORE the
+transaction opens and throws BadRequestException (naming the asset) if
+any of the three required accounts (asset/accumulated-depreciation/
+expense) is missing. Depreciation can no longer be posted at all - to
+either the GL or the asset register - without a GL journal being
+created in the same transaction as the depreciation record and the
+book-value update.
+
+PROOF
+=====
+$ npx vitest run src/modules/fixed-assets/tests/fixed-assets.service.spec.ts
+
+New test 1 — "REFUSES to post depreciation when GL account mapping is
+incomplete — never silently reduces book value without a GL journal":
+asset + category with NO accounts mapped at all.
+FAILED against the pre-existing code before the fix - confirmed
+postDepreciation() resolved successfully with { id: "dep-1" } instead
+of rejecting, and fixedAsset.update/assetDepreciation.create were both
+called. Real FAIL-first proof.
+PASSES after the fix - rejects with the exact "GL account mapping is
+incomplete" message, no writes occur.
+
+New test 2 — "posts a balanced GL journal and reduces book value when
+accounts are fully mapped": positive-path regression proving the fix
+doesn't block the legitimate, fully-mapped case.
+PASSES.
+
+All 7 tests in the file pass (5 pre-existing + 2 new).
+
+BREAK/RESTORE
+=============
+Reverted postDepreciation() to the original conditional-GL-posting
+logic (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run fixed-assets.service.spec.ts
+  1 failed | 6 passed (7)
+  (exactly the new "REFUSES..." test - reproducing the original
+  silent-skip defect on purpose: promise resolved { id: "dep-1" }
+  instead of rejecting)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" fixed-assets.service.ts
+  (no matches — 0)
+  $ npx vitest run fixed-assets.service.spec.ts
+  7/7 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/fixed-assets/
+Test Files  5 passed | 1 failed (6)
+     Tests  16 passed (16)
+The 1 failing SUITE (collection-time, not test failures) is the same
+pre-existing "Cannot find package '@unerp/shared'" error documented in
+E09-E12's own evidence, confirmed unrelated (untouched by this phase).
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E12 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D088 (CRITICAL). Only postDepreciation() was audited and
+fixed. NOT investigated in this pass:
+  - transferAsset(), logMaintenance(), disposeAsset() in the same
+    service - not checked for the same conditional-GL-skip pattern.
+  - Revaluation and impairment - no dedicated method found in
+    fixed-assets.service.ts; asset-lifecycle.service.ts and
+    fixed-asset-deep.service.ts in advanced-finance/services/ are more
+    likely candidates and were not opened in this pass.
+  - Insurance - not searched for at all.
+  - disposeAsset()'s own GL posting was read far enough to confirm its
+    gainLoss calculation uses correct Prisma.Decimal arithmetic, but
+    NOT far enough to confirm its GL journal creation is unconditional
+    (vs. having the same optional-account-mapping pattern
+    postDepreciation() had).
+This defect's own discovery pattern - an optional GL-account check
+silently degrading to "post the domain event, skip the GL journal" -
+is filed as a plausible systemic pattern worth checking across the
+other 6 named event types, and potentially other GL-posting services
+outside fixed-assets entirely.
+
+COMMANDS
+========
+$ npx vitest run src/modules/fixed-assets/tests/fixed-assets.service.spec.ts
+$ npx vitest run src/modules/fixed-assets/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  b7a293d  fixed-assets.service.ts, fixed-assets.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D088

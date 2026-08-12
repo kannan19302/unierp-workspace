@@ -4482,3 +4482,29 @@ separate build. The new DDL path could not be integration-tested against a live 
 (no `DATABASE_URL`, the same infrastructure constraint as E38/E44/I11/J25/G01/G02 and this module's own
 pre-existing `extension-schema.service.spec.ts`); proof here is limited to the mocked safety-gating logic.
 "Per-tenant isolation of extension state" was not independently re-verified in this pass.
+
+### D130 · 🔴 CRITICAL · No sandbox-tenant concept, refresh-from-production pipeline, or PII-masking utility exists anywhere in this codebase
+
+Found while claiming and building G05 (Sandbox environments and data seeding), whose exit criterion is: "A
+developer refreshes a sandbox from production with all PII masked, provably, and promotes a change without
+touching production data." Investigated this deliverable's own named feature directly and found total
+absence at every layer: zero `Sandbox`-prefixed Prisma models anywhere in the schema; zero matches for
+`refreshFromProduction`/`promoteToProduction`/`sandboxTenant`/`isSandbox` across the whole `src` tree (the
+only near-hits, `builder-governance.service.ts`'s `promoteToStaging`/`promoteToProduction`, are an entirely
+different concept — promoting app-builder MODULE RELEASES through release channels, not tenant DATA
+sandboxes); zero real PII-masking utility for tenant data anywhere (the only hits were unrelated audit-log
+secret redaction and this session's own already-investigated GDPR erasure flow). Unlike most of this
+session's findings, there was nothing here to break, fix, or mislabel — a genuine, total absence, not a
+partial or fabricated implementation.
+
+**Released, not fixed.** Separately from the total absence, this deliverable's own literal exit criterion —
+"a developer refreshes a sandbox FROM PRODUCTION" — requires a live production database with real tenant
+data to refresh from and a live destination sandbox database to refresh into, neither of which this
+environment has (no `DATABASE_URL`, the same infrastructure blocker as E38/E44/I11/J25). Even a from-scratch
+build could not be demonstrably proven "with all PII masked, provably" without both live endpoints. A genuine
+follow-up needs, at minimum: a real sandbox-tenant concept distinguishable from a production tenant (so
+promotion/reset can never target production by mistake); a real PII-masking utility — the one piece that IS
+tractable without live infrastructure, buildable and property-testable as a pure function independent of a
+database, the natural first build in a follow-up pass; a provisioned source/destination database pair to
+build and prove the actual refresh-and-mask pipeline against; and a "promote to production" mechanism that
+moves a validated change out of the sandbox without ever moving tenant data the other direction.

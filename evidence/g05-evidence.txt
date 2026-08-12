@@ -1,0 +1,77 @@
+G05 — Sandbox environments and data seeding
+Deliverable: "Real sandbox tenants: create, refresh from production
+with masked data, reset, and promote to production."
+Exit: "A developer refreshes a sandbox from production with all PII
+masked, provably, and promotes a change without touching production
+data."
+
+WHY THIS PHASE IS RELEASED RATHER THAN CLAIMED DONE
+=====================================================
+Investigated this deliverable's own named feature directly - sandbox
+tenants refreshed from production with masked PII - and found it
+does not exist anywhere in this codebase, at any layer:
+
+  $ grep -n "model.*Sandbox" (across the whole Prisma schema)
+  (zero matches - no Sandbox-prefixed model exists at all)
+
+  $ grep -rln "refreshFromProduction|promoteToProduction|sandboxTenant|SandboxTenant|isSandbox" src --include=*.ts
+  Only two false-positive matches (builder-governance.service.ts's
+  promoteToStaging/promoteToProduction, which is an entirely
+  DIFFERENT concept - promoting app-BUILDER MODULE RELEASES through
+  dev/staging/production release channels, not tenant DATA
+  sandboxes).
+
+  $ grep -rln "maskPii|maskEmail|maskPhone|piiMask|anonymize|redact" src --include=*.ts
+  The only real hits are unrelated: audit-log field redaction
+  (password/token/secret/apiKey key-name matching, for log output,
+  not tenant data) and one unrelated hit in gdpr-compliance.service.ts
+  (checked, not a masking utility for a sandbox refresh - it's part of
+  the erasure flow this session's own E32/D101 already investigated).
+
+There is no schema support, no service, no masking utility for
+tenant-data specifically, and no concept of a "sandbox tenant"
+distinct from a regular tenant anywhere in this codebase. This is a
+total absence, not a partial or fabricated implementation - unlike
+most of this session's findings, there was nothing here to break, fix,
+or even mislabel.
+
+Separately, this deliverable's own literal exit criterion - "a
+developer refreshes a sandbox FROM PRODUCTION" - requires a live
+production database with real tenant data to refresh from, which this
+environment does not have (no DATABASE_URL configured, confirmed
+repeatedly this session: E38, E44, I11, J25). Even a from-scratch
+build of this feature could not be demonstrably proven "with all PII
+masked, provably" without a live source database to mask FROM and a
+live destination sandbox database to refresh INTO.
+
+WHAT WOULD BE NEEDED TO ACTUALLY CLOSE THIS PHASE
+====================================================
+1. A real "sandbox tenant" concept: a Tenant flagged as a sandbox
+   (or a genuinely separate model), distinguishable from a real
+   production tenant so promotion/reset operations can never be
+   pointed at production by mistake.
+2. A real PII-masking utility, built and unit-testable independent
+   of live infrastructure - this piece IS tractable without a live
+   database (a pure function taking a row shape and returning a
+   masked shape can be property-tested, similar to this session's
+   own J10 approach), and would be the natural first build in a
+   follow-up pass.
+3. A provisioned source (production-like) and destination (sandbox)
+   database to build and prove the actual "refresh from production"
+   copy-and-mask pipeline against.
+4. A "promote to production" mechanism that moves a validated change
+   (schema, config, or code) OUT of the sandbox without ever moving
+   tenant DATA the other direction - the deliverable's own "without
+   touching production data" requirement needs a live production
+   target to prove against.
+
+COMMANDS
+========
+$ grep -n "model.*Sandbox" (Prisma schema, all files)
+$ grep -rln "refreshFromProduction\|promoteToProduction\|sandboxTenant\|SandboxTenant\|isSandbox" src --include=*.ts
+$ grep -rln "maskPii\|maskEmail\|maskPhone\|piiMask\|anonymize\|redact" src --include=*.ts
+$ node -e "console.log(process.env.DATABASE_URL || 'NOT SET')"
+
+COMMITS
+=======
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D130

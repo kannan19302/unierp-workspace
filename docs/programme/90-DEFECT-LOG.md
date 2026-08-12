@@ -4005,3 +4005,49 @@ resume — the single most tractable of the six, since its storage foundation al
 pinning layer on the `dio` client; a jailbreak/root-detection package with a documented response policy;
 `FLAG_SECURE`/iOS capture-protection; a server-driven remote-wipe mechanism; and a live side-by-side run of
 both clients to confirm session-policy parity.
+
+### D118 · 🔴 CRITICAL · The public marketing site claimed SOC 2 Type II compliance, ISO 27001 certification, annual third-party audits, and bi-annual penetration tests — none of which exist — directly violating this phase's own G-3 requirement before any scoping work began
+
+Found while claiming and building K03 (Compliance framework scoping), whose exit criterion opens with G-3:
+"Out-of-scope frameworks are stated so a prospect is never misled." Checking whether the public site was
+already misleading a prospect today — before doing any of the scoping work — found three pages making
+specific, unqualified, falsifiable certification/audit claims: `app/(site)/security/page.tsx` stated "We
+maintain SOC 2 Type II compliance, audited annually by independent third parties," offered a non-existent
+"SOC 2 report" on request, and claimed "bi-annual third-party penetration tests" and "Full compliance with
+global privacy frameworks"; `app/(site)/features/FeaturesClient.tsx` displayed a certification-badge grid
+literally listing "SOC 2 Type II" and "ISO 27001" as achieved, and labeled a feature row "Audit Logs
+(HIPAA/SOC2)"; `app/(site)/about/AboutClient.tsx` stated "SOC 2, GDPR, HIPAA-ready ... fully encrypted,
+audited." This platform (`unierp-corporate-website`, part of a from-scratch development programme) has never
+undergone a third-party SOC 2, ISO 27001, HIPAA, or FERPA audit — no auditor engagement exists anywhere in
+its history. These were not hedged marketing language; several were flat, falsifiable factual claims to an
+actual prospect, exactly the "no claim without a mechanism" defect class this entire programme exists to
+eliminate, at its most consequential surface.
+
+**Fixed:** rewrote all three pages' compliance language to state the real posture — encryption at rest
+(AES-256-GCM, genuinely real, confirmed in `lib/crypto.ts`) stays claimed since it's true; certification
+claims replaced with an honest "not yet certified"/"compliance roadmap" framing; the non-existent "SOC 2
+report" offer removed. Added `scripts/ci/check-compliance-claims.mjs`, a CI gate denylisting the specific
+unearned-certification phrase patterns across `app/(site)/`, wired into `.github/workflows/guard.yml`.
+Proven: the gate's own FIRST run against the as-found, unmodified repo genuinely failed on the real claim (a
+true FAIL-first result); after the fix, 0 matches. Break/restore: re-injected the original "SOC 2 Type II
+compliance, audited annually" sentence in a scratch file, confirmed the gate reproduces the exact original
+failure, removed it, confirmed pass. Typecheck clean.
+
+**Framework scope decision (the phase's own deliverable), stated explicitly per G-3.** SOC 2 Type II and ISO
+27001: OUT OF SCOPE, no dated target — no auditor engagement exists, and a SOC 2 observation period requires
+a stable production deployment to observe, which does not exist yet. GDPR/CCPA: IN SCOPE, partially
+implemented — this session's own E32 (D101) found and fixed a GDPR erasure request that threw `ENOENT` on
+every call plus a failure to cascade erasure to a user's stored files, both fixed 2026-08-12; K15 (Data
+portability and exit rights) remains OPEN in this same plan, a real, named, dated gap. HIPAA and FERPA: OUT
+OF SCOPE, explicitly, with a named forward risk — no BAA process, no PHI/FERPA-specific controls exist
+anywhere, and this programme names `unierp-app-healthcare`/`unierp-app-education` as verticals that must not
+be positioned as HIPAA/FERPA-suitable until this gap is closed. Regional requirements (e.g. DPDP): named as
+unscoped, not reviewed in this pass.
+
+**Not fixed — the honest remaining gap.** A full control-by-control matrix (e.g. every SOC 2 Trust Services
+Criterion mapped to a named mechanism) was not built — it is only meaningful once SOC 2/ISO 27001 are
+actually pursued, which this scope decision says they are not, yet. The new compliance-claims gate is a
+denylist of specific phrases confirmed false today; it will not catch a differently-worded future false
+claim — H03 (claim-verification gate, still OPEN in this same plan) is the broader, capability-manifest-
+backed mechanism this gate deliberately does not attempt to replace. Regional requirements beyond GDPR/CCPA
+were not reviewed.

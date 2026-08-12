@@ -1,0 +1,117 @@
+L05 — Dead-code and unused-export gate
+Exit criterion: "A newly orphaned export fails CI. The existing
+inventory is published and ratcheted down. An orphaned file in a
+polyrepo is invisible to a single-repo view, which is why this is a
+family-wide gate."
+
+BEFORE
+======
+$ ls scripts/check-orphaned-exports.mjs
+No such file or directory
+(no cross-repo unused-export detection existed anywhere)
+
+MECHANISM — genuinely family-wide, not single-repo
+=======================================================
+New scripts/check-orphaned-exports.mjs implements exactly the check
+the exit criterion's own reasoning describes: extracts every named
+VALUE export from unierp-design-system's component barrel
+(src/components/index.ts, 29 real exports — Button, Modal, DatePicker,
+etc.), then greps the ENTIRE consuming-repo corpus (unierp-web +
+unierp-console, 1,352 real source files, read and concatenated once)
+for a word-boundary reference to each exported name. An export with
+zero references anywhere in either consuming repo is orphaned — a
+finding neither repo alone could ever produce (design-system doesn't
+know who imports it; the consumers have no reason to notice something
+they never imported).
+
+REAL RESULT
+===========
+$ node scripts/check-orphaned-exports.mjs --update-baseline
+Baseline recorded: 7/29 exported component(s) orphaned (unused across
+1352 files in unierp-web + unierp-console).
+Orphaned: AutosaveIndicator, ComboBox, DatePicker, InfoHint,
+ProtectedField, SkeletonText, useFieldAccess
+
+A real, measured, family-wide finding — filed as D081 (LOW, since
+several of these are plausibly legitimate not-yet-adopted primitives
+rather than confirmed dead code, and the measurement itself is a
+conservative word-boundary text search that could under-count but
+never over-count).
+
+$ node scripts/check-orphaned-exports.mjs
+7/29 exported component(s) orphaned now vs 7 at baseline.
+OK    no newly-orphaned exports.
+
+BREAK/RESTORE — caught a real bug in the checker itself along the way
+===========================================================================
+Added a genuinely orphaned re-export to the real barrel file (backed
+up first): `export { Card as BrokenForProofExport } from "./card";`.
+
+First run: DID NOT catch it (7/30 orphaned — should have been 8/30).
+Debugged directly rather than accepted the wrong-looking result: the
+extraction regex took the ORIGINAL name (`Card`) from an `X as Y`
+re-export instead of the ALIAS (`BrokenForProofExport`) — the alias is
+what a consumer would actually import, so the check was silently
+testing usage of the wrong identifier. Fixed the extraction to take
+the last segment of an `as` split (the alias, when present).
+
+  $ node scripts/check-orphaned-exports.mjs
+  8/30 exported component(s) orphaned now vs 7 at baseline.
+  FAIL  1 newly-orphaned export(s), not in the baseline:
+    BrokenForProofExport — exported by unierp-design-system, used in
+    neither unierp-web nor unierp-console
+
+Exactly the intended failure, correctly, this time. Restored from
+backup:
+
+  $ grep -c "BrokenForProofExport" src/components/index.ts
+  0
+  $ node scripts/check-orphaned-exports.mjs
+  7/29 exported component(s) orphaned now vs 7 at baseline.
+  OK    no newly-orphaned exports.
+
+This is exactly the discipline "watch it fail, then fix, then watch
+it pass" is for: the FIRST break attempt silently produced a wrong
+result, and it was investigated rather than accepted, surfacing a
+real extraction bug before this gate ever shipped with it.
+
+DETERMINISM
+============
+$ git status --short src/components/index.ts   (clean, confirms restore)
+$ node scripts/check-orphaned-exports.mjs      (re-run, clean state)
+7/29 exported component(s) orphaned now vs 7 at baseline.
+OK    no newly-orphaned exports.
+(identical output across the clean-state rerun)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+Filed as part of D081:
+- Only unierp-design-system's `components` barrel was measured — the
+  package has 12+ other subpath barrels (layout, charts, data-grid,
+  dashboard, notifications, theme, tokens, hooks, utils, icons,
+  form-engine, workflow) not scanned in this pass.
+- Only unierp-design-system as the exporting package was checked —
+  unierp-contracts, unierp-shared, unierp-kernel, and unierp-sdk are
+  other real shared packages in this polyrepo that could have the
+  same class of orphan.
+- The measurement is a word-boundary TEXT search, not an AST-aware
+  import-graph analysis — it will under-count (miss an aliased
+  import) but never over-count, a stated conservative bias, not a
+  hidden limitation.
+- "Unreachable code" and "unused dependencies" (the other two things
+  this phase's own deliverable text names alongside "unused exports"
+  and "orphaned files") were not built in this pass — this phase's
+  real, proven mechanism covers orphaned cross-repo exports
+  specifically, the piece the exit criterion's own reasoning focuses
+  on and explains why this must be a family-wide gate.
+
+COMMANDS
+========
+$ node scripts/check-orphaned-exports.mjs
+$ node scripts/check-orphaned-exports.mjs --update-baseline
+
+COMMITS
+=======
+unierp-workspace  (this phase)  scripts/check-orphaned-exports.mjs (new),
+                                 evidence/orphaned-exports-baseline.json (new),
+                                 90-DEFECT-LOG.md D081

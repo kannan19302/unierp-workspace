@@ -2333,3 +2333,34 @@ the registry on every invocation, itself a supply-chain risk this fix removes).
    to more of the repo needs either more memory/time budget than this session had, or a
    non-type-aware approximation of the boolean-naming rule that trades some accuracy for
    tractability.
+
+### D081 · 🟢 LOW · 7 of 29 unierp-design-system component exports appear unused across both consuming repos
+
+Found while building L05 (Dead-code and unused-export gate) — the exact family-wide blind spot the
+phase's own exit criterion names ("an orphaned file in a polyrepo is invisible to a single-repo
+view"). `unierp-design-system`'s component barrel (`src/components/index.ts`) exports 29 named
+values; a real cross-repo grep against both consuming frontend repos (`unierp-web`,
+`unierp-console` — 1,352 source files) found 7 with zero textual reference anywhere:
+`AutosaveIndicator`, `ComboBox`, `DatePicker`, `InfoHint`, `ProtectedField`, `SkeletonText`,
+`useFieldAccess`.
+
+**How it was caught:** running the real, measured mechanism this phase built — no single repo's
+own lint/typecheck would ever surface this, since `unierp-design-system` itself has no way to know
+whether anything downstream imports what it exports, and the consuming repos have no reason to
+notice a component they never imported.
+
+**Not fixed — not necessarily dead code.** Some of these are plausibly legitimate: `ComboBox` and
+`DatePicker` may be intentionally-unadopted newer primitives (B01-B12's own migration work is
+ongoing per this session's own findings elsewhere), and `useFieldAccess`/`ProtectedField` may be
+consumed only via a JSX spread or a dynamically-constructed import this word-boundary text search
+cannot see. Each of the 7 needs an individual read to determine real dead-code vs not-yet-adopted
+vs a false negative in this measurement — not something to delete or judge from the count alone.
+
+**Not fully investigated:** whether the SAME orphan pattern exists in `unierp-design-system`'s other
+barrel exports (`layout`, `charts`, `data-grid`, `dashboard`, `notifications`, `theme`, `tokens`,
+`hooks`, `utils`, `icons`, `form-engine`, `workflow` — this phase measured only the `components`
+barrel), or in any other shared package this polyrepo has (`unierp-contracts`, `unierp-shared`,
+`unierp-kernel`, `unierp-sdk`). A known limitation of the measurement itself: it is a word-boundary
+text search, not an AST-aware import-graph analysis — it will miss usage where a consumer aliases
+the import to a different local name (`import { ComboBox as Combo } from ...`), so the true orphan
+count could be lower than 7, never higher.

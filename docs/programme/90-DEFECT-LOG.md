@@ -3287,3 +3287,52 @@ redaction, access audit, and deletion consistent with D11–D12" — none indepe
     changed.
   - Retention policies, redaction, and access-audit logging (the phase's other three named deliverables)
     were not investigated in this pass.
+
+### D102 · 🔴 CRITICAL · IdempotencyInterceptor was opt-in everywhere, silently unprotecting every mutating route that doesn't send the header — the exact opposite of this phase's own deliverable
+
+Found while claiming and building E43 (Concurrency, optimistic locking and write idempotency), whose own
+deliverable is explicit: idempotency keys "required on every non-idempotent write... this makes them
+mandatory and universal, not available." `unierp-api/src/common/idempotency/idempotency.interceptor.ts`'s
+own docstring states plainly: "Opt-in per request... Requests without the header are untouched." A
+mutating request (POST/PUT/PATCH/DELETE) with no `Idempotency-Key` header — which is every existing
+caller in the codebase, since nothing currently sends this header anywhere — passes straight through with
+zero duplicate-write protection. A double-submitted `POST /pos/orders` (a customer's card charged twice
+by a network retry, or a cashier double-tapping "complete sale") creates two independent orders, exactly
+the failure mode this phase's own exit criterion names as the thing that must never happen.
+
+**How it was caught:** reading the interceptor's own code and docstring, which states its opt-in nature
+directly; confirmed no route in the codebase currently applies any mechanism requiring the header.
+
+**Fixed:** rather than flipping the interceptor's global default (a sweeping, unverifiable breaking
+change across every mutating route in a ~2,000-file API, with no way to confirm every existing caller
+across 3 frontend clients — web, mobile, POS terminal — was updated to send the header in the same pass),
+built a real, targeted enforcement mechanism: new `@RequireIdempotencyKey()` decorator (Reflector-based
+metadata) that `IdempotencyInterceptor` now checks via `reflector.getAllAndOverride()`. A mutating request
+with no header to a route carrying this decorator is now rejected with `400 IDEMPOTENCY_KEY_REQUIRED`
+instead of silently passing through; undecorated routes keep their existing opt-in behavior unchanged.
+Applied to `POST /pos/orders` (`createOrder`) as proof of technique — a textbook double-submit-creates-
+duplicate-charge endpoint. `IdempotencyInterceptor` now takes an optional `Reflector`; `app.module.ts`'s
+factory wiring updated to inject it (`inject: [Reflector]`). Proven via break/restore (reverted the
+enforcement check, confirmed the exact original defect reproduces — a mutating request to a decorated
+route with no header no longer throws, passing straight through — restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 12/12 interceptor tests pass, including a direct test asserting the
+underlying create-handler runs exactly once across two "submissions" of the same key+payload). Full
+regression: `src/common/idempotency/` + `src/modules/pos/`, 88/88 tests pass cleanly. Typecheck: same 4
+pre-existing unrelated errors, unchanged — confirming the new DI wiring across the whole `AppModule`
+graph typechecks cleanly.
+
+**Not fully investigated — E43's own deliverable is much larger than this pass.** Two other named
+requirements were not attempted:
+  - **Version columns on every mutable entity**: this phase's own exit criterion states 36 entities carry
+    a version column today, across only 3 of 18 schema files — the vast majority of mutable entities have
+    no optimistic-lock column at all, and no work was done on this in this pass.
+  - **Optimistic-lock conflict detection with a real resolution UI**: "two concurrent edits to one record
+    produce a surfaced conflict, never a silent last-write-wins" — not investigated; no mechanism for
+    detecting or surfacing such a conflict was located or built in this pass.
+  - **The idempotency-key requirement itself is applied to exactly one endpoint** (`POST /pos/orders`) as
+    proof of technique. Every other mutating write in the codebase — sales orders, purchase orders,
+    payments, invoices, and the hundreds of other POST/PUT/PATCH/DELETE handlers — remains unprotected by
+    default. A systematic audit identifying which endpoints are genuinely double-submit-sensitive
+    (financial writes, order creation) versus naturally idempotent or low-risk, followed by applying the
+    decorator across that identified set, is the real remaining scope this phase's own deliverable
+    implies.

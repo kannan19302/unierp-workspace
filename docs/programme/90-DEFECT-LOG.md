@@ -3759,3 +3759,39 @@ transactional p95 under representative concurrent load; a design decision on the
 only then can the "does not degrade p95, verified under load" bar be meaningfully tested. The concrete,
 already-identified unbounded-historical-query pattern in `getTrialBalance()`/`getProfitLoss()`/
 `getBalanceSheet()` (D107) is the most obvious first target once that infrastructure exists.
+
+### D112 · 🔴 CRITICAL · `fulltextSearch()`'s unified cross-module index had zero permission filtering — any authenticated user could retrieve and count records of any indexed entity type regardless of their own RBAC permissions
+
+Found while claiming and building E39 (Federated search), whose exit criterion is: "Searching a term
+returns only records the user may see — and result counts do not leak the existence of others (G-6)."
+`search.service.ts` contains two independent query paths: `globalSearch()` already implements real
+per-entity RBAC via `resolvePermissions(userId)` and a `can(code)` closure gating each of
+customer/lead/product/employee before querying its own table — but the separate `fulltextSearch()` method,
+which queries the unified cross-module `SearchIndex` table, had **no permission filtering of any kind**.
+Its `where` clause contained only `tenantId`/`status`/`module`/`entityType` — no permission check anywhere
+— and this feeds both the `findMany()` results and the `count()` total. Confirmed this is a live, reachable
+endpoint: `GET /search/query` in `search.controller.ts`, gated only by the generic `search.query.read`
+permission, with no per-record or per-entityType check downstream. A user holding only `search.query.read`
+(no `hr.employee.read`, no `crm.contact.read`, etc.) could call `GET /search/query?entityType=employee` and
+receive real indexed employee records with an accurate total count — both halves of G-6 violated at once.
+
+**Fixed:** added `ENTITY_TYPE_PERMISSIONS`, deliberately reusing the SAME permission codes `globalSearch()`
+already established (`crm.contact.read`, `crm.lead.read`, `inventory.product.read`, `hr.employee.read`)
+rather than inventing a second, potentially-drifting definition of the same access rule. `fulltextSearch()`
+now takes an optional `userId`, resolves the caller's permissions once, and either refuses outright with
+`{ items: [], total: 0 }` (no query executed at all) if a specific gated `entityType` was explicitly
+requested and disallowed, or excludes every gated-but-unauthorized entityType via
+`where.entityType = { notIn: [...] }` applied identically to both the `findMany()` and `count()` calls, so
+the total can never reflect the existence of records outside the user's permission. `search.controller.ts`'s
+`query()` handler now passes `req.user.userId` through. Proven via break/restore (reverted
+`gatedEntityTypes` to an empty array, marked `BROKEN FOR PROOF`, confirmed the exact 2 new FAIL-first tests
+reproduce the original bypass and count-leak, restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 8/8
+tests pass). Full regression: `src/modules/search/`, all 3 test files / 12 tests pass cleanly. Typecheck:
+same 4 pre-existing unrelated errors, unchanged.
+
+**Not fixed — the honest remaining gap.** `ENTITY_TYPE_PERMISSIONS` only covers the four entity types
+`globalSearch()` already knows about. `SearchIndex` is populated by `indexContent()` for **any** entityType
+any module chooses to index (`module` is a free string field) — any entity type not yet enumerated in this
+map is treated as ungated by default, a real if narrower G-6 gap. No exhaustive audit was performed of
+every indexed entity type across all ~40 modules to confirm each access-controlled record type that gets
+indexed has a corresponding permission gate registered here.

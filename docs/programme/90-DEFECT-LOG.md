@@ -2115,3 +2115,29 @@ bypass quota entirely) was identified but not fixed here, since it is a second, 
 own considerations (should a version's size count against the SAME quota as a new file, or a distinct
 "version storage" allocation? — a product decision this phase should not make unilaterally). Filed here so
 it is not silently left unaddressed.
+
+### D074 · 🟢 LOW · jscpd (v5.0.14, Rust CLI) failed to detect a verified byte-identical 60-line duplicate — root cause not found, tool not used for L06
+
+Found while building L06 (Duplication gate). `npx jscpd` ran successfully against unierp-api's 46
+modules and reported plausible-looking real findings (345 clones, 234 cross-module at a 40-line
+threshold) — but when a byte-identical 60-line block was deliberately copy-pasted from
+`hr.service.ts` into `people.service.ts` (confirmed via `diff` returning zero output), jscpd failed
+to report it as a clone even scoped to just those two files at `--min-lines 5 --min-tokens 10`
+(the loosest reasonable settings). `.gitignore` handling, a stale cache directory, and file-format
+detection were checked directly and none explained it.
+
+**How it was caught:** the break/restore step of L06's own protocol — proving the gate can fail is
+what surfaced that the underlying detector couldn't be trusted to catch the exact scenario named in
+the exit criterion.
+
+**Not fixed — jscpd was not used.** Rather than ship a duplication gate depending on a third-party
+binary whose detection behavior could not be verified end-to-end, L06's `check-duplication.mjs` was
+built as a self-contained, deterministic sliding-window hash detector instead (see L06's own
+evidence file, `evidence/l06-evidence.txt`), proven correct via the same break/restore scenario that
+exposed jscpd's gap.
+
+**Not fully investigated:** the actual root cause inside jscpd 5.0.14's Rust implementation. If a
+future phase wants industry-standard AST-aware clone detection (this session's hand-rolled detector
+is deliberately conservative — near-verbatim only, no semantic equivalence), it would need to
+either find and fix jscpd's detection gap, pin an older/different jscpd version and re-verify, or
+evaluate an alternative tool with the same break/restore discipline before trusting it.

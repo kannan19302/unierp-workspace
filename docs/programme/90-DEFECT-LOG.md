@@ -2500,3 +2500,42 @@ dedicated audit of `ap-deep.service.ts` and `finance-operations.service.ts` (bot
 `recordPayment|createPayment|applyPayment` search that led to this fix) for the same float-vs-Decimal
 class of bug is a high-priority follow-up, following this defect's own precedent that assuming
 internal consistency is unsafe without inspection.
+
+### D086 · 🔴 CRITICAL · InterCompanyService.autoMatchTransactions() falsely auto-matched intercompany invoices/schedules up to a full cent apart — same epsilon-tolerant float class of bug as D084/D085, on the reconciliation path
+
+Found while claiming and building E11 (Advanced finance), whose own exit criterion names
+"intercompany... reconciling to the GL" among its non-negotiables. `unierp-api/src/modules/advanced-
+finance/services/intercompany.service.ts`'s `autoMatchTransactions()` matched an AR invoice to an AP
+payment schedule as the same intercompany transaction via
+`Math.abs(Number(inv.totalAmount) - Number(sched.amount)) < 0.01` — an epsilon-tolerant float
+comparison, the third confirmed instance of this session's D084/D085 bug class (money converted to
+`Number`, compared with tolerance instead of exactness). Unlike D084/D085 where the consequence was a
+wrongly-refused or wrongly-accepted single transaction, here the consequence is a **false positive
+match**: two invoices/schedules that are genuinely different dollar amounts (differing by up to a full
+cent) get silently recorded as the same reconciled intercompany transaction, creating an incorrect
+`interCompanyTransaction` row and, downstream, an incorrect elimination journal entry against the GL —
+directly undermining this phase's own "reconciling to the GL" requirement.
+
+**How it was caught:** writing a FAIL-first test for a $5000.00 invoice and a $4999.995 payment
+schedule (a genuine half-cent difference, real distinct amounts) — the pre-existing code created an
+`interCompanyTransaction` matching them as if they were the same transaction.
+
+**Fixed:** `amtMatch` now constructs `Prisma.Decimal` for both sides and uses `.equals()` — exact
+equality, matching the pattern established in D084 and D085. Proven via break/restore (reverted to the
+epsilon-tolerant comparison, confirmed the false match reproduces, restored, confirmed 0 `BROKEN FOR
+PROOF` markers remain and 12/12 tests pass). Full regression: `src/modules/advanced-finance/` +
+`src/modules/finance/`, 630/630 real tests pass (2 pre-existing unrelated `@unerp/shared`
+collection failures, unchanged). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E11's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion (budgets, cost centres, allocations, consolidation, intercompany, deferred
+revenue, accruals, each reconciling to the GL) spans 47 service files in `advanced-finance/services/`.
+Only `autoMatchTransactions()`'s own amount-match check was audited and fixed. Other candidates spotted
+but NOT investigated in this pass: `budget-control.service.ts`'s tolerance-based budget-limit check
+(uses float arithmetic with an intentional configurable tolerance — plausibly correct-by-design rather
+than a bug, not distinguished either way here) and every other `Number(...)`-converted money field
+across `consolidation.service.ts`, `consolidation-deep.service.ts`, `consolidation-v2.service.ts`,
+`budget-deep.service.ts`, `budget-reallocation.service.ts`, and the remaining 40+ services in this
+module — this defect's own discovery, the third of its class this session, suggests a systematic sweep
+of every `Number(...)`-on-money conversion across `advanced-finance` (and the wider codebase) is now a
+higher-value follow-up than auditing one function at a time.

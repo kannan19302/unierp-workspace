@@ -1,0 +1,13 @@
+{
+  "totalViolations": 5,
+  "fileCount": 3,
+  "perFile": {
+    "src/modules/admin/automation-rule-engine.service.ts": 2,
+    "src/modules/admin/automation-rules.service.ts": 2,
+    "src/modules/admin/import-export.service.ts": 1
+  },
+  "scope": [
+    "src/modules/admin/**/*.ts"
+  ],
+  "recordedAt": "2026-08-12T03:56:45.250Z"
+}

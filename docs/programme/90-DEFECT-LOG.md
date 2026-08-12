@@ -2299,3 +2299,37 @@ line-split risks producing exactly the kind of shallow decomposition this sessio
 **Not fixed:** 260 of 261 oversized pages, including `connect/page.tsx`. The React component-test
 infrastructure gap for `unierp-web`. `scripts/check-page-decomposition.mjs --worst N` gives a real,
 measured, prioritised worklist.
+
+### D080 · 🔴 CRITICAL · unierp-api had no ESLint config at all — `npm run lint` referenced a file that did not exist anywhere in the repo
+
+Found while claiming and building L02 (Naming convention gate). `package.json`'s `lint` script
+(`eslint "{src,test}/**/*.ts"`) has presumably existed for a long time, but no `.eslintrc.*` or
+`eslint.config.(js|mjs|cjs)` file existed anywhere in `unierp-api` — confirmed directly: an
+unpinned `npx eslint` invocation against a real source file failed immediately with "ESLint
+couldn't find an eslint.config.(js|mjs|cjs) file." This means `npm run lint` has never actually
+linted anything in this repo; it fails at startup before checking a single file. If CI ever ran
+this script, it either (a) was never wired into a required CI check, (b) silently treated the
+immediate failure as acceptable, or (c) was never actually invoked — any of which is the same
+class of finding as D013/D016/D017: a documented, apparently-enforced standard with no working
+mechanism behind it.
+
+**How it was caught:** L02's own protocol step of running the exit criterion's implied mechanism
+before building anything — the very first `npx eslint` invocation for this phase failed outright,
+not with naming-convention warnings but with a missing-config error.
+
+**Fixed:** a real `eslint.config.mjs` now exists, encoding the mechanically-checkable subset of
+`CODE_STANDARDS § 3` via `@typescript-eslint/naming-convention`. `eslint`, `typescript-eslint`,
+`@typescript-eslint/parser`, and `@typescript-eslint/eslint-plugin` added as real devDependencies
+(none were previously installed — the npx invocation was auto-installing an unpinned copy from
+the registry on every invocation, itself a supply-chain risk this fix removes).
+
+**Not fully investigated:**
+1. Whether this SAME pattern (a `lint` script referencing a config that doesn't exist) is present
+   in any of the other 29 repos in this polyrepo — not swept for platform-wide in this pass.
+2. Type-aware naming-convention linting (needed to distinguish a boolean variable from any other)
+   OOMs across the FULL `unierp-api` repo even with an 8GB heap, and proved unreliable to invoke
+   correctly at even a 6-module scope in this environment — L02's own baseline is scoped to a
+   single module (`admin`, 30 files, 5 real violations found) as a result. Extending real coverage
+   to more of the repo needs either more memory/time budget than this session had, or a
+   non-type-aware approximation of the boolean-naming rule that trades some accuracy for
+   tractability.

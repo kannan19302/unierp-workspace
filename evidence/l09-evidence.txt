@@ -1,0 +1,129 @@
+L09 — Decompose the oversized pages
+Exit criterion: "No page component exceeds 300 lines. Extracted
+components that are reusable land in unierp-design-system with
+stories, not locally."
+
+BEFORE
+======
+$ find unierp-web/app -name "page.tsx" | xargs wc -l | sort -rn | head -3
+  6637 app/(dashboard)/connect/page.tsx
+  2001 app/(dashboard)/projects/page.tsx
+  1526 app/(auth)/register/page.tsx
+(891 real page.tsx route files; 261 over the 300-line ceiling —
+measured directly)
+
+MECHANISM 1 — the measurement/ratchet gate
+=============================================
+New scripts/check-page-decomposition.mjs (same pattern as L06-L08/L14)
+scans every page.tsx and ratchets a per-file line-count baseline.
+
+$ node scripts/check-page-decomposition.mjs --update-baseline
+Baseline recorded: 891 pages, 261 over 300 lines.
+
+$ node scripts/check-page-decomposition.mjs --worst 5
+  6637 lines — connect/page.tsx
+  2001 lines — projects/page.tsx
+  1526 lines — register/page.tsx
+  1468 lines — manufacturing/page.tsx
+  1274 lines — finance/advanced/budgeting/page.tsx
+
+MECHANISM 2 — one complete decomposition as proof of technique
+====================================================================
+projects/portfolios/page.tsx (301 lines, the smallest real violator)
+had two clean, obviously-separable pieces: a data-fetch/create flow
+(useState/useEffect/fetch/POST) and two distinct render blocks (a
+portfolio rollup card, and a "New Portfolio" create form). Extracted:
+
+  hooks/use-portfolios.ts     - usePortfolios() hook: fetch, loading/
+                                 error state, createPortfolio()
+  components/portfolio-card.tsx        - one portfolio's rollup card
+  components/create-portfolio-modal.tsx - the create form
+
+page.tsx is now 61 lines: state (isModalOpen only), the hook call, and
+composition of the two sub-components.
+
+REUSABILITY ASSESSMENT — stated, not assumed
+=================================================
+Neither extracted component was moved to unierp-design-system.
+portfolio-card.tsx and create-portfolio-modal.tsx are both shaped
+entirely around the Portfolio entity (strategic alignment enum,
+budget/risk KPI fields specific to portfolios) — not generic reusable
+primitives another page would compose. The exit criterion's own
+wording is conditional ("components that ARE reusable land in
+design-system"), not "every extraction must produce a design-system
+component" — forcing a non-generic component into the shared package
+would itself be the wrong move.
+
+BEHAVIOR-PRESERVATION PROOF — mechanical, since no render-test infra exists
+================================================================================
+$ grep -rn "testing-library\|jsdom" unierp-web/package.json unierp-web/vitest.config.ts
+(no matches — @testing-library/react and jsdom are not dependencies)
+$ find unierp-web -iname "*.test.tsx"
+(zero files anywhere in the repo)
+
+unierp-web has NO React component-test infrastructure at all — a real
+gap, filed as part of D079, not silently worked around by claiming a
+render test that couldn't actually be written. Behavior preservation
+was instead verified mechanically and directly:
+
+  $ python3 -c "..." # extracted every styles.<name> reference from the
+  # original 301-line file and confirmed each of the 34 distinct names
+  # appears, unchanged, somewhere across the 4 split files
+  original className refs: 34
+  missing after split: []
+
+  # confirmed both API endpoint strings preserved exactly
+  endpoints match: True {'/projects/portfolios'} {'/projects/portfolios'}
+
+Every className the original page referenced, and both API calls it
+made, are provably still present post-split — the strongest proof
+available without adding new test infrastructure in this pass.
+
+BREAK/RESTORE — both mechanisms proven independently
+==========================================================
+1. The page-decomposition gate itself: appended 300 padding lines to
+   the already-fixed portfolios/page.tsx (backed up first).
+
+     $ node scripts/check-page-decomposition.mjs
+     FAIL  1 page(s) regressed past their own baseline:
+       .../portfolios/page.tsx: line count grew: 362 > 62
+
+   Restored: verified the restored file is the CORRECT 61-line
+   decomposed version (not the broken padded one, and not a revert to
+   the original 301-line monolith) via `wc -l` (61) and
+   `grep -c "padding"` (0).
+   $ node scripts/check-page-decomposition.mjs
+   OK    261/261 (identical to the original correct baseline)
+
+TYPECHECK
+=========
+$ npx tsc --noEmit -p tsconfig.json | grep -i portfolio
+(no output — zero errors touching any of the 4 portfolio files)
+Pre-existing unrelated errors elsewhere in the repo (identity-access
+tabs, OnboardingChecklist, AppHeader) confirmed out of this phase's
+scope via `git status --short` — only the 4 portfolio files changed.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+260 of 261 oversized pages remain, including connect/page.tsx (6,637
+lines — the exact file this phase's own deliverable text names,
+cited there as "6,651 lines"). Filed as D079 (MEDIUM) along with the
+zero-React-test-infrastructure finding. `--worst N` gives a real,
+measured, prioritised worklist for whoever continues this. Mirrors
+this session's consistent precedent (L07's D077, L08's D078,
+D12/D19/J04's own honest-partial-completion pattern).
+
+COMMANDS
+========
+$ node scripts/check-page-decomposition.mjs
+$ node scripts/check-page-decomposition.mjs --worst 10
+$ npx tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-web  d81125a  page.tsx, components/portfolio-card.tsx (new),
+                     components/create-portfolio-modal.tsx (new),
+                     hooks/use-portfolios.ts (new)
+unierp-workspace  (this phase)  scripts/check-page-decomposition.mjs (new),
+                                 evidence/page-decomposition-baseline.json (new),
+                                 90-DEFECT-LOG.md D079

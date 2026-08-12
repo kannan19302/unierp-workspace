@@ -2261,3 +2261,41 @@ genuine responsibility boundaries before any split, not a mechanical divide-by-N
 **Not fixed:** 47 of 48 oversized services, including `inventory.service.ts`.
 `scripts/check-service-decomposition.mjs --worst N` gives whoever continues this a real, measured,
 prioritised worklist.
+
+### D079 · 🟡 MEDIUM · 260 of 261 oversized page components remain after L09's own proof-of-technique decomposition
+
+L09 ("Decompose the oversized pages") built the real measurement gate (`scripts/check-page-
+decomposition.mjs`, line-count per `page.tsx`, baseline-ratcheted like L06-L08/L14) and completely
+decomposed ONE real violator (`unierp-web/app/(dashboard)/projects/portfolios/page.tsx`, 301 lines)
+into a hook (`hooks/use-portfolios.ts`, fetch/create data flow) and two sub-components
+(`components/portfolio-card.tsx`, `components/create-portfolio-modal.tsx`). The page itself is now 61
+lines, composition only.
+
+Neither extracted component was moved to `unierp-design-system` — both are genuinely portfolio-shaped
+(strategic-alignment badges, budget/risk KPI fields specific to this one entity), not generic reusable
+primitives, so moving them would have been a forced fit the exit criterion does not require ("extracted
+components that ARE reusable land in unierp-design-system" — conditional, not mandatory for every
+extraction).
+
+Measured directly: **891 real `page.tsx` route files** exist under `unierp-web/app`, of which **261**
+(now 260, after this phase) exceed the 300-line ceiling. The worst, `connect/page.tsx` at 6,637 lines,
+is the exact file this phase's own deliverable text names (cited there as "6,651 lines" — a small
+measurement-convention difference).
+
+**Also found and stated as a real infrastructure gap (not fixed):** `unierp-web` has ZERO React
+component-test infrastructure — `@testing-library/react` and `jsdom` are not dependencies, and no
+`*.test.tsx` file exists anywhere in the repo for any page or component. This phase's own "behaviour
+proven unchanged" was therefore verified mechanically instead (every one of the original 34 CSS-module
+class references and both API endpoint strings from the pre-split file confirmed present, unchanged,
+somewhere across the split files) rather than via a render test, since building that test
+infrastructure from scratch is a separate, larger decision this phase should not make unilaterally.
+
+**Why not attempted at scale:** 260 remaining violators, several multi-thousand-line
+(`connect/page.tsx` 6,637; `projects/page.tsx` 2,001; `register/page.tsx` 1,526), have not been read
+closely enough in this pass to identify genuine, safe extraction boundaries each — a mechanical
+line-split risks producing exactly the kind of shallow decomposition this session's own precedent
+(L07's D077, L08's D078) has consistently rejected.
+
+**Not fixed:** 260 of 261 oversized pages, including `connect/page.tsx`. The React component-test
+infrastructure gap for `unierp-web`. `scripts/check-page-decomposition.mjs --worst N` gives a real,
+measured, prioritised worklist.

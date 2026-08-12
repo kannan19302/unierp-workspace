@@ -4819,3 +4819,45 @@ deliberately left as-is (the same judgment already applied to J25's rehearsal-fr
 No representative dataset exists or was seeded. A genuine follow-up needs: the k6 binary and a reachable
 deployment; the remaining 4 scenario files; a realistically-sized seeded dataset; and wiring onto push/PR
 once a live target genuinely exists.
+
+### D140 · 🔴 CRITICAL · 5 of 7 documented user journeys had zero E2E test coverage, and 10 real existing E2E specs had never been connected back to the journey list they were meant to prove — nothing checked either direction
+
+Found while claiming and building J19 (End-to-end journey suite), whose exit criterion is: "Every documented
+journey has an E2E test. An undocumented journey is either documented or removed." Extracted the 7 journeys
+named in `docs/ai/APP_FLOW.md` (A–G: Onboarding, Daily sign-in, The universal record lifecycle, Approval
+workflow, Frontline mobile, AI Copilot, Extending without forking) and cross-referenced them against all 11
+existing `e2e/journeys/*.spec.ts` files in `unierp-web`. Found none of them corresponded by name or intent to
+journeys A, B, D, E, or F — the existing suite covers module-specific CRUD flows (real instances of journey
+C's generic pattern) and three cross-cutting security/lifecycle tests (tenant isolation, the plane-2 admin
+boundary, offboarding — real tests of `APP_FLOW.md § 11` behavioural rules, not named journeys). Only
+`builder.spec.ts` was a genuine, direct match for a named journey (G). 5 of 7 documented journeys had zero
+dedicated coverage, and 10 real spec files had never been connected back to the journey list — both halves of
+the exit criterion genuinely unmet.
+
+**Fixed (partially — see release reason below):** added `scripts/check-e2e-journey-coverage.mjs`, which
+parses `APP_FLOW.md`'s journey headings directly from the doc and checks a committed manifest
+(`e2e/journey-coverage.json`) mapping each to real spec files — failing if a journey has no mapped spec, a
+mapped spec doesn't exist, or a real spec file is referenced by nothing. Cross-cutting-rule specs are
+explicitly allowlisted with a stated reason rather than force-mapped; Journey E (frontline mobile) is marked
+`outOfScope` for this web suite with a stated reason (needs its own coverage in `unierp-mobile`). Added a
+real new spec, `daily-sign-in.spec.ts`, covering Journey B's plain email/password success and 401
+(no-account-disclosure) outcomes, reducing the real coverage gap from 5 journeys to 3. Proven via a genuine
+FAIL-first result (the gate's own first run against the real, unmodified repo found the real 5-journey gap,
+not a staged one) and break/restore against the live gate: pointed Journey G's mapping at a nonexistent
+file, confirmed the gate caught both the broken mapping AND the resulting orphaned real spec in the same
+break, restored, confirmed the honest 3-gap state returns exactly. Typecheck: no errors attributable to the
+new files.
+
+**Released, not finished — the gate itself still, correctly, reports 3 genuine failures.** Journeys A
+(Onboarding), D (Approval workflow), and F (AI Copilot) genuinely have zero E2E coverage — writing real,
+trustworthy Playwright specs for these needs a live running app and backend to prove against, which this
+session has neither. Journey B's new coverage is real but partial — only the plain success/401 paths are
+tested; the documented MFA, OAuth/SSO, account-lockout, tenant-suspended, and forgot-password branches remain
+entirely untested, named explicitly rather than implied covered. The new gate is pure static analysis and
+needs no live server, but was deliberately not wired into `unierp-web`'s live CI in this pass — doing so
+would correctly turn CI red for every future push/PR until the 3 remaining journeys are covered, a real,
+consequential action on a live repository's whole contributor workflow that this session chose not to take
+unilaterally, the same judgment already applied to several gates this session (though this one differs: the
+failure here is genuine missing coverage, not missing infrastructure). "Tagged by criticality" was not
+addressed. No spec in this suite has actually been executed — this environment has no running `unierp-web`
+instance to run Playwright against.

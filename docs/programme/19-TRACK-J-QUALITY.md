@@ -65,7 +65,7 @@ truthful without its J phases.
 | **J15** | Data-volume testing | J14, A03 | Every module verified at 10× expected volume, with N+1 detection | No N+1 query on any list or detail path, asserted by a query-count test. Performance holds at 10× data | OPEN |
 | **J16** | Multi-tenant noisy-neighbour testing | A20, J14 | Adversarial load from one tenant while measuring another's SLO | One tenant's abusive load leaves another tenant's p95 within SLO. This is the test that makes multi-tenancy a promise rather than a hope (**G-13**) | OPEN |
 | **J17** | Migration and upgrade testing | A03, J06 | Every migration tested forward and backward against production-shaped data, with lock and duration measurement | No migration locks a large table beyond its stated budget. `check-migration-safety.mjs` blocking. A release upgrade is rehearsed from the previous train | OPEN |
-| **J18** | Outbox, idempotency and eventual-consistency testing | E28 | Duplicate delivery, out-of-order delivery, dead-letter handling and replay all tested | A duplicated event produces no duplicated effect. A dead-lettered event replays to a correct outcome | WIP |
+| **J18** | Outbox, idempotency and eventual-consistency testing | E28 | Duplicate delivery, out-of-order delivery, dead-letter handling and replay all tested | A duplicated event produces no duplicated effect. A dead-lettered event replays to a correct outcome | DONE |
 
 ---
 

@@ -1,0 +1,22 @@
+{
+  "totalViolations": 22,
+  "fileCount": 14,
+  "filesScanned": 2095,
+  "perFile": {
+    "src/common/pipes/zod-validation.pipe.ts": 1,
+    "src/common/services/import.service.ts": 2,
+    "src/modules/admin/platform.service.ts": 1,
+    "src/modules/advanced-hr/advanced-hr.service.ts": 2,
+    "src/modules/ai/ai.service.ts": 1,
+    "src/modules/analytics/analytics-enterprise.service.ts": 1,
+    "src/modules/blockchain/services/blockchain-sync.service.ts": 1,
+    "src/modules/communication/communication.service.ts": 1,
+    "src/modules/ecommerce/payments/stripe-payment-gateway.service.ts": 2,
+    "src/modules/ext-gateway/ext-callback.controller.ts": 1,
+    "src/modules/ext-gateway/ext-proxy.service.ts": 1,
+    "src/modules/hr-advanced/hr-global-payroll-deep.service.ts": 1,
+    "src/modules/search/search.service.ts": 1,
+    "src/platform/v1/plans.controller.ts": 6
+  },
+  "recordedAt": "2026-08-12T04:31:32.290Z"
+}

@@ -1,0 +1,144 @@
+E42 — Statutory and regulatory reporting per market
+Deliverable: "The legally required reports per supported jurisdiction,
+versioned by effective date, with a documented update process for
+annual changes."
+Exit: "Each supported market's mandatory filings are produced and
+validated against that jurisdiction's specification. Unsupported
+markets are stated explicitly rather than implied."
+
+THE INVESTIGATION
+==================
+Investigated the exit criterion's own named feature directly:
+TaxEngineService.computeTaxReturn() (src/modules/advanced-finance/
+services/tax-engine.service.ts), reachable via GET
+/tax-returns/compute?filingType=... in advanced-finance.controller.ts,
+gated by "finance.tax.compute".
+
+The method took `filingType: string` with NO validation of any kind -
+no whitelist, no switch, no regex. "GSTR-1", "US-SALES-TAX", or a typo
+like "XYZ-999" all produced the byte-identical generic aggregate
+(sum of invoice.taxAmount minus sum of purchaseOrder.taxAmount over
+the period), differing only in the label string stored on the
+TaxFiling row and echoed back. No jurisdiction-specific field mapping,
+box numbers, or form structure existed for any named filing type - a
+filing labeled "GSTR-1" (India's GST return) was computed with the
+exact same logic as one labeled with a made-up string.
+
+No enumerated "supported jurisdictions/markets" concept existed
+anywhere in this service or its siblings (tax-jurisdiction-lookup.
+service.ts, global-tax-deep.service.ts, tax-provisioning.service.ts) -
+everything was implicitly treated as supported as long as the caller
+supplied a string.
+
+THE BUG, CONFIRMED
+====================
+This directly and provably violates the second half of E42's own exit
+criterion: "Unsupported markets are stated explicitly rather than
+implied." Calling this endpoint for a jurisdiction this system has
+never implemented did not state that fact - it silently returned a
+DRAFT filing record that looked exactly as valid as a real GSTR-1
+filing, with no distinguishing signal anywhere in the response.
+
+MECHANISM (this phase's fix)
+====================================
+Added SUPPORTED_FILING_SPECS, an explicit, named registry mapping each
+real filing type this system can actually produce to its jurisdiction
+and the fields that jurisdiction's authority requires on the filing
+(currently GSTR-1/IN and US-SALES-TAX/US - the two filing types this
+codebase's own data model, a flat output/input tax aggregate, can
+honestly support without a schema migration for real box-by-box
+filing structure).
+
+computeTaxReturn() now:
+  - rejects any filingType not in the registry with a BadRequestException
+    naming the supported list explicitly, before touching the database
+    or creating any TaxFiling row;
+  - validates each of the matched spec's requiredFields is a finite
+    number before persisting, refusing to file an invalid return;
+  - stamps the resolved jurisdiction onto both the persisted payload
+    and the returned response, so a caller can see which market's
+    specification the filing was actually validated against.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/advanced-finance/tests/tax-engine.compute-tax-return.service.spec.ts
+3 new tests:
+  - "computes a real filing for a supported filing type"
+  - "E42: rejects an unsupported filing type instead of silently
+    computing a generic return"
+  - "E42: an unsupported filing type never creates a TaxFiling row"
+All 3 pass against the fix.
+
+BREAK/RESTORE
+=============
+Reverted the spec lookup to fall back to a synthetic
+{ jurisdiction: "UNKNOWN", requiredFields: [] } for any unmatched
+filingType (marked "BROKEN FOR PROOF") - reproducing "any string is
+silently accepted as a valid filing."
+
+  $ npx vitest run tax-engine.compute-tax-return.service.spec.ts
+  2 failed | 1 passed (3)
+  (exactly the 2 new rejection tests - reproducing the original
+  silent-acceptance bug on purpose; the unsupported filingType
+  resolved a filing and created a TaxFiling row instead of rejecting)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/advanced-finance/services/tax-engine.service.ts
+  0
+  $ npx vitest run tax-engine.compute-tax-return.service.spec.ts
+  3/3 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/advanced-finance/
+Test Files  33 passed, 1 failed (34)
+     Tests  472 passed (472)
+
+The 1 failed suite (advanced-finance.controller.spec.ts) fails at
+collection time with "Cannot find package '@unerp/shared'" - the
+same pre-existing, environment-wide @kannan19302/auth package-
+resolution bug confirmed independently multiple times earlier this
+session (rbac.guard.spec.ts and others), unrelated to and unchanged
+by this phase. All 472 real test-level assertions pass cleanly.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from every prior phase this session
+(same @kannan19302/shared resolution class of issue - vendor.service.ts,
+provider-registry.service.ts x2, industry-suite-catalogue.service.ts -
+none touched by this phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D113 (CRITICAL). Not fixed in this pass:
+  - Only 2 filing types (GSTR-1/IN, US-SALES-TAX/US) are registered as
+    "supported." Real GSTR-1 filings require far more structure than a
+    single output/input tax aggregate - B2B/B2C invoice-level tables,
+    HSN/SAC summaries, place-of-supply breakdowns. Neither registered
+    spec validates against the real, full jurisdiction specification;
+    they validate only that the generic aggregate's fields are present
+    and finite. This closes the "state unsupported markets explicitly"
+    half of the exit criterion but does NOT close the "validated
+    against that jurisdiction's specification" half for the two
+    markets nominally marked supported - that requires jurisdiction-
+    specific field-level schemas (a genuine content/schema-modeling
+    project per market, not a single-session code change).
+  - No versioning of filing specs by effective date, and no documented
+    annual-update process - the deliverable's other two named
+    requirements were not attempted in this pass.
+  - Every other market (EU VAT, UK VAT, most others) remains entirely
+    unimplemented, which this fix now states explicitly via rejection
+    rather than silently fabricating a filing for them - but building
+    those real specs is out of scope for this pass.
+
+COMMANDS
+========
+$ npx vitest run src/modules/advanced-finance/tests/tax-engine.compute-tax-return.service.spec.ts
+$ npx vitest run src/modules/advanced-finance/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/advanced-finance/services/tax-engine.service.ts
+
+COMMITS
+=======
+unierp-api  068869b  tax-engine.service.ts,
+                     tests/tax-engine.compute-tax-return.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D113

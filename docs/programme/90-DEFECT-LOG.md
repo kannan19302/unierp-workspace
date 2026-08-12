@@ -3795,3 +3795,44 @@ any module chooses to index (`module` is a free string field) — any entity typ
 map is treated as ungated by default, a real if narrower G-6 gap. No exhaustive audit was performed of
 every indexed entity type across all ~40 modules to confirm each access-controlled record type that gets
 indexed has a corresponding permission gate registered here.
+
+### D113 · 🔴 CRITICAL · `computeTaxReturn()` accepted any filing-type string with zero validation, producing an identical generic aggregate regardless of the requested jurisdiction — an unsupported market's filing was silently fabricated as if it were a validated real return
+
+Found while claiming and building E42 (Statutory and regulatory reporting per market), whose exit criterion
+is: "Each supported market's mandatory filings are produced and validated against that jurisdiction's
+specification. Unsupported markets are stated explicitly rather than implied." `TaxEngineService.
+computeTaxReturn()` (`src/modules/advanced-finance/services/tax-engine.service.ts`), reachable via
+`GET /tax-returns/compute?filingType=...`, took `filingType: string` with **no validation of any kind** —
+no whitelist, no switch, no regex. `"GSTR-1"`, `"US-SALES-TAX"`, or a typo like `"XYZ-999"` all produced the
+byte-identical generic aggregate (sum of `invoice.taxAmount` minus sum of `purchaseOrder.taxAmount` over the
+period), differing only in the label string stored on the `TaxFiling` row and echoed back — no
+jurisdiction-specific field mapping, box numbers, or form structure existed for any named filing type at
+all. No enumerated "supported jurisdictions" concept existed anywhere in this service or its siblings —
+everything was implicitly treated as supported as long as the caller supplied a string, directly violating
+the exit criterion's own second half: an unsupported market was never stated as unsupported, it was
+silently implied to be a real, validated filing.
+
+**Fixed:** added `SUPPORTED_FILING_SPECS`, an explicit, named registry mapping each real filing type this
+system can actually produce to its jurisdiction and the fields that jurisdiction's authority requires
+(currently `GSTR-1`/IN and `US-SALES-TAX`/US — the two filing types this codebase's flat output/input tax
+aggregate can honestly support without a schema migration for real box-by-box filing structure).
+`computeTaxReturn()` now rejects any unmatched `filingType` with a `BadRequestException` naming the
+supported list explicitly, before touching the database or creating any `TaxFiling` row; validates each
+matched spec's required fields are finite numbers before persisting; and stamps the resolved jurisdiction
+onto both the persisted payload and the response. Proven via break/restore (reverted the spec lookup to
+fall back to a synthetic `{jurisdiction:"UNKNOWN", requiredFields:[]}` for any unmatched type, marked
+`BROKEN FOR PROOF`, confirmed the exact 2 new rejection tests reproduce the original silent-acceptance bug,
+restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 3/3 new tests pass). Full regression:
+`src/modules/advanced-finance/`, 472/472 real tests pass (1 pre-existing, unrelated `@unerp/shared`
+collection-time failure in `advanced-finance.controller.spec.ts`, the same environment-wide
+`@kannan19302/auth` resolution bug confirmed independently multiple times earlier this session). Typecheck:
+same 4 pre-existing unrelated errors, unchanged.
+
+**Not fixed — the honest remaining gap.** Only 2 filing types are registered as "supported," and neither
+registered spec validates against the REAL full jurisdiction specification (real GSTR-1 requires B2B/B2C
+invoice-level tables, HSN/SAC summaries, place-of-supply breakdowns — far more than a single aggregate) —
+this fix closes the "state unsupported markets explicitly" half of the exit criterion but not the "validated
+against that jurisdiction's specification" half for the two markets nominally marked supported, which needs
+real jurisdiction-specific field-level schemas, a content/schema-modeling project per market. Also not
+attempted: versioning of filing specs by effective date, and a documented annual-update process — the
+deliverable's other two named requirements.

@@ -69,12 +69,31 @@ const AS_JSON = process.argv.includes("--json");
 // running rather than a gate that passes — worse, because it blocks everything
 // while proving nothing. Source is a faithful proxy in that state: it is the
 // same tree the consumer compiles against through the workspace link.
-const DIST = (name) => {
-  const short = name.replace("@kannan19302/", "");
+/**
+ * J05/D136: PROVIDERS and CONSUMERS below used to name monorepo paths
+ * (`apps/web`, `packages/sdk`) — this harness's own docstring says it was
+ * built for BEFORE "the Phase 3 split" into 30 separate repositories.
+ * After that split, none of those paths exist in this repo any more
+ * (`apps/` and `packages/` are empty here, confirmed by direct listing) —
+ * the harness silently found zero providers and zero consumers on every
+ * run, satisfying nothing, wired into no CI workflow anywhere (confirmed:
+ * `grep -rln "cdc-harness" .github/workflows` returns zero matches) and
+ * with zero `cdc/expectations.json` ever committed in any of the 30
+ * repos. A real, sophisticated mechanism that had simply never been
+ * connected to the polyrepo it now runs against.
+ *
+ * Every sibling repo this workspace's own AGENTS.md/README documents is
+ * checked out beside this one on disk (the same layout policy-gate.yml
+ * already assumes for its own cross-repo gates) — `../unierp-contracts`,
+ * `../unierp-web`, etc. — so providers and consumers are named as sibling
+ * directories instead of monorepo subpaths.
+ */
+const SIBLING = (repo) => `../${repo}`;
+
+const DIST = (repo) => {
   const candidates = [
-    { dir: `node_modules/${name}`, entry: "dist/index.d.ts" },
-    { dir: `packages/${short}`, entry: "dist/index.d.ts" },
-    { dir: `packages/${short}`, entry: "src/index.ts" },
+    { dir: SIBLING(repo), entry: "dist/index.d.ts" },
+    { dir: SIBLING(repo), entry: "src/index.ts" },
   ];
   return (
     candidates.find((c) => fs.existsSync(path.join(ROOT, c.dir, c.entry))) ??
@@ -83,46 +102,46 @@ const DIST = (name) => {
 };
 
 const PROVIDERS = {
-  "@kannan19302/contracts": DIST("@kannan19302/contracts"),
-  "@kannan19302/kernel": DIST("@kannan19302/kernel"),
-  "@kannan19302/sdk": DIST("@kannan19302/sdk"),
-  "@kannan19302/extension-api": DIST("@kannan19302/extension-api"),
-  "@kannan19302/sandbox": DIST("@kannan19302/sandbox"),
-  "@kannan19302/framework": DIST("@kannan19302/framework"),
-  "@kannan19302/database": DIST("@kannan19302/database"),
-  "@kannan19302/shared": DIST("@kannan19302/shared"),
-  "@kannan19302/auth": DIST("@kannan19302/auth"),
-  "@kannan19302/ui": { ...DIST("@kannan19302/ui"), subpathRoot: "dist" },
+  "@kannan19302/contracts": DIST("unierp-contracts"),
+  "@kannan19302/kernel": DIST("unierp-kernel"),
+  "@kannan19302/sdk": DIST("unierp-sdk"),
+  "@kannan19302/extension-api": DIST("unierp-extension-api"),
+  "@kannan19302/sandbox": DIST("unierp-sandbox"),
+  "@kannan19302/framework": DIST("unierp-framework"),
+  "@kannan19302/database": DIST("unierp-data"),
+  "@kannan19302/shared": DIST("unierp-shared"),
+  "@kannan19302/auth": DIST("unierp-auth"),
+  "@kannan19302/ui": { ...DIST("unierp-design-system"), subpathRoot: "dist" },
 };
 
 /** Consumers: anything that compiles against a provider's published artifact. */
 const CONSUMERS = [
-  { name: "@kannan19302/web", dir: "apps/web", roots: ["app", "src"] },
-  { name: "@kannan19302/console", dir: "apps/console", roots: ["app", "src"] },
-  { name: "@kannan19302/developer", dir: "apps/developer", roots: ["src"] },
-  { name: "@kannan19302/api", dir: "apps/api", roots: ["src"] },
-  { name: "@kannan19302/idp", dir: "apps/idp", roots: ["src"] },
-  { name: "@kannan19302/framework", dir: "packages/framework", roots: ["src"] },
-  { name: "@kannan19302/sdk", dir: "packages/sdk", roots: ["src"] },
-  { name: "@kannan19302/kernel", dir: "packages/kernel", roots: ["src"] },
+  { name: "@kannan19302/web", dir: SIBLING("unierp-web"), roots: ["app", "src"] },
+  { name: "@kannan19302/console", dir: SIBLING("unierp-console"), roots: ["app", "src"] },
+  { name: "@kannan19302/developer", dir: SIBLING("unierp-developer"), roots: ["src", "app"] },
+  { name: "@kannan19302/api", dir: SIBLING("unierp-api"), roots: ["src"] },
+  { name: "@kannan19302/idp", dir: SIBLING("unierp-idp"), roots: ["src"] },
+  { name: "@kannan19302/framework", dir: SIBLING("unierp-framework"), roots: ["src"] },
+  { name: "@kannan19302/sdk", dir: SIBLING("unierp-sdk"), roots: ["src"] },
+  { name: "@kannan19302/kernel", dir: SIBLING("unierp-kernel"), roots: ["src"] },
   {
     name: "@kannan19302/ext-real-estate",
-    dir: "apps/extensions/real-estate",
+    dir: SIBLING("unierp-extensions") + "/real-estate",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-education",
-    dir: "apps/extensions/education",
+    dir: SIBLING("unierp-extensions") + "/education",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-healthcare",
-    dir: "apps/extensions/healthcare",
+    dir: SIBLING("unierp-extensions") + "/healthcare",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-field-service",
-    dir: "apps/extensions/field-service",
+    dir: SIBLING("unierp-extensions") + "/field-service",
     roots: ["src"],
   },
 ];

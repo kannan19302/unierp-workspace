@@ -4358,3 +4358,49 @@ issued. `startExport()`'s `DataExportJob` rows are confirmed, via the same grep 
 ever processes them to completion — "complete export" (the deliverable's other named requirement) may itself
 be equally unfulfilled, not independently verified in this pass. "Assisted migration away" (the deliverable's
 third named requirement) was not investigated at all.
+
+### D127 · 🔴 CRITICAL · The published extension capability surface had an open index signature accepting any string key, and a duplicate, permissive, unused manifest schema sat alongside the real closed one — directly contradicting the "anything not granted is unreachable" contract partners compile against
+
+Found while claiming and building G01 (Extension API surface definition), whose exit criterion is: "Every
+capability is explicitly granted; anything not granted is unreachable, proven by test. A capability cannot be
+added without a version bump." Reading `unierp-extension-api`'s four source files found `capabilities.ts`
+genuinely well-built (a closed `SCOPES` enum, explicit rejection of wildcard grants, correct
+`effectiveScopes()` intersection logic), but `index.ts` — the file defining the actual capability object
+extension code receives — had two direct violations. First, `ExtensionApi` declared
+`[capability: string]: unknown` — an open index signature making every possible string key a type-checking
+member, the literal opposite of "anything not granted is unreachable"; the file's own preceding comment names
+the exact principle this violates ("the compatibility promise... is meaningless if the shape is `any`") while
+the code beneath it does exactly that. Second, a separate, older `ExtensionManifestSchema`/`ExtensionManifest`
+lived in the same file with `permissions: z.array(z.string())` (any string accepted, no closed enum),
+duplicating and contradicting the real, correct `ExtensionManifestV1Schema` (`capabilities.ts`, closed
+`ScopeSchema` enum) — confirmed via grep that `unierp-api`'s `extension-registry.service.ts` (the only real
+consumer found anywhere) validates exclusively against the correct one; the old one was never imported by
+anything, just exported from the public package as a trap for a future integrator.
+
+**Fixed:** closed `ExtensionApi` to only `log` (log:write) — the sole capability with a confirmed real
+host-function implementation anywhere in this codebase (confirmed by grep: no runtime binder exists for the
+other 5 `SCOPES` entries — data:read/write, http:fetch, jobs:schedule, events:subscribe — anywhere).
+Deliberately did not add fabricated typed members for those 5, since inventing a plausible-looking signature
+with no real implementation would itself be an unproven claim. Deleted `ExtensionManifestSchema`/
+`ExtensionManifest` entirely. Bumped `package.json` from 1.0.6 to 1.1.0 and added
+`scripts/check-capability-version-bump.mjs` — a CI gate comparing the live `SCOPES`/`ExtensionApi` surface
+(named members and whether an open index signature exists) against a committed snapshot
+(`capability-manifest.json`), failing if the surface changed without a version bump. Proven via break/restore
+against the real gate: temporarily reverted `package.json`'s version to 1.0.6 (matching the old snapshot)
+while keeping the fixed, closed `ExtensionApi` — the gate correctly failed ("surface changed but version
+matches the last recorded snapshot"); restored to 1.1.0 — passes again. Wired into `ci.yml`, safe since a
+passing baseline reflecting the fixed state is already committed. `npm run build` (tsc) compiles cleanly
+before and after. Confirmed via grep that `unierp-api` does not reference `ExtensionApi` anywhere today,
+consistent with no real sandbox runtime having ever wired this type to anything — no other repository was
+affected.
+
+**Not fixed — the honest remaining gap.** The exit criterion's "proven by test" is only partially satisfied —
+the version-bump gate itself is proven via break/restore, but no automated test proves an ungranted capability
+genuinely fails at type-check or runtime for an extension without the corresponding scope; this package has no
+test infrastructure at all (only a build script), and building one from scratch was out of this pass's scope.
+The deliverable names five verbs — "read, write, call, emit and render" — but only `log` (a form of "emit")
+has a real, confirmed capability; the other four have no host-function implementation anywhere, a
+substantially larger build than this pass's tractable scope (closing the type surface, killing the duplicate
+schema). This repo's version bump is local — `unierp-api`'s own dependency is still pinned to the published
+1.0.6 in its lockfile (confirmed via `node_modules/.pnpm`, not a workspace symlink); publishing 1.1.0 and
+bumping the consumer's dependency is a separate, deliberate step not attempted here.

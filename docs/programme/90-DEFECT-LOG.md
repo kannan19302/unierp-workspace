@@ -3679,3 +3679,46 @@ records are actually consulted anywhere to gate `runReport` access beyond the te
 built here — not investigated). This fix closes the specific, named exit-criterion scenario; the broader
 "ad-hoc report builder" feature remains largely a metadata CRUD surface without an interactive builder UI
 contract behind it.
+
+### D110 · 🔴 CRITICAL · ReportingDataDrilldownDeepService.executeDrilldown() returned the same three hardcoded fake rows for every call — a dashboard "drill-through" showed identical fabricated numbers regardless of which tile was clicked
+
+Found while claiming and building E37 (Dashboards for end users), whose own exit criterion names the
+exact feature this defect breaks: "A dashboard tile drills through to the filtered record list that
+produced it." `unierp-api/src/modules/reporting/reporting-data-drilldown-deep.service.ts`'s
+`executeDrilldown(tenantId, dto: { dimension, filterValue, metricKey })` — the API endpoint (`POST /
+reporting/data-drilldown-deep/execute`) a real dashboard tile click would call — never touched the
+database at all. It returned a literal, hardcoded array (`{label: "EMEA", value: 428500, growth:
+"+12.4%"}`, `"APAC"`, `"Americas"`) unconditionally, on every call, regardless of what `dimension`,
+`filterValue`, or entity was actually requested. Clicking any dashboard tile, for any tenant, on any
+metric, would show the identical three fabricated regions with the identical fabricated numbers — the
+sibling method `getDrilldownPaths()` was equally fabricated (two hardcoded path definitions, no database
+read), though `executeDrilldown` is the more severe half since it is what a live drill-through action
+actually invokes.
+
+**How it was caught:** reading `executeDrilldown()` in full; three literal, hardcoded rows returned
+unconditionally from a method that accepts filter parameters is self-evidently fabricated on inspection —
+no real query varies output would ever look like this.
+
+**Fixed:** `executeDrilldown()` now requires an `entity` parameter (the semantic-layer source the
+dashboard tile was built from — reusing the exact `ReportingEngineService.executeQuery()` infrastructure
+already proven correct in E33/E35/E46) and executes a real, filtered query
+(`filters: { [dimension]: filterValue }`), returning the actual matching records rather than fixed data.
+Rejects with `BadRequestException` if no source entity is given, instead of silently returning fabricated
+rows regardless. Proven via break/restore (reverted to the fabricated fixed-row return, confirmed all 3
+FAIL-first tests reproduce the exact original defect — identical `EMEA`/`APAC`/`Americas` output
+regardless of the requested dimension/filter, and no entity-required validation at all — restored,
+confirmed 0 `BROKEN FOR PROOF` markers remain, 4/4 tests pass, including one proving two different filter
+values now genuinely produce two different result sets). Full regression: `src/modules/reporting/`, all
+13 test files / 41 tests pass cleanly. Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fixed — `getDrilldownPaths()`'s own fabrication.** The sibling method returning two hardcoded fake
+drilldown-path definitions (`REGION → COUNTRY`, `PRODUCT_CATEGORY → SKU`) was read and confirmed equally
+fabricated but was **not fixed in this pass** — no `DrilldownPath`-style Prisma model exists to back a
+real implementation, and building one would require a schema migration, the same constraint blocking full
+fixes in D092/D095/D096/D100 this session. This is a genuinely lower-severity half of the same defect
+(a static list of *available* drilldown paths is less actively misleading than a live drill-through action
+returning fake numbers) and is filed as the honest remaining gap rather than attempted shallowly. Also not
+investigated: whether any real dashboard-tile UI in `unierp-web` actually calls this endpoint at all, or
+whether dashboards are rendered from an entirely separate, unaudited code path — this fix makes the
+endpoint itself correct but does not confirm end-to-end wiring from a rendered dashboard tile to this
+specific call.

@@ -1,0 +1,130 @@
+E37 — Dashboards for end users
+Deliverable: "Tenant-authored dashboards from governed metrics, with
+drill-through to records."
+Exit: "A dashboard tile drills through to the filtered record list
+that produced it."
+
+SCOPE NOTE
+==========
+Investigated the exit criterion's own named feature directly - drill-
+through - and found the API endpoint a real tile click would call
+(executeDrilldown) was completely fabricated: three hardcoded fake
+rows returned unconditionally on every call, regardless of what
+filter was requested. Fixed it to execute a real, filtered query
+against the semantic layer, proved via break/restore, and files the
+honest remaining scope (a sibling method with the same class of
+fabrication, and unverified end-to-end UI wiring).
+
+THE INVESTIGATION
+==================
+Read reporting-data-drilldown-deep.service.ts in full. Found:
+
+  async executeDrilldown(tenantId, dto: {dimension, filterValue, metricKey}) {
+    return {
+      dimension: dto.dimension, filterValue: dto.filterValue, metricKey: dto.metricKey,
+      results: [
+        { label: "EMEA", value: 428500, growth: "+12.4%" },
+        { label: "APAC", value: 312700, growth: "+8.1%" },
+        { label: "Americas", value: 615200, growth: "+19.7%" },
+      ],
+      executedAt: new Date().toISOString(),
+    };
+  }
+
+No database access anywhere - the three rows are literal, hardcoded,
+and returned regardless of the actual dimension/filterValue/entity
+requested. The sibling getDrilldownPaths() has the identical
+fabrication pattern (two hardcoded path definitions).
+
+THE BUG, CONFIRMED
+====================
+Clicking any dashboard tile, for any tenant, on any metric, would
+show the IDENTICAL three fabricated regions with the identical
+fabricated numbers - a drill-through that provably does not "drill
+through to the filtered record list that produced it," since no
+record list was ever consulted.
+
+MECHANISM (this phase's own fix)
+====================================
+executeDrilldown() now requires an entity parameter (the semantic-
+layer source the tile was built from) and executes a real query via
+ReportingEngineService.executeQuery() with filters: { [dimension]:
+filterValue } - reusing the exact infrastructure already proven
+correct in E33/E35/E46 - returning the actual matching records.
+Rejects with BadRequestException if no source entity is given.
+
+PROOF
+=====
+$ npx vitest run src/modules/reporting/tests/reporting-data-drilldown-deep.service.spec.ts
+
+3 new tests:
+  - "executes a real, filtered query against the drilled-into
+    dimension — not fabricated fixed rows"
+  - "a different filterValue produces genuinely different results,
+    proving the query is real"
+  - "rejects a drilldown with no source entity instead of returning
+    fabricated data"
+
+All 3 FAILED against the pre-existing code before the fix - confirmed
+the identical EMEA/APAC/Americas output regardless of the requested
+dimension/filter, and no entity-required validation. Real FAIL-first
+proof.
+All 3 PASS after the fix. 4/4 tests in the file pass (1 pre-existing
++ 3 new).
+
+BREAK/RESTORE
+=============
+Reverted executeDrilldown() to the fabricated fixed-row return (marked
+"BROKEN FOR PROOF").
+
+  $ npx vitest run reporting-data-drilldown-deep.service.spec.ts
+  3 failed | 1 passed (4)
+  (exactly the 3 new tests - reproducing the original fabrication on
+  purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" reporting-data-drilldown-deep.service.ts
+  (no matches — 0)
+  $ npx vitest run reporting-data-drilldown-deep.service.spec.ts
+  4/4 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/reporting/
+Test Files  13 passed (13)
+     Tests  41 passed (41)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E36 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D110 (CRITICAL). Not fixed in this pass:
+  - getDrilldownPaths()'s own fabrication (two hardcoded fake
+    drilldown-path definitions) - confirmed equally fabricated but
+    not fixed; no DrilldownPath-style Prisma model exists to back a
+    real implementation, requiring a schema migration (same
+    constraint as D092/D095/D096/D100). Genuinely lower severity than
+    the executeDrilldown fix (a static list of available paths is
+    less actively misleading than a live action returning fake
+    numbers).
+  - Whether any real dashboard-tile UI in unierp-web actually calls
+    this endpoint at all was not verified - this fix makes the
+    endpoint itself correct but does not confirm end-to-end wiring
+    from a rendered dashboard tile to this specific call.
+
+COMMANDS
+========
+$ npx vitest run src/modules/reporting/tests/reporting-data-drilldown-deep.service.spec.ts
+$ npx vitest run src/modules/reporting/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  6d6cf14  reporting-data-drilldown-deep.service.ts,
+                     reporting-data-drilldown-deep.controller.ts,
+                     reporting-data-drilldown-deep.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D110

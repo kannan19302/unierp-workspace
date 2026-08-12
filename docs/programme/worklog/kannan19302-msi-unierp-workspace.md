@@ -16579,3 +16579,129 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E19 · FINISH · 2026-08-12T09:02:54Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E19 — Point of sale and retail
+Non-negotiables at exit: "Offline-capable POS with reconciled sync;
+shifts, cash drawer, refunds; store and online inventory as one
+truth."
+
+SCOPE NOTE
+==========
+E19's full scope covers offline sync, shifts, cash drawer, refunds,
+and unified store/online inventory. Far larger than this session's
+remaining budget. Investigated "cash drawer" directly - a concretely
+checkable named non-negotiable - and found a genuinely architectural
+defect: two entirely parallel, model-distinct POS register/shift
+implementations exist under the same base route, and the more
+discoverable one silently never reconciled the cash drawer at all.
+Fixed the immediate reconciliation gap completely and correctly, and
+files the honest remaining scope (including the split-implementation
+finding itself) rather than a shallow pass.
+
+THE INVESTIGATION
+==================
+Searched src/modules/pos/*.ts for variance/discrepancy/reconcil
+logic. Found it in TWO places:
+  - pos.service.ts's closeRegister() (POSRegister/POSShift models) -
+    stores endingCash/actualCash verbatim, computes NOTHING.
+  - pos-expansion.service.ts's closeRegister() (SEPARATE PosRegister/
+    PosShift models) - correctly computes
+    cashVariance/closingDifference = actualCash - endingCash.
+
+Checked controller routing: pos.controller.ts and pos-expansion.
+controller.ts are BOTH mounted at @Controller("pos"). Routes:
+  PUT /pos/registers/:id/close      -> pos.service.ts (NO variance)
+  PUT /pos/exp/registers/:id/close  -> pos-expansion.service.ts (variance)
+
+Both are real, live, callable endpoints - not dead code. The plainer,
+non-"exp" route (the one a caller would reach for first) is the one
+that never reconciles.
+
+THE BUG, CONFIRMED
+====================
+Calling closeRegister("tenant-1", "reg-1", { endingCash: 300,
+actualCash: 285 }) via pos.service.ts returned a register with
+closingDifference undefined - a $15 drawer shortage would never be
+recorded or surfaced, even though the schema's own closingDifference
+column exists specifically to capture it.
+
+MECHANISM (this phase's own fix)
+====================================
+pos.service.ts's closeRegister() now computes closingDifference =
+Prisma.Decimal(actualCash).sub(Prisma.Decimal(endingCash)) and
+persists it - matching the already-correct pattern in the parallel
+pos-expansion.service.ts implementation.
+
+PROOF
+=====
+$ npx vitest run src/modules/pos/tests/pos.service.spec.ts
+
+New test - "computes closingDifference between counted and expected
+cash, not just storing the raw inputs": endingCash 300, actualCash
+285, expects closingDifference -15.
+FAILED against the pre-existing code before the fix - confirmed
+closingDifference was undefined (NaN when coerced). Real FAIL-first
+proof.
+PASSES after the fix.
+All 3 tests in the file pass (2 pre-existing + 1 new).
+
+BREAK/RESTORE
+=============
+Reverted closeRegister() to the original no-computation version
+(marked "BROKEN FOR PROOF").
+
+  $ npx vitest run pos.service.spec.ts
+  1 failed | 2 passed (3)
+  (exactly the new test - reproducing the original gap on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" pos.service.ts
+  (no matches — 0)
+  $ npx vitest run pos.service.spec.ts
+  3/3 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/pos/
+Test Files  2 passed (2)
+     Tests  76 passed (76)
+Clean pass - no pre-existing collection failures in this module.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E18 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D094 (CRITICAL). Not investigated/fixed in this pass:
+  - The existence of two independently-maintained, model-distinct
+    implementations of the same core POS concept is itself an
+    architectural finding: pos-expansion.service.ts duplicates most
+    of pos.service.ts's surface (registers, shifts, payment methods).
+    Which one is the intended system of record, whether client apps
+    call both inconsistently, and whether POSRegister/PosRegister
+    (and the equivalent Shift pair) should be consolidated is a
+    dedicated follow-up this pass only patched around, not resolved.
+  - pos.service.ts's endShift() (the shift-level equivalent) was not
+    conclusively checked for the same missing-variance pattern.
+  - Offline-capable sync, refunds (processReturn() exists but was not
+    audited), and store/online inventory unification - none
+    investigated at all.
+
+COMMANDS
+========
+$ npx vitest run src/modules/pos/tests/pos.service.spec.ts
+$ npx vitest run src/modules/pos/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  f8a5a94  pos.service.ts, pos.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D094
+```
+

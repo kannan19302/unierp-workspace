@@ -73,7 +73,7 @@ truthful without its J phases.
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **J19** | End-to-end journey suite | E02 | Playwright coverage of every journey in `APP_FLOW.md`, tagged by criticality, running on merge | Every documented journey has an E2E test. An undocumented journey is either documented or removed | WIP |
+| **J19** | End-to-end journey suite | E02 | Playwright coverage of every journey in `APP_FLOW.md`, tagged by criticality, running on merge | Every documented journey has an E2E test. An undocumented journey is either documented or removed | BLOCKED |
 | **J20** | Manual test-case management | J01 | A maintained manual suite for what automation cannot reach: print output, document fidelity, real payment flows, device behaviour, third-party integrations | Every release runs the manual suite with recorded results. A failing manual case blocks release the same way a failing unit test does | OPEN |
 | **J21** | Exploratory testing charters | J20 | Time-boxed exploratory charters per surface, with findings filed to `90-DEFECT-LOG.md` | Each surface has been explored with a recorded charter and outcome. Exploratory findings are tracked, not remembered | OPEN |
 | **J22** | Security testing as a discipline | A10, A18 | Beyond CodeQL: authenticated DAST, dependency and container scanning, secret scanning, IDOR sweeps, authorisation fuzzing, and the sandbox escape suite (A18) as a permanent gate | The open CodeQL alerts that pre-date current work are triaged to zero-or-justified. An IDOR sweep covers every record endpoint | BLOCKED |

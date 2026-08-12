@@ -1,0 +1,129 @@
+K04 — Evidence collection automation
+Deliverable: "Automated evidence: access reviews, change management,
+audit logs, vulnerability management, backup verification -
+generated continuously rather than assembled before an audit."
+Exit: "An auditor's evidence request is satisfiable from generated
+artefacts. Nothing is assembled by hand the week before."
+
+THE INVESTIGATION
+==================
+Read ComplianceController (src/modules/saas/compliance.controller.ts),
+the API surface most directly named by this phase's own deliverable
+("evidence... satisfiable from generated artefacts"). Found systemic
+fabrication across nearly every read endpoint - the same defect class
+K03 (D118) already found and removed from the PUBLIC marketing site,
+here reproduced server-side through an AUTHENTICATED API, presented as
+if it were real compliance evidence:
+
+  - listCertifications(): hardcoded `{standard: "SOC 2 Type II",
+    status: "certified", certifiedAt: "2024-01-01", expiresAt:
+    "2025-01-01"}` and `{standard: "GDPR", status: "compliant"}` -
+    identical for every tenant, regardless of reality. This platform
+    holds no third-party certification of any kind (confirmed by
+    K03's own investigation this session).
+  - listComplianceStandards(): claimed SOC 2 "certified".
+  - getHipaaStatus(): claimed `compliant: true, controls: 120,
+    passed: 118` - a fully fabricated control-count with no HIPAA
+    program, no BAA process, no PHI-specific controls anywhere in
+    this codebase (also confirmed by K03).
+  - getGdprStatus(): claimed hardcoded `dataExports: 3,
+    erasureRequests: 1` for every tenant, regardless of how many real
+    export/erasure requests that tenant actually has - even though
+    the real underlying models (DataExportJob, DataErasureRequest)
+    exist and are queryable.
+
+An auditor pointed at this API today would receive confident,
+specific, false claims - the polar opposite of "generated
+continuously" evidence; it was static fiction served through a live
+endpoint.
+
+MECHANISM (this phase's fix)
+====================================
+Fixed four endpoints to return the real, honest state instead:
+  - listCertifications(): every standard now `not_certified`, matching
+    K03's own scope decision (SOC 2/ISO 27001 out of scope, no dated
+    target).
+  - listComplianceStandards(): SOC 2/HIPAA no longer claimed
+    certified/in_progress-as-if-real.
+  - getHipaaStatus(): compliant: false, controls: 0, passed: 0 -
+    honestly reflecting that no HIPAA program exists.
+  - getGdprStatus(): dataExports/erasureRequests are now REAL,
+    tenant-scoped Prisma counts (prisma.dataExportJob.count /
+    prisma.dataErasureRequest.count), not hardcoded numbers.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/saas/tests/compliance.controller.spec.ts
+4 new tests:
+  - "listCertifications: no third-party certification is claimed
+    (this platform holds none)"
+  - "listComplianceStandards: does not claim SOC 2 is certified"
+  - "getHipaaStatus: does not claim HIPAA compliance or fabricate a
+    control count"
+  - "getGdprStatus: dataExports/erasureRequests reflect the REAL
+    tenant-scoped count, not a hardcoded number" (asserts a second
+    tenant's export jobs are correctly excluded, proving real
+    tenant-scoping, not just a real total)
+All 4 pass against the fix.
+
+BREAK/RESTORE
+=============
+Reverted listCertifications() to the original hardcoded "SOC 2 Type
+II: certified" literal (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run compliance.controller.spec.ts
+  1 failed | 3 passed (4)
+  (exactly the certification test - reproducing the exact original
+  fabrication on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/saas/compliance.controller.ts
+  0
+  $ npx vitest run compliance.controller.spec.ts
+  4/4 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/saas/
+Test Files  10 passed (10)
+     Tests  56 passed (56)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+0 errors.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D125 (CRITICAL). Not fixed in this pass:
+  - listComplianceReports()/getComplianceReport()/
+    runComplianceScan() are ALSO fabricated (hardcoded "status:
+    compliant", fake findings: [], fake generatedAt dates) but were
+    not fixed - these are more of a "generated document" workflow
+    (report generation, scanning) than a direct certification claim,
+    a larger, separate build (an actual report-generation pipeline)
+    out of this pass's tractable scope.
+  - The deliverable's five named evidence categories - "access
+    reviews, change management, audit logs, vulnerability management,
+    backup verification" - were not built as a coherent automated
+    pipeline. Audit logs already have a real source (C03, this
+    session's own J25 built a real backup-verification rehearsal
+    mechanism, though not yet wired live) but access reviews, change
+    management, and vulnerability management have no automated
+    evidence generation anywhere in this codebase, confirmed by grep
+    - not investigated in depth in this pass.
+  - This fix stops the API from LYING; it does not yet make the
+    evidence "generated continuously" in the sense of an actual,
+    running evidence-collection pipeline an auditor could point to.
+
+COMMANDS
+========
+$ npx vitest run src/modules/saas/tests/compliance.controller.spec.ts
+$ npx vitest run src/modules/saas/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/saas/compliance.controller.ts
+
+COMMITS
+=======
+unierp-api  112d033  compliance.controller.ts,
+                     tests/compliance.controller.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D125

@@ -4273,3 +4273,44 @@ missing read path. The fix built here is tenant-scoped only — an extension AUT
 tenants' installations of their extension) has no separate, cross-tenant view; no publisher-scoped identity
 concept was confirmed to exist to build this against, and it was not investigated. No portal UI was checked
 for whether it actually calls this new endpoint.
+
+### D125 · 🔴 CRITICAL · The authenticated compliance-evidence API fabricated SOC 2/HIPAA certification claims and hardcoded GDPR request counts for every tenant — the server-side twin of D118's public marketing-site lie, but presented as real audit evidence through a live endpoint
+
+Found while claiming and building K04 (Evidence collection automation), whose exit criterion is: "An
+auditor's evidence request is satisfiable from generated artefacts. Nothing is assembled by hand the week
+before." Reading `ComplianceController` (`src/modules/saas/compliance.controller.ts`) — the API surface most
+directly named by this phase's own deliverable — found systemic fabrication across nearly every read
+endpoint: `listCertifications()` returned a hardcoded `{standard: "SOC 2 Type II", status: "certified",
+certifiedAt: "2024-01-01", expiresAt: "2025-01-01"}` and `{standard: "GDPR", status: "compliant"}`, identical
+for every tenant; `listComplianceStandards()` claimed SOC 2 "certified"; `getHipaaStatus()` claimed
+`compliant: true, controls: 120, passed: 118` with zero HIPAA program anywhere in this codebase (confirmed
+by K03 this session); `getGdprStatus()` returned hardcoded `dataExports: 3, erasureRequests: 1` for every
+tenant regardless of how many real requests that tenant actually has — even though the real underlying
+Prisma models (`DataExportJob`, `DataErasureRequest`) exist and are queryable. This platform holds no
+third-party certification of any kind (K03's own investigation). An auditor pointed at this API today would
+receive confident, specific, false claims through a live, authenticated endpoint — the exact opposite of
+"generated continuously" evidence, and a more severe instance of the same defect class D118 already found and
+removed from the public marketing site.
+
+**Fixed:** all four endpoints now return the real, honest state — every certification standard `not_certified`
+(matching K03's own scope decision); `listComplianceStandards()` no longer claims SOC 2/HIPAA as
+certified/real-in-progress; `getHipaaStatus()` returns `compliant: false, controls: 0, passed: 0`; `getGdprStatus()`'s
+`dataExports`/`erasureRequests` are now real, tenant-scoped `prisma.dataExportJob.count()`/
+`prisma.dataErasureRequest.count()` queries instead of hardcoded numbers. Proven via break/restore: reverted
+`listCertifications()` to the original hardcoded "SOC 2 Type II: certified" literal (marked "BROKEN FOR
+PROOF"), confirmed the exact certification test reproduces the original fabrication, restored, confirmed 0
+`BROKEN FOR PROOF` markers remain, 4/4 tests pass (including a test proving the GDPR counts are genuinely
+tenant-scoped, not just genuinely real). Full regression: `src/modules/saas/`, 10 test files / 56 tests pass
+cleanly. Typecheck: 0 errors.
+
+**Not fixed — the honest remaining gap.** `listComplianceReports()`/`getComplianceReport()`/
+`runComplianceScan()` are also fabricated (hardcoded "compliant" status, fake findings, fake dates) but were
+not fixed — these are more of a "generated document" workflow than a direct certification claim, a larger,
+separate report-generation-pipeline build out of this pass's tractable scope. The deliverable's five named
+evidence categories — "access reviews, change management, audit logs, vulnerability management, backup
+verification" — were not built as a coherent automated pipeline: audit logs already have a real source (C03),
+and this session's own J25 built a real (though not yet live-wired) backup-verification rehearsal mechanism,
+but access reviews, change management, and vulnerability management have no automated evidence generation
+anywhere in this codebase, confirmed by grep, and were not investigated in depth. This fix stops the API from
+lying; it does not yet make the evidence "generated continuously" in the sense of a running, coherent
+evidence-collection pipeline an auditor could actually point to.

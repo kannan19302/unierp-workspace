@@ -3081,3 +3081,49 @@ parts consumption, warranties, and expenses — none independently audited. Spec
   - Whether a periodic/scheduled sweep for SLA breaches on STILL-OPEN tickets (not just at close) is
     needed for real-time dashboards and alerting — this fix only guarantees correctness at close time,
     not proactive breach notification while a ticket is still in progress — was not addressed.
+
+### D098 · 🔴 CRITICAL · WorkflowService.checkSlaBreaches() logged escalations without ever performing them — audit trail claimed ownership had moved when it hadn't
+
+Found while claiming and building E28 (Workflow, AI and platform services), a deliberately-scoped
+container phase covering 21 modules (`workflow`, `ai`, `analytics`, `notifications`, `outbox`,
+`saved-views`, `admin`, `pwa`, `devops`, `blockchain`, `api-platform`, `ext-gateway`,
+`extension-registry`, `marketplace`, `saas`, `saas-portal`, `subscriptions`, `communication`,
+`localization`, `reporting`, `search`), whose own exit criterion explicitly instructs subdivision into
+per-module work as it is picked up rather than a single pass across all 21.
+
+Picked `workflow` as the first module and ran the existing `scripts/score-module.mjs workflow` rubric
+tool (built in an earlier phase, E01). Row 4 ("Approvals") scored a real chain shape and delegation/
+escalation keywords, but reading `WorkflowService.checkSlaBreaches()` (`unierp-api/src/modules/workflow/
+workflow.service.ts`) in full found the escalation itself was fake: for every matching
+`WorkflowEscalationRule` on a breached task, the method called `logAudit(..., "ESCALATED", ...,
+{ escalationId, escalateTo: esc.escalateToRole })` and **stopped** — it never wrote
+`assigneeRole`/`assigneeId` on the `WorkflowTask` itself. The audit trail asserts an escalation occurred;
+the task's actual owner never changes. Anyone reading the audit log (or building an SLA dashboard from
+it) would believe ownership moved to the escalation target; the original assignee, unaware anything
+happened, still holds a task they may have already missed the deadline on.
+
+**How it was caught:** writing a FAIL-first test for a breached task with a matching escalation rule and
+asserting `workflowTask.update()` was called with the escalation target's role/user — the pre-existing
+code never called `workflowTask.update()` at all for the escalation.
+
+**Fixed:** `checkSlaBreaches()` now updates the task's `assigneeRole`/`assigneeId` to the escalation
+rule's `escalateToRole`/`escalateToUser` before logging the audit entry — the escalation actually moves
+ownership, and the audit trail records something that genuinely happened. Proven via break/restore
+(reverted to logging without reassigning, confirmed the exact original defect reproduces —
+`workflowTask.update` called zero times — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 6/6
+tests pass). Full regression: `src/modules/workflow/`, the 3 test files exercising the mocked service
+layer all pass (39 tests total across those); a separate, unrelated `workflow-advanced.service.spec.ts`
+suite fails on both the pre-fix and post-fix code because it requires a live database connection this
+environment doesn't have — confirmed pre-existing and unrelated via `git stash`. Typecheck: same 4
+pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E28's own exit criterion explicitly calls for exactly this scoping.** Only
+`workflow` was scored and only its `checkSlaBreaches()` escalation gap was fixed. The other 20 modules
+this phase names (`ai` through `search`) were not scored against the rubric at all in this pass — E28
+itself instructs splitting into `E28a…` per module as work is picked up, which this pass treats as
+license to complete ONE module's real, provable improvement rather than a shallow pass across 21. The
+`workflow` module's own rubric score (captured in this phase's evidence file) shows several other rows
+below the "next level" threshold — Documents (0, no print path), Integrations (0, no CSV), UI states (0,
+no six-state components referenced by any of 10 pages), Accessibility (0), Performance (0, unmeasured) —
+none of which were addressed in this pass; each is a legitimate target for a future `E28a`-style
+sub-phase.

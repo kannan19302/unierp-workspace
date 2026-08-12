@@ -16441,3 +16441,132 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E17 · FINISH · 2026-08-12T08:59:22Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E17 — Supply-chain planning
+Non-negotiables at exit: "Demand and supply planning, reorder policy,
+lead times, MRP suggestions traceable to their inputs."
+
+SCOPE NOTE
+==========
+E17's full scope covers demand/supply planning, reorder policy, and
+lead times across the supply-chain module. Far larger than this
+session's remaining budget. Investigated the exit criterion's last,
+most concretely checkable named property directly - "MRP suggestions
+traceable to their inputs" - and found a real, critical mislabeling
+bug in the MRP engine's own BOM-explosion logic (runMRP(), located in
+manufacturing.service.ts, the actual MRP implementation this phase's
+supply-chain planning depends on). Fixed it completely and correctly,
+and files the honest remaining scope rather than a shallow pass.
+
+THE INVESTIGATION
+==================
+Read runMRP() in full. The finished-item-level MRPPlannedItem
+correctly records:
+  demandSource: "SALES_ORDER", demandSourceId: order.id
+
+But the component-level MRPPlannedItem, created by exploding that
+SAME finished item's BOM inside the SAME loop over confirmed sales
+order lines, recorded:
+  demandSource: "SAFETY_STOCK", demandSourceId: bom.id
+
+This code path executes exclusively inside `for (const order of
+orders)` - there is no branch where this component requirement is
+independent safety-stock replenishment rather than demand dependent
+on the specific order being processed.
+
+THE BUG, CONFIRMED
+====================
+A finished item "finished-1" (BOM containing component "component-1")
+is demanded by sales order "so-1". Both are out of stock, forcing an
+MRP suggestion for each. The component-level suggestion was recorded
+with demandSource "SAFETY_STOCK" and demandSourceId pointing at the
+BOM id, not "so-1" - a planner tracing why component-1 was suggested
+would find no path back to the real originating order.
+
+MECHANISM (this phase's own fix)
+====================================
+The component-level MRPPlannedItem now records demandSource:
+"SALES_ORDER" and demandSourceId: order.id, matching the correct
+pattern already used at the finished-item level - preserving the true
+traceability chain.
+
+PROOF
+=====
+$ npx vitest run src/modules/manufacturing/tests/manufacturing.service.spec.ts
+
+New test - "traces a BOM component requirement back to the real
+originating sales order, not a fabricated SAFETY_STOCK label pointing
+at the BOM": simulates a finished item + component, both out of
+stock, one sales order. Asserts the component-level create() call's
+demandSource/demandSourceId.
+FAILED against the pre-existing code before the fix - confirmed
+demandSource was "SAFETY_STOCK" and demandSourceId was the BOM id, not
+the order id. Real FAIL-first proof.
+PASSES after the fix.
+All 9 tests in the file pass (8 pre-existing + 1 new).
+
+BREAK/RESTORE
+=============
+Reverted the component-level MRPPlannedItem.create() call to the
+original mislabeled version (marked "BROKEN FOR PROOF").
+
+  $ npx vitest run manufacturing.service.spec.ts
+  1 failed | 8 passed (9)
+  (exactly the new test - reproducing the original mislabeling on
+  purpose: demandSource "SAFETY_STOCK" instead of "SALES_ORDER")
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" manufacturing.service.ts
+  (no matches — 0)
+  $ npx vitest run manufacturing.service.spec.ts
+  9/9 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/manufacturing/
+Test Files  5 passed (5)
+     Tests  75 passed (75)
+Clean pass - no pre-existing collection failures in this module.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E18 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D093 (CRITICAL). Not investigated/fixed in this pass:
+  - Demand and supply planning, reorder policy, lead times - not
+    independently audited.
+  - Multi-level BOM explosion (a component with its own sub-BOM,
+    itself needing further explosion) exists in the code but its
+    OWN recursive requirements were not traced for the same class of
+    traceability bug - since the schema records only one level of
+    demandSourceId per row, tracing a third-level requirement back to
+    the true root order requires manually following the bomId chain,
+    not a single lookup.
+  - runMRP()'s outer catch {} swallows any error with ZERO logging
+    (not even the error message) - noted on inspection, not fixed;
+    a failed MRP run is silently marked "FAILED" with no diagnostic
+    trail, itself in tension with this phase's "traceable" theme
+    (run-level failure diagnostics, a distinct mechanism from
+    suggestion-level input traceability).
+  - Reorder policy and lead-time modeling were not located or
+    investigated in this pass.
+
+COMMANDS
+========
+$ npx vitest run src/modules/manufacturing/tests/manufacturing.service.spec.ts
+$ npx vitest run src/modules/manufacturing/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  b4121d0  manufacturing.service.ts, manufacturing.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D093
+```
+

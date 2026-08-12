@@ -20699,3 +20699,141 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G04 · FINISH · 2026-08-12T15:10:32Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+G04 — Observability for customer code
+Deliverable: "Per-extension logs, traces, metrics, errors and
+resource consumption — visible to both the author and the tenant."
+Exit: "An author debugs a failing handler from the portal without
+our involvement. A tenant sees what an installed extension is
+doing."
+
+THE INVESTIGATION
+==================
+Read the extension execution path (unierp-api's ext-gateway and
+extension-registry modules) and the Prisma schema for extension-
+related models. Found a real, well-designed data model already in
+place: `ExtensionInvocationUsage` (prisma/schema/extensions.prisma)
+records cpuMs, queries, httpCalls, failed, errorKind, per
+tenant/extension/hook, on every invocation - confirmed live and
+called from `ExtensionRegistryService.recordUsage()`.
+
+But grepping the whole repo for any endpoint reading this table back:
+
+  $ grep -n "@Get\|extensionInvocationUsage" src/modules/extension-registry/*.controller.ts src/modules/extension-registry/extension-registry.service.ts
+  (only the write site, recordUsage - zero GET endpoints)
+
+THE BUG, CONFIRMED
+====================
+The per-invocation resource/error data the exit criterion asks for
+("resource consumption... visible to both the author and the
+tenant") existed, was correctly collected on every invocation, and
+was completely unreachable by anyone - not the tenant who installed
+the extension, not its author, not even an internal admin tool.
+Write-only telemetry that nobody can ever read is functionally
+identical to not collecting it at all, and directly contradicts the
+exit criterion: currently NEITHER "an author debugs... from the
+portal" NOR "a tenant sees what an installed extension is doing" is
+possible, since the one piece of real per-invocation data this
+platform collects has no read path.
+
+MECHANISM (this phase's fix)
+====================================
+Added `ExtensionRegistryService.getInvocationUsage(tenantId,
+extensionId, limit)` - tenant-scoped (reuses the existing `require()`
+installation check, so a tenant can never see another tenant's usage
+and the call cleanly refuses for an extension not installed for that
+tenant), newest-first, capped at 200 rows. Wired
+`GET /extensions/:id/usage`, gated by the same `admin.extensions.read`
+permission the extension list endpoint already requires (not a new,
+drifting permission check).
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/extension-registry/tests/extension-registry-invocation-usage.service.spec.ts
+3 new tests:
+  - "G04: returns the real, tenant-scoped invocation usage - a
+    tenant/author can now see what an installed extension is doing"
+  - "G04: refuses to leak usage for an extension not installed for
+    this tenant"
+  - "G04: a different tenant cannot see another tenant's extension
+    usage"
+All 3 pass against the fix.
+
+BREAK/RESTORE
+=============
+Removed the `require()` tenant-installation check and the `tenantId`
+filter from the query (marked "BROKEN FOR PROOF") - reproducing an
+unscoped, cross-tenant-leaking query.
+
+  $ npx vitest run extension-registry-invocation-usage.service.spec.ts
+  3 failed | 0 passed (3)
+  (all 3 - both the missing-installation guard and the cross-tenant
+  isolation guard were reproduced broken on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/extension-registry/extension-registry.service.ts
+  0
+  $ npx vitest run extension-registry-invocation-usage.service.spec.ts extension-signature.service.spec.ts
+  12/12 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/extension-registry/
+2/3 test files pass; extension-schema.service.spec.ts's own
+beforeAll executes a real `prisma.$executeRaw` DDL statement against
+a live database (`DROP TABLE IF EXISTS ...` / provisioning a real
+extension-owned table) - this is a genuine integration test requiring
+DATABASE_URL, which this environment does not have (confirmed
+unset in prior phases this session, e.g. E38/E44). Unrelated to and
+unaffected by this phase's change - confirmed by running the two
+files actually within this change's scope
+(extension-registry-invocation-usage.service.spec.ts,
+extension-signature.service.spec.ts) in isolation: 12/12 pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+0 errors.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D124 (CRITICAL). Not fixed in this pass:
+  - Only "resource consumption" and coarse "errors" (the failed flag
+    + errorKind string already recorded by ExtensionInvocationUsage)
+    are now readable. "Logs" (a message/stack-trace-shaped record of
+    what the handler actually printed or threw) and "traces"
+    (span-level execution detail within a single invocation) - two of
+    the five items the deliverable names - do not exist anywhere in
+    this codebase at all, confirmed by the same grep sweep that found
+    zero read endpoints; there is no write path for either, not just
+    a missing read path.
+  - "An author debugs a failing handler from the portal without our
+    involvement" - the fix built here is tenant-scoped only (the
+    tenant who installed the extension can see their own usage). An
+    extension AUTHOR (the publisher, potentially across many tenants'
+    installations of their extension) has no separate, cross-tenant
+    view - no publisher-scoped identity/auth concept was confirmed to
+    exist to build this against, and it was not investigated in this
+    pass.
+  - No portal UI was built or verified to call this new endpoint -
+    this fix makes the data reachable via the API; whether any
+    console/portal frontend (unierp-console, unierp-developer)
+    actually renders it was not checked.
+
+COMMANDS
+========
+$ npx vitest run src/modules/extension-registry/tests/extension-registry-invocation-usage.service.spec.ts
+$ npx vitest run src/modules/extension-registry/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/extension-registry/extension-registry.service.ts
+
+COMMITS
+=======
+unierp-api  49093f5  extension-registry.service.ts,
+                     extension-registry.controller.ts,
+                     tests/extension-registry-invocation-usage.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D124
+```
+

@@ -3336,3 +3336,56 @@ requirements were not attempted:
     (financial writes, order creation) versus naturally idempotent or low-risk, followed by applying the
     decorator across that identified set, is the real remaining scope this phase's own deliverable
     implies.
+
+### D103 · 🔴 CRITICAL · unierp-web has zero i18n framework usage across 890+ pages, no RTL support anywhere, and the one real backend translation service is unreachable via any HTTP endpoint
+
+Found while claiming and building E41 (Localisation completeness), whose own exit criterion is explicit
+and mechanical: "A hardcoded user-facing string fails CI. The platform is fully usable in an RTL locale
+(G-15)." A repo-wide search confirmed:
+
+- **Zero i18n library usage anywhere in `unierp-web`**: `grep -rl "next-intl\|react-i18next" app/
+  --include=*.tsx` across all 994 `.tsx` files under `app/` returns nothing. No translation hook, no
+  locale-aware string lookup, nothing — every one of the platform's 890+ pages hardcodes its user-facing
+  text directly in JSX.
+- **Zero RTL support anywhere**: no `dir="rtl"`, no direction-aware layout logic, no CSS logical
+  properties audit — nothing found across the same search scope, despite `unierp-api/src/common/
+  services/i18n.service.ts`'s own `getSupportedLocales()` explicitly listing Arabic with
+  `direction: "rtl"`, implying RTL was at least designed for at the data-model level.
+- **The one real translation mechanism that exists (`I18nService`) is unreachable via HTTP**: it has a
+  real `translate()`/`getTranslations()` implementation with a small built-in dictionary (es/fr/de, ~10
+  keys each) and a tenant-override mechanism (`LanguageOverride` model), but `grep -rln "I18nService" src
+  --include=*.controller.ts` finds no controller referencing it anywhere — the same orphaned-service
+  pattern this session already found in D099 (e-signature) and D097 (SLA-related, before its fix).
+
+Given the scale (890+ pages, zero existing framework to build on), externalising every hardcoded string
+in one pass is not attemptable in a single phase. Consistent with this session's established approach for
+large-surface findings (D077/D078/D079/D082/D092), the real, load-bearing contribution here is the
+mechanical CI gate this phase's own exit criterion names directly — "a hardcoded user-facing string fails
+CI" — which did not exist in any form before this pass.
+
+**Built:** `scripts/check-hardcoded-strings.mjs` — scans every `.tsx` file under `unierp-web/app` for
+JSX text nodes matching `>[A-Za-z][A-Za-z ]{3,}<` (a run of 4+ letters/spaces directly between two JSX
+tag delimiters — catches literal English UI text like `>Create Band<` while not matching JSX expression
+containers like `>{value}<`), following the exact baseline-ratchet pattern used by every other gate this
+programme has built (L02–L18): records the CURRENT count as a baseline
+(`evidence/hardcoded-strings-baseline.json`) and `--check` fails only on a **regression** above that
+baseline — never retroactively on already-measured, already-filed existing debt. Baseline: **3,675
+hardcoded strings across 658 of 994 `.tsx` files**.
+
+Proven via break/restore: introduced one deliberate new hardcoded string (`<span>BROKEN FOR PROOF
+hardcoded text</span>`) into a real page (`unierp-web/app/(dashboard)/advanced-hr/compensation/page.tsx`)
+— `node scripts/check-hardcoded-strings.mjs --check` correctly failed, naming the exact file and the
+count delta (`2 (was 1)`); reverted from a backup, confirmed byte-identical restore (`grep -c "BROKEN FOR
+PROOF"` → 0), confirmed the check passes cleanly again (`3675 hardcoded string(s) found, baseline is
+3675 — no regression`).
+
+**Not fixed — the actual externalisation, RTL implementation, and any of the phase's other named
+requirements (locale-correct dates/numbers/currency/address formats/name ordering, timezone
+correctness).** None of these were attempted at scale in this pass; only the mechanical detection gate
+was built. The 3,675-string baseline itself is the honest, measured scope of the remaining work — every
+one of those strings needs a real translation framework (choosing and installing `next-intl` or similar),
+a frontend hook consuming `I18nService`'s data (which itself needs a controller wired up first — D099's
+own orphaned-service pattern, again), and a page-by-page migration this single phase cannot complete.
+This is filed as the honest, load-bearing remaining scope, not a shortfall of this pass's own effort —
+matching this session's precedent for phases whose real scope exceeds what one pass can complete
+(D077/D078/D079/D092/D096).

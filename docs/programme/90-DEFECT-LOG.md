@@ -4612,3 +4612,26 @@ decision on whether `GET /saas/plans`'s current `"saas.read"` permission gate is
 unauthenticated public pricing page, or whether a separate public endpoint is needed); and a CI gate
 comparing the live plan data against the deployed page's rendered prices, failing on divergence — the actual
 "a mismatch fails CI" mechanism this phase's own exit criterion names.
+
+### D134 · 🔴 CRITICAL · No custom-lint enforcement mechanism exists for hardcoded design values in unierp-mobile, and hardcoded colors/spacing remain pervasive (75 Color literals, 886 raw EdgeInsets calls)
+
+Found while claiming and building I04 (Token and theme adoption), whose exit criterion is: "A hardcoded
+`Color(0x...)` or raw padding value fails `flutter analyze` via a custom lint. All 7 themes and both densities
+render." Confirmed real design tokens already exist (`lib/app/theme/design_tokens.dart`,
+`lib/app/theme/app_theme.dart`), but confirmed via direct count that hardcoded values remain pervasive
+throughout the app: `grep -rc "Color(0x" lib` sums to 75 hardcoded color literals; `grep -rc
+"EdgeInsets\.(all|symmetric|only)("` sums to 886 raw spacing call sites. `grep -n "custom_lint"
+pubspec.yaml analysis_options.yaml` returns zero matches — the enforcement mechanism the exit criterion names
+does not exist as a dependency, a rule file, or any other artifact anywhere in this repository.
+
+**Released, not fixed** — the same environment blocker as I11 (Mobile security), confirmed directly:
+`which flutter dart` finds neither anywhere in this environment. A `custom_lint` package is itself a real Dart
+package requiring `dart pub get` and the Dart analyzer plugin infrastructure to compile and run; even writing
+the lint rule's source code here would be unverifiable against this session's own "no claim without a
+mechanism that can fail" standard, which requires proving the lint actually fires (FAIL-first) and survives
+break/restore via a real `flutter analyze` run — not achievable without the SDK. Migrating 75+886 hardcoded
+value call sites to token references is also a large, separate mechanical effort independent of the SDK
+constraint. A genuine follow-up needs: a Flutter SDK installation; `custom_lint`/`custom_lint_builder` added
+as dev dependencies with a real lint rule authored and proven via `flutter analyze`; a mechanical migration of
+the hardcoded call sites to `design_tokens.dart` references; and verification that all 7 themes and both
+densities render without regression once migrated — none of which was investigated or attempted in this pass.

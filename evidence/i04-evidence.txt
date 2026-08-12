@@ -1,0 +1,87 @@
+I04 — Token and theme adoption
+Deliverable: "Generated Dart tokens consumed throughout; every
+hardcoded colour, spacing and type value removed."
+Exit: "A hardcoded Color(0x...) or raw padding value fails
+`flutter analyze` via a custom lint. All 7 themes and both densities
+render."
+
+WHY THIS PHASE IS RELEASED RATHER THAN CLAIMED DONE
+=====================================================
+Same environment blocker as I11 (Mobile security), confirmed
+directly: `which flutter dart` finds neither anywhere in this
+environment. unierp-mobile is a Flutter app; the exit criterion's own
+mechanism ("fails `flutter analyze` via a custom lint") requires
+building and running a `custom_lint` Dart package against the Dart
+analyzer - genuinely impossible without the Flutter/Dart SDK.
+
+THE INVESTIGATION
+==================
+Confirmed real design tokens already exist:
+  lib/app/theme/design_tokens.dart, lib/app/theme/app_theme.dart
+
+But confirmed via direct count that hardcoded values are still
+pervasive throughout the app, not yet migrated to those tokens:
+
+  $ grep -rc "Color(0x" lib --include=*.dart | sum
+  75 hardcoded Color(0x...) literals
+
+  $ grep -rc "EdgeInsets\.(all|symmetric|only)(" lib --include=*.dart | sum
+  886 raw EdgeInsets spacing calls (not necessarily all non-token
+  values, but confirms spacing is overwhelmingly expressed as
+  ad hoc literals rather than named token references)
+
+Confirmed no lint infrastructure exists at all:
+  $ grep -n "custom_lint" pubspec.yaml analysis_options.yaml
+  (no matches - custom_lint is not even a dependency)
+
+THE GAP, CONFIRMED
+====================
+Both halves of the deliverable are genuinely unmet: hardcoded values
+are pervasive (75 colors, spacing expressed almost entirely as raw
+literals across 886 call sites), and the enforcement mechanism named
+in the exit criterion (a custom `flutter analyze` lint) does not
+exist as a dependency, a rule file, or any other artifact anywhere in
+this repository.
+
+WHY THIS CANNOT BE BUILT AND PROVEN HERE
+============================================
+A custom_lint package is itself a real Dart package requiring `dart
+pub get`, the Dart analyzer plugin infrastructure, and `flutter
+analyze` to compile and run its own tests - none of which is
+executable without the SDK. Even writing the lint rule's SOURCE CODE
+here would be unverifiable: this session's own "no claim without a
+mechanism that can fail" standard requires PROVING the lint actually
+fires (FAIL-first) and can be broken/restored, which needs a real
+`flutter analyze` run - not achievable in this environment.
+
+Migrating 75+886 hardcoded value call sites to token references is
+also a large, separate mechanical effort - even setting the SDK
+constraint aside, this is not a small fix within this pass's
+realistic scope.
+
+WHAT WOULD BE NEEDED TO ACTUALLY CLOSE THIS PHASE
+====================================================
+1. A Flutter SDK installation (matching I11's own identical finding).
+2. Add `custom_lint` + `custom_lint_builder` as dev dependencies, and
+   author a real lint rule flagging `Color(0x...)` literals and raw
+   `EdgeInsets`/padding values outside the token files themselves,
+   proven via `flutter analyze` (FAIL-first against a seeded
+   violation, then PASS after the rule fires, then break/restore).
+3. A mechanical migration of the ~75 hardcoded Color literals and the
+   majority of the 886 raw EdgeInsets call sites to reference
+   lib/app/theme/design_tokens.dart instead.
+4. Manual or automated verification that all 7 themes and both
+   densities (the exit criterion's other named requirement) actually
+   render without regression once the migration is done - not
+   investigated at all in this pass.
+
+COMMANDS
+========
+$ which flutter dart
+$ grep -rc "Color(0x" lib --include=*.dart
+$ grep -rc "EdgeInsets\.(all|symmetric|only)(" lib --include=*.dart
+$ grep -n "custom_lint" pubspec.yaml analysis_options.yaml
+
+COMMITS
+=======
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D134

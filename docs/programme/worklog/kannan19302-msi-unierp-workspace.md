@@ -21152,3 +21152,172 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G01 · FINISH · 2026-08-12T15:26:23Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+G01 — Extension API surface definition
+Deliverable: "unierp-extension-api (currently 4 files, ~380 lines)
+grown into a versioned, documented capability model: what an
+extension may read, write, call, emit and render - enumerated,
+never implicit."
+Exit: "Every capability is explicitly granted; anything not granted
+is unreachable, proven by test. A capability cannot be added without
+a version bump."
+
+THE INVESTIGATION
+==================
+Read all four files of unierp-extension-api (capabilities.ts,
+index.ts, schema.ts, bundle.ts). capabilities.ts is genuinely well
+built: a closed `SCOPES` enum (6 scopes), an explicit comment
+rejecting wildcard grants ("the § 1.2 escalation in this codebase
+happened because a wildcard grant satisfied a check it was never
+meant to satisfy"), and `effectiveScopes()` correctly intersecting
+requested scopes against the installer's own permissions.
+
+But index.ts - the file defining the actual capability surface
+handed to extension code - had two direct violations of this
+phase's own exit criterion:
+
+1. `ExtensionApi` (the typed capability object extension code
+   receives) had:
+     export interface ExtensionApi {
+       log: (message: string, meta?: Record<string, unknown>) => void;
+       [capability: string]: unknown;
+     }
+   The `[capability: string]: unknown` index signature makes EVERY
+   possible string key a valid, type-checking member of this
+   interface - the literal opposite of "anything not granted is
+   unreachable." The comment two lines above it explicitly names the
+   principle this violates ("the compatibility promise... is
+   meaningless if the shape is `any`") while the code directly beneath
+   it does exactly that.
+
+2. A SEPARATE, older `ExtensionManifestSchema`/`ExtensionManifest`
+   lived in the same file, alongside the real, correct
+   `ExtensionManifestV1Schema` in capabilities.ts:
+     - OLD (index.ts): `permissions: z.array(z.string())` - any
+       string accepted, no closed enum.
+     - REAL (capabilities.ts): `scopes: z.array(ScopeSchema)` - closed
+       to the 6-value SCOPES enum.
+   Confirmed via grep that unierp-api's extension-registry.service.ts
+   (the only real consumer found anywhere) imports and validates
+   against `ExtensionManifestV1Schema` exclusively - the old
+   `ExtensionManifestSchema` was never used by anything, just
+   exported from the public package as a trap for a future
+   integrator who imported the wrong one.
+
+MECHANISM (this phase's fix)
+====================================
+- Closed `ExtensionApi` to only `log` (log:write) - the ONE capability
+  with a confirmed real host-function implementation anywhere in this
+  codebase (confirmed by grep across unierp-api and this repo - no
+  concrete runtime binder for data:read/write, http:fetch,
+  jobs:schedule, or events:subscribe was found anywhere). The other 5
+  SCOPES entries are deliberately NOT added as typed ExtensionApi
+  members yet - inventing a plausible-looking method signature for a
+  capability with no real implementation behind it would be exactly
+  the kind of unproven claim this whole programme exists to
+  eliminate. They stay declared as grantable scopes (capabilities.ts)
+  without a fabricated typed accessor until their real host functions
+  are built.
+- Deleted `ExtensionManifestSchema`/`ExtensionManifest` entirely -
+  confirmed unused by the only real consumer, and actively dangerous
+  to keep exported alongside the correct, closed model.
+- Bumped package.json from 1.0.6 to 1.1.0.
+- Added scripts/check-capability-version-bump.mjs: a CI gate
+  comparing the live SCOPES array + ExtensionApi surface (named
+  members AND whether an open index signature exists) against a
+  committed snapshot (capability-manifest.json). Fails if the surface
+  changed but the version did not.
+
+PROOF (break/restore, against the real gate)
+================================================
+$ node scripts/check-capability-version-bump.mjs
+(current, fixed state, version 1.1.0 vs the OLD 1.0.6 snapshot)
+"capability surface changed AND version was bumped (1.0.6 -> 1.1.0)."
+(exit 0)
+
+Break: temporarily reverted package.json's version back to 1.0.6
+(matching the OLD snapshot) while keeping the fixed, closed
+ExtensionApi in place:
+
+  $ node scripts/check-capability-version-bump.mjs
+  FAILED: the capability surface changed but package.json's version
+  (1.0.6) matches the last recorded snapshot (1.0.6) - no bump
+  happened.
+    Snapshot openIndexSignature: true
+    Current openIndexSignature:  false
+  (exit 1 - genuinely caught the exact "capability change without a
+  version bump" scenario)
+
+Restored the version to 1.1.0:
+  $ node scripts/check-capability-version-bump.mjs
+  "capability surface changed AND version was bumped (1.0.6 ->
+  1.1.0)." (exit 0)
+
+Wrote the final snapshot at the current, fixed, correct state
+(node scripts/check-capability-version-bump.mjs --write) so future
+changes are checked against THIS state, not the old broken one.
+
+$ npm run build
+Clean tsc compile, no errors, both before and after the fix.
+
+REGRESSION
+==========
+$ grep -rln "ExtensionApi\b" /d/UniERP/unierp-api/src --include=*.ts
+(zero matches)
+unierp-api does not reference ExtensionApi anywhere today - confirms
+this type was never wired to a real runtime sandbox in the first
+place, consistent with finding no host-function implementation for 5
+of the 6 declared scopes. No other repository was affected by this
+change.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D127 (CRITICAL). Not fixed in this pass:
+  - The exit criterion's own words, "proven by test," are only
+    partially satisfied. The version-bump gate is proven via
+    break/restore against the real script - that mechanism can fail
+    and is verified. But there is no automated test proving
+    `api.someUngrantedCapability` genuinely fails to type-check or
+    fails at runtime for an extension without the corresponding
+    scope - this package has zero test infrastructure (no test
+    runner installed, confirmed via package.json's scripts, only a
+    build script), and building one from scratch was out of this
+    pass's scope.
+  - "What an extension may read, write, call, emit and render" - the
+    deliverable names five verbs. Only `log` (a form of "emit") has a
+    real, confirmed capability. Read, write, call, and render have no
+    real host-function implementation anywhere in this codebase - the
+    capability model's SCOPES enum declares them as grantable, but
+    nothing backs data:read/write, http:fetch, jobs:schedule, or
+    events:subscribe with an actual runtime binder. Building those
+    five real implementations is a substantially larger effort than
+    this pass's tractable scope (closing the type surface and killing
+    the duplicate schema).
+  - This package's version bump (1.0.6 -> 1.1.0) is local to this
+    repo; unierp-api's own dependency on @kannan19302/extension-api is
+    still pinned to 1.0.6 in its lockfile (a published-package
+    consumer, not a workspace symlink, confirmed via
+    node_modules/.pnpm). Publishing this version and bumping the
+    dependency in unierp-api is a separate, deliberate step not
+    attempted here.
+
+COMMANDS
+========
+$ node scripts/check-capability-version-bump.mjs [--write]
+$ npm run build
+$ grep -rln "ExtensionManifestSchema\b" src (repo-wide, confirming removal)
+$ grep -rln "ExtensionApi\b" ../unierp-api/src --include=*.ts
+
+COMMITS
+=======
+unierp-extension-api  1d2ab04  src/index.ts, package.json,
+                       capability-manifest.json,
+                       scripts/check-capability-version-bump.mjs,
+                       .github/workflows/ci.yml
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D127
+```
+

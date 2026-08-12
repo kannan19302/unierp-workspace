@@ -18983,3 +18983,131 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E39 · FINISH · 2026-08-12T14:07:20Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E39 — Federated search
+Deliverable: "One search surface across modules, respecting each
+record's own access rules."
+Exit: "Searching a term returns only records the user may see — and
+result counts do not leak the existence of others (G-6)."
+
+THE INVESTIGATION
+==================
+Read search.service.ts in full. Found two independent query paths:
+
+  - globalSearch(tenantId, userId, query) — real, per-entity RBAC via
+    resolvePermissions(userId) + a can(code) closure gating each of
+    customer/lead/product/employee before querying its own table.
+  - fulltextSearch(tenantId, query, filters) — queries the unified
+    cross-module SearchIndex table (entityType/module/tenantId/status
+    columns). ZERO permission filtering of any kind. Both the
+    findMany() results AND the count() total were computed from a
+    where-clause containing only tenantId/status/module/entityType —
+    no permission check anywhere.
+
+Confirmed this is a live, reachable endpoint: GET /search/query in
+search.controller.ts, gated only by the generic "search.query.read"
+permission — no per-record or per-entityType check downstream.
+
+THE BUG, CONFIRMED
+====================
+A user holding only "search.query.read" (no hr.employee.read, no
+crm.contact.read, etc.) could call GET /search/query?entityType=employee
+and receive real indexed employee records, with an accurate total
+count — both halves of G-6 violated: unauthorized records returned,
+and even an entityType-scoped total count would leak how many such
+records exist to a user who could not otherwise see any of them.
+
+MECHANISM (this phase's fix)
+====================================
+Added ENTITY_TYPE_PERMISSIONS, reusing the SAME permission codes
+globalSearch() already established (crm.contact.read, crm.lead.read,
+inventory.product.read, hr.employee.read) rather than inventing a
+second, potentially-drifting definition of the same access rule.
+
+fulltextSearch() now takes an optional userId, resolves the caller's
+permissions once, and:
+  - if a specific gated entityType was explicitly requested and the
+    user lacks the permission, refuses outright with
+    { items: [], total: 0 } rather than running any query at all;
+  - otherwise excludes every gated-but-unauthorized entityType via
+    where.entityType = { notIn: [...] }, applied identically to BOTH
+    the findMany() and the count() calls, so the total can never
+    reflect records outside the user's permission.
+
+search.controller.ts's query() handler now passes req.user.userId as
+the 4th argument.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/search/tests/search.service.spec.ts
+Added 2 new tests:
+  - "E39/G-6: excludes permission-gated entity types the user cannot
+    read from both results and the count"
+  - "E39/G-6: refuses an explicit request for a gated entityType the
+    user cannot read, without leaking a count"
+Both pass against the fix. 8/8 total in the file.
+
+BREAK/RESTORE
+=============
+Reverted gatedEntityTypes to an empty array (marked "BROKEN FOR
+PROOF") — reproducing "no entity type is ever treated as gated,"
+the exact shape of the original bug.
+
+  $ npx vitest run src/modules/search/tests/search.service.spec.ts
+  2 failed | 6 passed (8)
+  (exactly the 2 new tests — reproducing the original permission
+  bypass and count-leak on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/search/search.service.ts
+  0
+  $ npx vitest run src/modules/search/tests/search.service.spec.ts
+  8/8 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/search/
+Test Files  3 passed (3)
+     Tests  12 passed (12)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from every prior phase this session
+(same @kannan19302/shared resolution class of issue — vendor.service.ts,
+provider-registry.service.ts x2, industry-suite-catalogue.service.ts —
+none touched by this phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D112 (CRITICAL). Not fixed in this pass:
+  - ENTITY_TYPE_PERMISSIONS only covers the 4 entity types
+    globalSearch() already knows about (customer/lead/product/
+    employee). SearchIndex is populated by indexContent() for
+    ANY entityType any module chooses to index (module field is a
+    free string) — any future or existing entityType not in this map
+    is treated as ungated by default. This is a real, if narrower,
+    G-6 gap for entity types not yet enumerated.
+  - No verification that every module which calls indexContent()
+    actually registers a permission-gated entityType if the
+    underlying record is itself access-controlled — this fix closes
+    the FOUR known cases, not an exhaustive audit of every indexed
+    entity type across all ~40 modules.
+
+COMMANDS
+========
+$ npx vitest run src/modules/search/tests/search.service.spec.ts
+$ npx vitest run src/modules/search/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/search/search.service.ts
+
+COMMITS
+=======
+unierp-api  5faad14  search.service.ts, search.controller.ts,
+                     tests/search.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D112
+```
+

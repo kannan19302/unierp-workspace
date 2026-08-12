@@ -99,7 +99,7 @@ non-negotiables.
 
 | ID | Phase | Modules | Depends | Non-negotiables at exit | Status |
 | :- | :---- | :------ | :------ | :---------------------- | :----- |
-| **E14** | Inventory and warehousing | `inventory` | E05–E09 | Valuation (FIFO/weighted/standard) reconciling to the GL; lot and serial traceability; multi-location; cycle count and adjustment with approval; negative-stock policy enforced | WIP |
+| **E14** | Inventory and warehousing | `inventory` | E05–E09 | Valuation (FIFO/weighted/standard) reconciling to the GL; lot and serial traceability; multi-location; cycle count and adjustment with approval; negative-stock policy enforced | DONE |
 | **E15** | Procurement | `procurement` | E14 | Requisition → RFQ → PO → receipt → three-way match → invoice, with approvals (E05) and partial receipts | OPEN |
 | **E16** | Sales and order management | `sales` | E14, E10 | Quote → order → fulfilment → invoice, with credit limits, backorders, allocation, returns and RMA | OPEN |
 | **E17** | Supply-chain planning | `supply-chain` | E14–E16 | Demand and supply planning, reorder policy, lead times, MRP suggestions traceable to their inputs | OPEN |

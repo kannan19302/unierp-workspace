@@ -21644,3 +21644,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G05 · RELEASED · 2026-08-12T15:40:00Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+No sandbox-tenant concept, refresh-from-production pipeline, or PII-masking utility exists anywhere in this codebase (confirmed via grep across the schema and src tree). Even a from-scratch build cannot be proven per this deliverable's own exit criterion without a live production database to refresh from and a live sandbox database to refresh into - this environment has no DATABASE_URL, the same blocker as E38/E44/I11/J25. Findings filed as D130, including the one tractable piece for a follow-up (a real PII-masking utility, buildable and property-testable without live infrastructure).
+```
+

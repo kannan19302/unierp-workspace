@@ -2840,3 +2840,45 @@ analogous to `FixedAssetCategory`'s account fields; (2) a journal-posting call i
 on `manufacturing.workorder.completed`, following the exact `postDepreciation()`-style pattern proven
 in D088; (3) the same style of break/restore proof. Also not investigated in this pass: BOM versioning,
 routing, capacity, and quality gates — none of E18's other four named non-negotiables were audited.
+
+### D093 · 🔴 CRITICAL · MRP component requirements were labeled SAFETY_STOCK and pointed at the BOM, not the sales order that actually created the demand — breaking the exit criterion's own named requirement
+
+Found while claiming and building E17 (Supply-chain planning), whose own exit criterion names the
+property this defect breaks directly: "MRP suggestions traceable to their inputs." `unierp-api/src/
+modules/manufacturing/manufacturing.service.ts`'s `runMRP()` explodes a finished item's BOM to compute
+component-level requirements. The finished-item-level `MRPPlannedItem` correctly records
+`demandSource: "SALES_ORDER"` / `demandSourceId: order.id`. But the component-level requirement, derived
+from that exact same order via BOM explosion inside the same loop, was recorded as
+`demandSource: "SAFETY_STOCK"` / `demandSourceId: bom.id` — both facts are wrong. This code path runs
+**exclusively** inside `for (const order of orders)`; there is no execution path where a component
+requirement created here is independent safety-stock replenishment rather than demand dependent on a
+specific confirmed sales order. A planner investigating "why is this component being suggested?" — the
+exact question this phase's own named non-negotiable exists to answer — would find a BOM id under a
+label implying an unrelated stock-policy trigger, with no path back to the real originating order.
+
+**How it was caught:** writing a FAIL-first test simulating a two-level BOM explosion (a finished item
+requiring a component, both out of stock) driven by one sales order, and asserting the component-level
+`MRPPlannedItem.create()` call recorded `demandSource: "SALES_ORDER"` / `demandSourceId` equal to the
+real order id — the pre-existing code recorded `"SAFETY_STOCK"` / the BOM id instead.
+
+**Fixed:** the component-level `MRPPlannedItem` now records `demandSource: "SALES_ORDER"` and
+`demandSourceId: order.id`, matching the finished-item-level record's own (correct) pattern and
+preserving the true traceability chain back to the originating demand. Proven via break/restore
+(reverted to the mislabeled version, confirmed the exact original mislabeling reproduces — recorded
+`"SAFETY_STOCK"` and the BOM id — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 9/9 tests
+pass). Full regression: `src/modules/manufacturing/`, all 5 test files / 75 tests pass cleanly. Typecheck:
+same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E17's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires demand and supply planning, reorder policy, and lead times —
+none independently audited. Within `runMRP()`'s own scope:
+  - Multi-level BOM explosion (a component that itself has a sub-BOM, itself needing further
+    explosion) exists in the code (`subBom` lookup) but its own recursive requirements were not traced
+    for the same class of traceability bug — a third-level requirement's `demandSourceId` may still not
+    resolve cleanly back to the true root order without following the `bomId` chain manually, since the
+    schema itself only records one level of `demandSourceId` per row rather than a full lineage.
+  - `runMRP()`'s outer `catch {}` swallows any error with **zero** logging (not even the error message)
+    — noted on inspection but not fixed in this pass; a failed MRP run is silently marked `"FAILED"`
+    with no diagnostic trail, itself in tension with this phase's own "traceable" theme even though it
+    is a different mechanism (run-level failure diagnostics, not suggestion-level input traceability).
+  - Reorder policy and lead-time modeling were not located or investigated in this pass.

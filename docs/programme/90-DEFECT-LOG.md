@@ -4582,3 +4582,33 @@ claims in free prose, which this gate cannot check, and the deliverable's "decla
 yet hold for the rest of the site. The gate's directory check confirms a backend module directory exists; it
 does not verify the specific claimed feature is actually implemented inside it, only that the module itself
 is real.
+
+### D133 · 🔴 CRITICAL · The public pricing page is 100% hardcoded, completely disconnected from the real billing-plan data (SaaSPlan/SaaSPlanPrice) the platform actually charges from — a price change would never reach the site
+
+Found while claiming and building H05 (Pricing, plans and comparison), whose exit criterion is: "A plan
+change in C13 updates the pricing page without an edit. A mismatch fails CI." Confirmed C13's real, mature
+billing-plan model exists in the schema — `SaaSPlan` (name, limits, features, `isPublic`, `sortOrder`,
+`status`, real plan-versioning via `version`/`supersededBy`) and `SaaSPlanPrice` (real Decimal `monthly`/
+`yearly` prices per `currency`/`region`, `stripePriceId`) — and that `unierp-api` exposes it via a real,
+structured `GET /saas/plans` endpoint (`SaasController.getPlans()`). But
+`unierp-corporate-website/app/(site)/pricing/page.tsx` (a separate repository, the public marketing site)
+hardcodes a static `PLANS` array (Starter/Professional/Enterprise, with prices and feature lists embedded
+directly in source) with zero connection to `SaaSPlan`/`SaaSPlanPrice` or `GET /saas/plans` anywhere. This
+directly and completely violates the exit criterion: changing a `SaaSPlanPrice` row's price would never reach
+the public pricing page at all — the two systems (what UniERP actually charges, and what the marketing site
+claims it charges) can drift apart silently and indefinitely with nothing to catch it, the exact opposite of
+"published prices cannot drift from what is charged."
+
+**Released, not fixed.** Closing this for real requires the pricing page to fetch live plan/price data — at
+build time or request time — from a running `unierp-api` instance backed by a live PostgreSQL database with
+real seeded `SaaSPlan`/`SaaSPlanPrice` rows. Neither exists in this environment (no `DATABASE_URL`, the same
+class of blocker as E38/E44/I11/J25/G05). Unlike H03 (a directory-existence check, satisfiable with two local
+repo checkouts and no live database), H05's exit criterion is about live DATA VALUES (prices), which only
+exist in a live database — even a from-scratch integration could not be demonstrably proven, since "a plan
+change updates the page without an edit" requires actually changing a real price row and observing the page
+reflect it. A genuine follow-up needs, at minimum: a provisioned `unierp-api` + database with real seeded
+plan/price rows; a build-time or request-time data fetch replacing the hardcoded `PLANS` array (and a
+decision on whether `GET /saas/plans`'s current `"saas.read"` permission gate is appropriate for an
+unauthenticated public pricing page, or whether a separate public endpoint is needed); and a CI gate
+comparing the live plan data against the deployed page's rendered prices, failing on divergence — the actual
+"a mismatch fails CI" mechanism this phase's own exit criterion names.

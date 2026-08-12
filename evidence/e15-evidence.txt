@@ -1,0 +1,145 @@
+E15 — Procurement
+Non-negotiables at exit: "Requisition -> RFQ -> PO -> receipt ->
+three-way match -> invoice, with approvals (E05) and partial
+receipts."
+
+SCOPE NOTE
+==========
+E15's full scope covers the entire requisition-to-invoice chain with
+approvals and partial receipts. Far larger than this session's
+remaining budget. Investigated the phase's own most centrally-named
+feature directly - "three-way match" - and found the single most
+severe defect filed this session: not a subtle arithmetic bug, but a
+completely fabricated report with zero connection to real invoice
+data. Fixed it completely and correctly, and files the honest
+remaining scope rather than a shallow pass across the rest of the
+chain.
+
+THE INVESTIGATION
+==================
+Read getThreeWayMatchReport() (procurement.service.ts) in full. Found:
+
+  const invoicedQty = po.status === "RECEIVED" ? Number(poItem.quantity) : receivedQty;
+  const orderedUnitPrice = Number(poItem.unitPrice);
+  const invoicedUnitPrice = poId.endsWith("d") ? orderedUnitPrice * 1.1 : orderedUnitPrice;
+
+No invoice model was ever queried. "invoicedQty" was assumed equal to
+ordered quantity whenever the PO's own status happened to be
+RECEIVED. "invoicedUnitPrice" was decided by whether the PO's cuid
+string happens to end in the letter "d" - literally a coincidence of
+ID generation, unrelated to any real invoiced price.
+
+Confirmed the schema DOES provide a real mechanism for this:
+APInvoiceCapture / APInvoiceCaptureLine, with matchingPurchaseOrderId
+and matchingPOLineId fields specifically designed to join a captured
+vendor invoice to a PO and PO line item. This model was never used by
+getThreeWayMatchReport() at all.
+
+THE BUG, CONFIRMED
+====================
+A purchase order could be reported "MATCHED" - the exact signal an AP
+team would use to release payment - despite zero real invoice ever
+having been captured or matched to it. The "invoice" side of the
+three-way match was entirely simulated from the PO's own fields.
+
+MECHANISM (this phase's own fix)
+====================================
+getThreeWayMatchReport() now queries real APInvoiceCapture records
+(matchingPurchaseOrderId: poId, excluding REJECTED status), joins
+their APInvoiceCaptureLine rows to PO line items via matchingPOLineId,
+and computes invoicedQty (summed across matched lines) and
+invoicedUnitPrice (quantity-weighted average, for the case of
+multiple invoice lines matching one PO line) from real captured
+invoice data. Each returned line item now reports hasInvoice: boolean;
+qtyMatch/priceMatch can never be true without hasInvoice being true -
+a PO with zero captured invoices can never be reported MATCHED.
+
+PROOF
+=====
+$ npx vitest run src/modules/procurement/tests/procurement.service.spec.ts
+
+New test 1 - "should generate a 3-way match report using a real
+matched AP invoice line, not a fabricated heuristic": mocks a real
+APInvoiceCapture with a line matched via matchingPOLineId, asserts
+hasInvoice/invoicedQty/invoicedUnitPrice all come from the real
+invoice data and that prisma.aPInvoiceCapture.findMany was called
+with matchingPurchaseOrderId.
+
+New test 2 - "REFUSES to report a match when no invoice has actually
+been captured for the PO - no invoice ID string heuristic": a fully-
+received PO with ZERO matched invoice captures. Asserts hasInvoice is
+false, qtyMatch is false, overallMatch is false.
+
+Both FAILED against the pre-existing code before the fix (the old
+code had no hasInvoice field at all, and would have reported the
+zero-invoice PO as matched via the po.status/poId.endsWith heuristic).
+Real FAIL-first proof.
+Both PASS after the fix.
+All 11 tests in procurement.service.spec.ts pass (9 pre-existing + 2
+new); all 29 tests in procurement.service.coverage.spec.ts still pass
+unchanged.
+
+BREAK/RESTORE
+=============
+Reverted getThreeWayMatchReport() to the original fabricated heuristic
+(marked "BROKEN FOR PROOF").
+
+  $ npx vitest run procurement.service.spec.ts
+  2 failed | 9 passed (11)
+  (exactly the 2 new tests - reproducing the original fabrication on
+  purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" procurement.service.ts
+  (no matches — 0)
+  $ npx vitest run procurement.service.spec.ts procurement.service.coverage.spec.ts
+  40/40 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/procurement/
+Test Files  22 passed (22)
+     Tests  212 passed (212)
+Clean pass - no pre-existing collection failures in this module.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09-E14 (same
+@kannan19302/shared resolution class of issue, none touched by this
+phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D090 (CRITICAL - the most severe finding this session; a
+fabricated feature, not an arithmetic bug). Not investigated/resolved
+in this pass:
+  - The full requisition -> RFQ -> PO -> receipt chain with approvals
+    and partial receipts - not re-verified; only the three-way-match
+    report itself was audited.
+  - The quantity-weighted-average approach for invoicedUnitPrice when
+    multiple invoice lines match one PO line was not validated against
+    any real AP reconciliation policy - whether a genuine price
+    variance should itself trigger a discrepancy flag (vs. just
+    averaging it away) is unresolved.
+  - APInvoiceCapture.status values other than REJECTED (QUEUED, DRAFT,
+    REVIEW_REQUIRED) are currently all treated as valid matches;
+    whether an unreviewed capture should count toward a MATCHED result
+    is a real AP-controls question not resolved here - plausibly only
+    PROCESSED should count, a stricter default worth a follow-up
+    decision.
+  - This defect's own discovery pattern - a report/feature that looks
+    complete (real endpoint, real DTOs, plausible function) but is
+    entirely fabricated on close reading - is flagged as worth
+    auditing across other "report"-shaped endpoints in the codebase,
+    not just arithmetic bugs in otherwise-real logic (this session's
+    other D084/D085/D086/D088/D089 pattern).
+
+COMMANDS
+========
+$ npx vitest run src/modules/procurement/tests/procurement.service.spec.ts
+$ npx vitest run src/modules/procurement/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  324dabc  procurement.service.ts, procurement.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D090

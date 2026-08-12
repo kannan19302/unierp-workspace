@@ -2680,3 +2680,64 @@ this pass. Critically, within the negative-stock fix's own narrow scope:
     (`inventory-warehouses.service.ts`, `transfer-orders.service.ts`, `pick-waves.service.ts`,
     `stock-take.service.ts`, etc.) was not searched for the same unchecked-decrement pattern — this
     session's own repeated experience (D084/D085/D086/D088) suggests more instances are plausible.
+
+### D090 · 🔴 CRITICAL · ProcurementService.getThreeWayMatchReport() was completely fabricated — no real invoice was ever queried; "invoiced" values were derived from PO status and a coin-flip on the PO id string
+
+Found while claiming and building E15 (Procurement), whose own exit criterion names the exact feature
+this defect breaks: "Requisition → RFQ → PO → receipt → three-way match → invoice." This is the most
+severe defect filed this session — not a subtle arithmetic bug, but a fabricated report with zero
+connection to real data, on the phase's own central named feature.
+
+`unierp-api/src/modules/procurement/procurement.service.ts`'s `getThreeWayMatchReport()` never queried
+any invoice record at all (`APInvoiceCapture`/`APInvoiceCaptureLine`, which the schema provides
+specifically for this purpose via `matchingPurchaseOrderId`/`matchingPOLineId`). Instead:
+
+```
+const invoicedQty = po.status === "RECEIVED" ? Number(poItem.quantity) : receivedQty;
+const invoicedUnitPrice = poId.endsWith("d") ? orderedUnitPrice * 1.1 : orderedUnitPrice;
+```
+
+`invoicedQty` was assumed equal to the ordered quantity whenever the PO's own status happened to be
+`"RECEIVED"` — nothing to do with any invoice. `invoicedUnitPrice` was decided by whether the **string**
+`poId` happened to end in the letter `"d"` — a coincidence of cuid generation with literally zero
+relationship to any invoiced price. A purchase order could be reported `MATCHED` — the report a real
+accounts-payable team would rely on to release payment — despite no invoice ever having been captured
+or matched to it at all.
+
+**How it was caught:** reading `getThreeWayMatchReport()` in full while investigating this phase's
+central exit criterion. The `poId.endsWith("d")` line is self-evidently not a real business rule on
+inspection; confirmed via a FAIL-first test that a fully-received PO with **zero** matched
+`APInvoiceCapture` records still reported `hasInvoice` as `undefined`/matching behavior implying a
+match was possible with no invoice ever checked.
+
+**Fixed:** `getThreeWayMatchReport()` now queries real `APInvoiceCapture` records
+(`matchingPurchaseOrderId: poId`, excluding `REJECTED`), joins their `APInvoiceCaptureLine`s to PO line
+items via `matchingPOLineId`, and computes `invoicedQty` (summed) and `invoicedUnitPrice`
+(quantity-weighted average, for the case of multiple invoice lines matching one PO line) from real
+captured invoice data. Each line item now also reports `hasInvoice: boolean`; `qtyMatch`/`priceMatch`
+can never be `true` without a real matched invoice — a PO with zero captured invoices can never be
+reported `MATCHED`, closing the exact hole the fabricated heuristic left open. Proven via break/restore
+(reverted to the original fabricated heuristic, confirmed both new tests fail against it — a real
+matched invoice no longer registers, and the "no invoice at all" case no longer distinguishes itself —
+restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 11/11 + 29/29 tests pass). Full regression:
+`src/modules/procurement/`, all 22 test files / 212 tests pass cleanly (no collection failures in this
+module). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E15's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires the full chain (requisition → RFQ → PO → receipt) with
+approvals and partial receipts, none independently re-verified in this pass — only the three-way-match
+report itself was audited. Within this fix's own scope:
+  - The quantity-weighted-average approach for `invoicedUnitPrice` when multiple invoice lines match one
+    PO line is a reasonable default but was not validated against any real AP reconciliation policy —
+    whether a genuine price *variance* (not just a different average) should itself trigger a
+    discrepancy flag was not determined.
+  - `APInvoiceCapture.status` values other than `REJECTED` (e.g. `QUEUED`, `DRAFT`,
+    `REVIEW_REQUIRED`) are currently all treated as valid matches; whether an unreviewed/unconfirmed
+    capture should count toward a `MATCHED` three-way-match result is a real AP-controls question not
+    resolved here — plausibly only `PROCESSED` should count, which would be a stricter, safer default
+    worth a follow-up decision.
+  - This defect's own discovery pattern — a report/feature that LOOKS complete (has a real endpoint,
+    real DTOs, a plausible-looking function) but is entirely fabricated on close reading — is a strong
+    signal to audit other "report"-shaped endpoints across the codebase for the same pattern, not just
+    arithmetic bugs in otherwise-real logic (the D084/D085/D086/D088/D089 pattern). This is a materially
+    different and more severe class of defect than this session's other findings.

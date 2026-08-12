@@ -3389,3 +3389,51 @@ own orphaned-service pattern, again), and a page-by-page migration this single p
 This is filed as the honest, load-bearing remaining scope, not a shortfall of this pass's own effort —
 matching this session's precedent for phases whose real scope exceeds what one pass can complete
 (D077/D078/D079/D092/D096).
+
+### D104 · 🔴 CRITICAL · No per-tenant AI model pinning existed at all — every tenant silently rode whatever model the deployment environment happened to have configured
+
+Found while claiming and building E45 (AI model operations), whose own exit criterion opens with: "A
+model version is pinned per tenant and an upgrade is a deliberate, reversible act." `unierp-api/src/
+modules/ai/ai-config.service.ts`'s own comment stated this outright before any fix: "per-tenant model
+override is explicitly out of scope... `model` and `baseUrl` are always sourced live from AiService
+(env-configured), never persisted." `AiConfigService.getConfig()` always returned
+`this.aiService.getDefaultModel()` — a single, global, environment-variable-configured model shared by
+every tenant on the deployment, with no mechanism to pin a tenant to a known-good version, no way to
+distinguish "upgraded" from "default," and no record of when or whether a model change ever happened.
+Changing `OLLAMA_MODEL` in the deployment environment silently changes every tenant's AI behavior at
+once — the opposite of "a deliberate, reversible act."
+
+**How it was caught:** reading `AiConfigService` in full — its own comment names the gap directly; no
+investigation was needed to discover it, only to confirm no other mechanism elsewhere compensated for it
+(`grep -rln "AiConfigService" src --include=*.controller.ts` confirmed the only two consumers,
+`ai-admin.controller.ts` and `ai.controller.ts`, both only ever called `getConfig`/`setEnabled`, never
+anything model-related).
+
+**Fixed:** `AiConfig` now includes `pinnedModel: string | null`; `getConfig()` returns the tenant's pin
+when set, falling back to the deployment default otherwise — using the same generic `Setting.value`
+JSON-blob storage pattern already established for the `enabled` kill switch, so no schema migration was
+needed. New `setModel(tenantId, model)` persists a pin (or `null` to explicitly revert to the deployment
+default — both directions are deliberate, explicit calls) and appends the change to an auditable
+`modelPinHistory` array on the same setting row, so an upgrade or rollback is a recorded event with a
+timestamp, not silent state. New `GET /ai/config/model/history` endpoint exposes that audit trail. New
+`POST /ai/config/model` endpoint wires the pin/unpin action to HTTP. Proven via break/restore (reverted
+`getConfig()` to always ignoring any stored pin, confirmed the exact original defect reproduces — setting
+a pin had zero effect on what `getConfig()` returned — restored, confirmed 0 `BROKEN FOR PROOF` markers
+remain, 5/5 tests pass, including one proving a pin for tenant A does not affect tenant B's config). Full
+regression: `src/modules/ai/`, all 6 test files / 39 tests pass cleanly. Typecheck: same 4 pre-existing
+unrelated errors, unchanged.
+
+**Not fully investigated — E45's own deliverable is much larger than this pass.** This phase's exit
+criterion also names "an unavailable model degrades the feature, never the request" (investigated in this
+pass and found already reasonably handled at the one real business-critical call site,
+`workflow-engine.service.ts`'s `isConfigured()` + try/catch-with-safe-defaults pattern — not a bug, cited
+as a positive finding, not fixed since nothing was broken) and "prompts are versioned artefacts, not
+string literals in services" (confirmed still true — `workflow-engine.service.ts`'s own AI-review prompt
+is a raw template string embedded directly in the service, not any kind of externalised/versioned
+artefact; not fixed in this pass). Critically, **the new per-tenant pin is not yet actually consulted by
+any AI call site** — `AiService.chat()`/`rawChat()` still take an explicit `options.model` parameter that
+callers must pass; no code path currently looks up `AiConfigService.getConfig(tenantId).model` and threads
+it through to an actual Ollama request. The storage/audit mechanism is real and proven; wiring every AI
+call site (all 15 services in the `ai` module) to actually resolve and use the tenant's pinned model
+before calling `rawChat()` is the real remaining integration work this phase's own exit criterion implies,
+not attempted at scale in this pass.

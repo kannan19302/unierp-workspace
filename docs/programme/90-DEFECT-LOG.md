@@ -2453,3 +2453,50 @@ pass. A dedicated, wider audit of every OTHER money-arithmetic path in `gl-accou
 the broader `advanced-finance`/`finance` modules) for the same float-vs-Decimal class of bug is a
 high-priority follow-up — this defect's own discovery, by inspecting one function closely rather than
 assuming the file was internally consistent, suggests more instances are plausible.
+
+### D085 · 🔴 CRITICAL · FinanceService.createPayment() rejected legitimate final payments outright due to float-vs-Decimal arithmetic — same class of bug as D084, different code path
+
+Found while claiming and building E10 (Receivables, payables and cash), whose own exit criterion
+names "part-payment" and "every posting traceable to a source document" among its non-negotiables.
+`unierp-api/src/modules/finance/finance.service.ts`'s `createPayment()` converted the invoice's real
+`Decimal(19,4)` columns (`paidAmount`, `totalAmount`) to plain JavaScript `Number` via `Number(...)`,
+then did `currentPaid + dto.amount` in float arithmetic, compared the result to `totalAmount` with
+`>` to reject overpayment, and with strict `===` to decide whether to transition the invoice to
+`PAID`. This directly repeats D084's class of bug (money arithmetic in float, violating
+`CODE_STANDARDS`' explicit "Money is `Decimal(19,4)`... never converted to `number` for arithmetic"
+rule) — predicted as plausible in D084's own "not fully investigated" note, now confirmed on a
+second, independent code path.
+
+The consequence is worse than a stuck status flag: IEEE 754 addition is not exact (e.g.
+`0.2 + 0.1 === 0.30000000000000004`, not `0.3`), so a legitimate final partial payment that
+mathematically completes an invoice exactly can compute a `newPaidAmount` that is both `!== totalAmount`
+(stuck at `PARTIALLY_PAID` forever) AND, in the confirmed reproduction, `> totalAmount` — meaning the
+payment is **rejected outright** with `BadRequestException("Payment amount exceeds total due amount")`,
+even though it was for the exact remaining balance.
+
+**How it was caught:** writing a FAIL-first test (`src/modules/finance/tests/finance-payment-decimal.service.spec.ts`)
+for an invoice with `paidAmount = 0.2`, `totalAmount = 0.3`, and a final payment of `0.1` — the
+pre-existing code threw `BadRequestException: Payment amount exceeds total due amount` against a
+payment that mathematically completes the invoice exactly.
+
+**Fixed:** `createPayment()` now constructs `Prisma.Decimal` for `currentPaid`, `totalAmount`, and
+the payment amount, and uses `.plus()` / `.greaterThan()` / `.equals()` throughout — zero float
+arithmetic on money, matching the pattern established in D084's fix. Proven via break/restore
+(reverted to the original float arithmetic, confirmed the FAIL-first test fails again with the
+identical `BadRequestException`, restored, confirmed clean pass, confirmed the restored file is
+byte-identical to the fixed version). Full regression: `src/modules/finance/` and
+`src/modules/advanced-finance/` — 629/629 real tests pass (2 pre-existing suite-collection failures,
+`Cannot find package '@unerp/shared'`, unrelated to this change, unchanged from E09). Typecheck: same
+4 pre-existing `@kannan19302/shared` resolution errors, unchanged.
+
+**Not fully investigated — E10's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion is far larger than the one bug found and fixed here: ageing, dunning,
+allocation (multi-invoice payment splitting), write-off, and bank reconciliation. Searching
+`unierp-api/src/modules/finance/ar-deep.service.ts` found NO allocation/write-off/bank-reconciliation
+logic at all — only collections-queue, credit-management, credit-hold, promise-to-pay, and
+dispute-management methods. Whether allocation/write-off/bank-reconciliation exist elsewhere in the
+repo, exist nowhere yet, or are out of scope for this checkout was not determined in this pass. A
+dedicated audit of `ap-deep.service.ts` and `finance-operations.service.ts` (both also matched the
+`recordPayment|createPayment|applyPayment` search that led to this fix) for the same float-vs-Decimal
+class of bug is a high-priority follow-up, following this defect's own precedent that assuming
+internal consistency is unsafe without inspection.

@@ -3535,3 +3535,41 @@ this phase. Building the "governed metric layer" itself — a single source of t
 independent "outstanding balance" calculations could be migrated to consume, instead of each
 re-implementing its own definition — is the real, large remaining scope this phase's own exit criterion
 implies and was not attempted at scale in this pass.
+
+### D107 · 🔴 CRITICAL · The three core financial statements (balance sheet, P&L, trial balance) all included DRAFT (unposted, unapproved) journal entries — none of them could ever reconcile to the actual ledger
+
+Found while claiming and building E34 (Standard report library), whose own exit criterion states: "Every
+module's expected report set exists and reconciles to its source data." `unierp-api/src/modules/finance/
+finance-operations.service.ts`'s three core financial-statement methods —
+`getBalanceSheet()`, `getProfitLoss()`, and `getTrialBalance()` — each queried `prisma.journalEntry.
+findMany()` with a filter on `tenantId`, the account type, and a date range, but **none of them filtered
+on the parent `Journal`'s own `status` field**. `Journal.status` defaults to `"DRAFT"` and only becomes
+`"POSTED"` once finalized (the same field D084's fix in `gl-accounting.service.ts` made exactness-checked
+for double-entry balance, earlier this session). Every one of these three reports silently included
+unposted, unapproved journal entries as if they were real, finalized accounting facts — meaning none of
+them could ever actually reconcile to the posted general ledger, the exact requirement this phase's own
+exit criterion names.
+
+**How it was caught:** writing a FAIL-first test for `getBalanceSheet()` with one real $100 POSTED entry
+and one $9,000 DRAFT entry against the same account — the pre-existing code reported `assets.total: 9100`
+instead of the correct `100`, a ~91x inflation entirely attributable to an unposted entry. The identical
+pattern was then found and fixed in `getProfitLoss()` and `getTrialBalance()`, the two sibling report
+methods in the same file, each independently missing the same filter.
+
+**Fixed:** all three methods now add `journal: { status: "POSTED" }` to their `journalEntry.findMany()`
+where-clauses. Proven via break/restore for all three simultaneously (reverted all three filters, confirmed
+all three FAIL-first tests reproduce the exact original defect — inflated totals including the DRAFT
+entry's amount — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, all 50 tests in the file pass).
+Full regression: `src/modules/finance/`, 167/167 real tests pass (1 pre-existing unrelated `@unerp/shared`
+collection failure, unchanged). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E34's own scope is much larger than three report methods.** This phase's own
+deliverable names "the reports each module is expected to have — statutory, operational, management — as
+governed definitions" across all modules, not just these three finance reports. Other report-generating
+methods across `finance-operations.service.ts` itself (e.g. `getCashPositionReport`, `getCashFlow`, seen
+adjacent to the three fixed here) and the dozens of other reporting services across other modules
+(`advanced-finance`, `reporting`, `manufacturing`, etc.) were not audited for the same missing-status-
+filter pattern — this defect's own discovery (the identical gap independently present in three separate
+methods in one file) strongly suggests more instances are plausible elsewhere in the codebase, following
+this session's now-repeated experience that a bug found once in isolation is rarely isolated (D084/D085/
+D086, D088/D092, D097/D099 all showed the same "found once, more likely elsewhere" pattern).

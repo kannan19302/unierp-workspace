@@ -2636,3 +2636,47 @@ was audited and fixed. NOT investigated in this pass:
 This defect's own discovery pattern (an optional GL-account check silently degrading to "post the
 domain event, skip the GL journal") is a plausible systemic pattern worth checking across the other 6
 event types and, by extension, other GL-posting services outside `fixed-assets` entirely.
+
+### D089 · 🔴 CRITICAL · No negative-stock policy existed anywhere in the inventory module — InventoryService.submitStockEntry() decremented on-hand quantity with no floor check at all
+
+Found while claiming and building E14 (Inventory and warehousing), whose own exit criterion names
+"negative-stock policy enforced" as one of its non-negotiables. A repo-wide search for
+`negativeStock`/`allowNegativeStock`/`negative_stock` across `unierp-api/src/modules/inventory/*.ts`
+(46 service files) returned **zero matches** — the concept this phase's exit criterion names does not
+exist anywhere in the module, not even as a stubbed or disabled config flag.
+`unierp-api/src/modules/inventory/inventory.service.ts`'s `submitStockEntry()` — the primary path by
+which committed stock movements actually adjust on-hand inventory — decremented
+`inventoryItem.quantity` via a bare Prisma `{ decrement: item.quantity }` with no prior read of the
+current quantity and no check of any kind. A stock entry requesting more units than were on hand would
+be submitted successfully, silently driving the warehouse's on-hand quantity negative.
+
+**How it was caught:** writing a FAIL-first test for a stock entry requesting 50 units from a warehouse
+with only 20 on hand — the pre-existing code resolved successfully (no rejection), decrementing straight
+through to a negative balance.
+
+**Fixed:** `submitStockEntry()` now reads the current on-hand quantity via `tx.inventoryItem.findFirst()`
+inside the same transaction, immediately before the decrement, and throws `BadRequestException` (naming
+the product, warehouse, available quantity, and requested quantity) if the requested quantity exceeds
+what's available. Proven via break/restore (reverted to the unchecked decrement, confirmed the exact
+original defect reproduces — the entry resolved successfully instead of rejecting — restored, confirmed
+0 `BROKEN FOR PROOF` markers remain, 2/2 tests pass). Full regression: `src/modules/inventory/`, all 47
+test files / 751 tests pass cleanly (no pre-existing collection failures in this module, unlike the
+finance modules). Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E14's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion also requires: valuation (FIFO/weighted/standard) reconciling to the GL; lot
+and serial traceability; multi-location; cycle count and adjustment with approval — none investigated in
+this pass. Critically, within the negative-stock fix's own narrow scope:
+  - Only the `fromWarehouseId` branch of `submitStockEntry()` was fixed. The sibling `fromBinId`
+    (bin-location-level) decrement in the same method has the identical unchecked-decrement pattern and
+    was NOT fixed — a stock entry could still drive a specific bin negative even while the warehouse
+    total is correctly checked.
+  - No policy CONFIGURABILITY was added (e.g., a per-product or per-warehouse
+    `allowNegativeStock` override for legitimate backorder/drop-ship scenarios where negative stock is
+    intentional) — this fix is a hard block, which may be too strict for some real business flows;
+    whether the plan intends a configurable policy or a hard block was not determined from the phase
+    brief's terse wording ("negative-stock policy enforced") and was not investigated further.
+  - Every OTHER inventory-quantity-decrementing code path across the module's other 45 service files
+    (`inventory-warehouses.service.ts`, `transfer-orders.service.ts`, `pick-waves.service.ts`,
+    `stock-take.service.ts`, etc.) was not searched for the same unchecked-decrement pattern — this
+    session's own repeated experience (D084/D085/D086/D088) suggests more instances are plausible.

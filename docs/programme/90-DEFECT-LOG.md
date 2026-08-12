@@ -4051,3 +4051,39 @@ denylist of specific phrases confirmed false today; it will not catch a differen
 claim — H03 (claim-verification gate, still OPEN in this same plan) is the broader, capability-manifest-
 backed mechanism this gate deliberately does not attempt to replace. Regional requirements beyond GDPR/CCPA
 were not reviewed.
+
+### D119 · 🔴 CRITICAL · Usage metering was not idempotent under replay — a retried batch delivery either crashed on a unique-constraint violation or silently double-counted toward billing, and no invoice-to-event tracing exists at all
+
+Found while claiming and building K05 (Metering pipeline), whose exit criterion is: "Metering is idempotent
+under replay: the same event delivered twice is counted once, proven by test. An invoiced quantity traces to
+individual events." `SaasMeteringEngineDeepService.processUsageBatch()` (`src/modules/saas/metering-engine.
+service.ts`), reachable via `POST /saas/metering/batches`, called `prisma.saasUsageEventBatch.create()`
+unconditionally — no lookup, no existence check. `batchRef` is `@unique` in the schema, so a genuine replay
+of the same batchRef would hit an unhandled Prisma `P2002` unique-constraint violation (a 500, not a graceful
+idempotent response) — and the original code defaulted `batchRef` to a freshly generated
+`BATCH-${Date.now()}` whenever the caller omitted it, meaning a caller without a stable replay key (or one
+whose retry regenerated the ref) could silently create a second batch row for the exact same events, with no
+error at all — real double-counting toward billing. Neither behavior is "counted once."
+
+**Fixed:** `processUsageBatch()` now requires `batchRef` explicitly (rejects with `BadRequestException` if
+absent — metering cannot be idempotent without a caller-supplied, stable replay key), looks up an existing
+`(tenantId, batchRef)` batch first, and returns the existing record unchanged on replay instead of
+reprocessing or erroring; only creates a new row when no matching batch exists for that tenant. Proven via
+break/restore: reverted the lookup to always return `null` (marked "BROKEN FOR PROOF"), confirmed the exact
+replay test fails — a second delivery of the same `batchRef` created a second batch row with a different id,
+reproducing the original double-counting defect — restored, confirmed 0 `BROKEN FOR PROOF` markers remain,
+4/4 tests pass. Full regression: `src/modules/saas/`, 9 test files / 52 tests pass cleanly. Typecheck: same 4
+pre-existing unrelated errors, unchanged.
+
+**Not fixed — the honest remaining gap, the deliverable's larger half.** The exit criterion's second
+sentence, "An invoiced quantity traces to individual events," is entirely unbuilt — `billing.service.ts`
+contains zero references to `saasUsageEventBatch` or `SaasUsageRecord` anywhere; there is no code path from a
+metered usage event to an invoice line item at all. `processUsageBatch()` itself only writes the raw event
+payload as an opaque JSON blob on the batch row; it never expands events into individual `SaasUsageRecord`
+rows (the model with a real per-tenant/per-subscription/per-meter shape suited to aggregation), so there is
+no per-event storage to trace an invoiced quantity back to even in principle. "Deduplicated" at the
+individual-event level (within a batch, or across batches with different refs covering overlapping events)
+is not addressed — this fix only deduplicates at the whole-batch level via `batchRef`. No aggregation step
+and no reconciliation report of any kind exist. These are genuinely separate, large pieces of the
+deliverable — a full usage-to-invoice pipeline, not a single-session addition — named explicitly rather than
+implied fixed by this pass's narrower, concrete replay-idempotency fix.

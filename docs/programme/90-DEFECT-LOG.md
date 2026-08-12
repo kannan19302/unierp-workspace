@@ -4087,3 +4087,42 @@ is not addressed — this fix only deduplicates at the whole-batch level via `ba
 and no reconciliation report of any kind exist. These are genuinely separate, large pieces of the
 deliverable — a full usage-to-invoice pipeline, not a single-session addition — named explicitly rather than
 implied fixed by this pass's narrower, concrete replay-idempotency fix.
+
+### D120 · 🔴 CRITICAL · Dead-lettered outbox deliveries silently never replayed — the replay endpoint reset the database row to PENDING, but the re-enqueue used the same BullMQ jobId as the already-terminal failed job, so the worker was never actually invoked again
+
+Found while claiming and building J18 (Outbox, idempotency and eventual-consistency testing), whose exit
+criterion has two halves: "A duplicated event produces no duplicated effect. A dead-lettered event replays to
+a correct outcome." Reviewing the first half against `outbox-processor.service.ts` found it genuinely
+adequate — a real delivery-status check (`status !== "LEASED" && status !== "PENDING"` → skip), a single
+transaction wrapping the handler invocation and the COMPLETED status update, and `FOR UPDATE SKIP LOCKED`
+claiming — not fabricated, holds up under inspection.
+
+The second half had a genuine, concrete bug. `outbox-dispatcher.service.ts`'s `enqueueDeliveries()` used the
+bare delivery id as the BullMQ `jobId`. `outbox.module.ts` registers the queue with `removeOnFail: 5000`,
+keeping up to 5000 failed jobs in Redis before the oldest are pruned by count, not age — a delivery that
+reaches `DEAD` (after `MAX_ATTEMPTS=10`) keeps its BullMQ job around under that same jobId for a realistically
+long time. `replayDeadLetter()` (`outbox-metrics.service.ts`) resets the delivery row to
+`status: "PENDING", attempts: 0` — a pure database write, never touching BullMQ. The next dispatcher poll
+re-claims the row and calls `queue.addBulk` with a job using the SAME jobId as the original, now-terminal job.
+BullMQ does not schedule a new attempt for a jobId that already exists in a terminal state — `add()`/
+`addBulk()` return the existing (already-failed) job without re-queueing it for a worker. The database showed
+the delivery back in PENDING/LEASED — looking replayed — but the worker was never actually invoked again: a
+"replayed" dead letter would silently never reprocess.
+
+**Fixed:** `enqueueDeliveries()` now generates a fresh, unique jobId per enqueue attempt
+(`${d.id}:${Date.now()}:${random}`) instead of the bare delivery id. `claimDeliveries()`'s `FOR UPDATE SKIP
+LOCKED` already guarantees exactly one dispatcher instance claims a given PENDING row per poll cycle, so
+BullMQ-level jobId collision protection was never needed for correctness — it was only ever actively harmful
+to replay. Proven via break/restore against a mocked BullMQ Queue: reverted jobId to the bare delivery id
+(marked "BROKEN FOR PROOF"), confirmed both the updated jobId-shape assertion and a new dedicated replay test
+fail exactly as the original defect would produce, restored, confirmed 0 `BROKEN FOR PROOF` markers remain,
+4/4 tests pass. Full regression: `src/modules/outbox/`, 3 test files / 31 tests pass cleanly. Typecheck: same
+4 pre-existing unrelated errors, unchanged.
+
+**Not fixed — the honest remaining gap.** This fix and its proof are against a mocked BullMQ Queue — this
+environment has no `REDIS_URL` configured (confirmed), so the fix could not be exercised against a live
+Redis instance's real terminal-job-return behavior, the same class of infrastructure gap as E38/E44/I11.
+"Out-of-order delivery" (the deliverable's other named scenario) was not investigated — `outboxEvent` has a
+`sequence` field, but whether consumers correctly handle events arriving out of order was not tested. No
+dedicated eventual-consistency test suite covers the deliverable's full named list; only this one replay-path
+defect was found and fixed.

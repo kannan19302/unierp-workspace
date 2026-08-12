@@ -1,0 +1,149 @@
+J18 — Outbox, idempotency and eventual-consistency testing
+Deliverable: "Duplicate delivery, out-of-order delivery, dead-letter
+handling and replay all tested."
+Exit: "A duplicated event produces no duplicated effect. A
+dead-lettered event replays to a correct outcome."
+
+THE INVESTIGATION
+==================
+Read the outbox module end to end: outbox-dispatcher.service.ts
+(claims PENDING deliveries and enqueues BullMQ jobs),
+outbox-processor.service.ts (the worker that runs handlers),
+outbox-metrics.service.ts's replayDeadLetter(), and the existing
+outbox-dispatcher.service.spec.ts test file, against both halves of
+the exit criterion separately.
+
+HALF 1 — "A duplicated event produces no duplicated effect"
+================================================================
+VERDICT: real, adequate, confirmed by reading the mechanism, not a
+comment claiming it. outbox-processor.service.ts's process() checks
+`delivery.status !== "LEASED" && delivery.status !== "PENDING"` and
+returns immediately if the delivery has already moved past that
+point - a duplicate BullMQ job execution for an already-COMPLETED (or
+already-DEAD) delivery is a genuine no-op, not a re-run. The handler
+invocation itself is wrapped in `prisma.$transaction` alongside the
+status update to COMPLETED and an outboxConsumerReceipt row, so a
+crash between "handler ran" and "status marked COMPLETED" rolls back
+both together - no partial-effect-then-retry-reprocesses gap. Claiming
+(claimDeliveries) uses `FOR UPDATE SKIP LOCKED` so two dispatcher
+instances cannot both claim the same PENDING row. This half of the
+exit criterion was not fabricated; it holds up under inspection.
+
+HALF 2 — "A dead-lettered event replays to a correct outcome"
+==================================================================
+FOUND AND FIXED THIS PASS: a genuine, concrete bug that silently
+broke replay.
+
+outbox-dispatcher.service.ts's enqueueDeliveries() used the bare
+delivery id as the BullMQ jobId (`opts: { jobId: d.id }`). Checked
+outbox.module.ts's queue registration:
+
+  removeOnComplete: 1000
+  removeOnFail: 5000
+
+`removeOnFail: 5000` keeps up to 5000 failed jobs in Redis before the
+oldest get pruned by count - not by age. A delivery that reaches DEAD
+(after MAX_ATTEMPTS=10 retries in outbox-processor.service.ts) keeps
+its BullMQ job around under that SAME jobId for a realistically long
+time - far longer than any operator would plausibly wait before
+calling `POST /replay-dead-letter`.
+
+`replayDeadLetter()` (outbox-metrics.service.ts) resets the delivery
+row to `status: "PENDING", attempts: 0, availableAt: now` - purely a
+database write, it never touches BullMQ directly. The NEXT dispatcher
+poll cycle re-claims that row (now PENDING again) and calls
+`queue.addBulk` with a job using the SAME jobId as the row's original,
+now-DEAD job. BullMQ does not schedule a new attempt for a jobId that
+already exists in a terminal state - `add()`/`addBulk()` just return
+the existing (already-failed) Job object without re-queueing it for a
+worker. The database shows the delivery back in PENDING/LEASED status
+- looking replayed - but the worker is never actually invoked again.
+A dead letter "replayed" through this endpoint would silently never
+reprocess, directly violating this half of the exit criterion.
+
+MECHANISM (this phase's fix)
+====================================
+enqueueDeliveries() now generates a fresh, unique jobId per enqueue
+attempt (`${d.id}:${Date.now()}:${random}`) instead of the bare
+delivery id. claimDeliveries()'s `FOR UPDATE SKIP LOCKED` already
+guarantees exactly one dispatcher instance claims a given PENDING row
+per poll cycle, so BullMQ-level jobId collision protection was never
+needed for correctness here - it was only ever actively harmful to
+replay.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/outbox/tests/outbox-dispatcher.service.spec.ts
+Updated the existing test's jobId assertion to match the new
+`<id>:<timestamp>:<random>` shape, and added:
+  - "J18: a replayed dead-lettered delivery gets a fresh jobId, not
+    the id of its already-terminal job" - simulates two poll cycles
+    for the SAME delivery id (as would happen on a genuine replay)
+    and asserts the two enqueue calls used DIFFERENT jobIds.
+4/4 tests pass against the fix.
+
+BREAK/RESTORE
+=============
+Reverted jobId back to the bare `d.id` (marked "BROKEN FOR PROOF") -
+reproducing the exact original defect.
+
+  $ npx vitest run outbox-dispatcher.service.spec.ts
+  2 failed | 2 passed (4)
+  (the original jobId-shape assertion AND the new replay test both
+  failed - both assert "the jobId is not just the bare delivery id,"
+  reproducing the collision on purpose)
+
+Restored:
+  $ grep -c "BROKEN FOR PROOF" src/modules/outbox/outbox-dispatcher.service.ts
+  0
+  $ npx vitest run outbox-dispatcher.service.spec.ts
+  4/4 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/outbox/
+Test Files  3 passed (3)
+     Tests  31 passed (31)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from every prior phase this session
+(same @kannan19302/shared resolution class of issue, none touched by
+this phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D120 (CRITICAL). Not fixed in this pass:
+  - This fix and its proof are against a mocked BullMQ Queue, not a
+    live Redis instance - this environment has no REDIS_URL
+    configured (confirmed: `node -e "console.log(process.env.REDIS_URL
+    || 'NOT SET')"` returns NOT SET). The mocked-Queue proof
+    demonstrates the jobId collision and its fix at the code level;
+    it does not exercise BullMQ's real terminal-job-return behavior
+    against a live Redis instance, which would need real
+    infrastructure this environment does not provide (the same class
+    of gap as E38/E44/I11).
+  - "Out-of-order delivery" (the deliverable's other named scenario)
+    was not investigated in this pass - outboxEvent has a `sequence`
+    field (confirmed in the processor's handler payload), but whether
+    consumers correctly handle events arriving out of sequence order
+    was not tested here.
+  - No dedicated eventual-consistency test suite exists covering the
+    deliverable's full named list (duplicate delivery is covered by
+    existing mechanism + this session's confirmation; out-of-order
+    delivery and a broader dead-letter-handling suite beyond this one
+    replay-path fix are not built).
+
+COMMANDS
+========
+$ npx vitest run src/modules/outbox/tests/outbox-dispatcher.service.spec.ts
+$ npx vitest run src/modules/outbox/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/outbox/outbox-dispatcher.service.ts
+$ node -e "console.log(process.env.REDIS_URL || 'NOT SET')"
+
+COMMITS
+=======
+unierp-api  9c0b010  outbox-dispatcher.service.ts,
+                     tests/outbox-dispatcher.service.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D120

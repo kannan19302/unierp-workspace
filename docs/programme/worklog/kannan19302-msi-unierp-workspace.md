@@ -22176,3 +22176,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### I01 · RELEASED · 2026-08-12T16:14:13Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+No Flutter/Dart SDK is installed in this environment - flutter analyze and a real CI build cannot be executed/verified here, same blocker as I04/I11. A real, substantial structural fix WAS made and committed though: mobile-ci.yml pointed at a monorepo apps/mobile path that hasn't existed since the platform split, and unierp-mobile's own ci.yml never called it anyway (called the ill-fitting Node reusable-ci.yml instead, with no package.json to act on) - this Flutter client had zero real CI coverage from either angle. Fixed both. Repo hygiene confirmed already clean via git ls-files. Findings filed as D137.
+```
+

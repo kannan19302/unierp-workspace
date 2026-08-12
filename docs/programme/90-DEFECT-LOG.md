@@ -2021,3 +2021,29 @@ encryption-at-rest), (2) an actual encryption registry naming which of the 21 mo
 vs. exempted and why, and (3) the encryption code itself for whichever models don't yet have it. This is a
 multi-session effort at true platform scale, exactly the class of finding this session's D12/D19/J04
 precedent says to report honestly rather than understate.
+
+### D071 · 🔴 CRITICAL · Leave balance counted approved REQUESTS, not DAYS — and approveLeaveRequest never checked balance at all
+
+Found while claiming and building E22 (Talent, time and attendance). `HrService.getLeaveBalances()`
+(`unierp-api/src/modules/hr/hr.service.ts`) computed `usedDays` as `prisma.leaveRequest.count({ status:
+"APPROVED" })` — a raw count of approved leave-request ROWS, regardless of how many days each request
+actually spanned. A single approved 10-day request counted as "1 used day" against a 10-day annual
+allocation, leaving the balance calculation reporting 9 days still remaining after the employee had already
+used their entire allocation in one request. Compounding this, `approveLeaveRequest()` never consulted
+leave balance at all before approving — a manager (or the approval-chain engine from E05, once wired to
+leave) could approve any number of leave requests of any length with zero enforcement, so even a correct
+balance calculation would not have prevented over-allocation.
+
+**How it was caught:** writing the FAIL-first tests for E22's own "leave" non-negotiable and confirming
+both the balance-arithmetic bug and the missing-enforcement bug against the pre-existing code before any
+fix was written.
+
+**Fixed:** a new shared `requestDays()` (inclusive day-count between two dates) is used by both
+`getLeaveBalances()` (summing real days across approved requests, not counting rows) and
+`approveLeaveRequest()` (refusing, with a `BadRequestException` naming the shortfall, when the request's
+day-count would exceed the employee's real remaining balance). Proven via break/restore.
+
+**Not fully investigated:** whether the SAME "count rows, not days" pattern exists in any other balance- or
+allocation-tracking code across the 45 modules (e.g. any other entitlement computed by counting approved
+records rather than summing a quantity field) was not swept for platform-wide — this defect was found only
+because E22 happened to audit this exact leave-balance code path.

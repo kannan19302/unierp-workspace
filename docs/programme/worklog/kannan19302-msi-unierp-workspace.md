@@ -12457,3 +12457,135 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E30 · FINISH · 2026-08-12T01:59:52Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E30 — Print and export fidelity
+Exit criterion: "An invoice in hi-IN with ₹ lakh grouping and a
+200-line table renders correctly across page breaks."
+
+BEFORE
+======
+Read E29's renderInvoicePdf() (unierp-api/src/modules/sales/
+document-template-engine.service.ts, built this session): it rendered
+the entire template output as ONE text blob via `doc.fontSize(11).text(output)`.
+No locale-aware number formatting existed anywhere — currency values
+came from renderTemplate()'s own `String(value)` substitution, a raw
+JS number-to-string conversion. No real table existed either — line
+items were not rendered as a distinct structure at all; only the
+template's own header text was output. pdfkit's default text
+auto-pagination happens to split very long single-blob text across
+pages, but with zero column layout and zero header repetition.
+
+MECHANISM (this phase's own work)
+====================================
+1. formatCurrency(amount, locale, currency): uses Node's native
+   Intl.NumberFormat — verified directly:
+     $ node -e "console.log(new Intl.NumberFormat('hi-IN',
+       {style:'currency',currency:'INR'}).format(1234567.89))"
+     ₹12,34,567.89
+   Correct hi-IN lakh grouping (12,34,567 not 1,234,567) and the ₹
+   symbol, both for free from the platform's own Intl implementation
+   — no custom locale logic needed.
+
+2. renderLineItemsTable(doc, lineItems, locale, currency, total): a
+   real 4-column table (Description/Qty/Unit Price/Amount). Before
+   each row, checks `doc.y + rowHeight > bottomMargin`; if a row would
+   overflow the page, calls `doc.addPage()` and redraws the column
+   headers before continuing — so a 200-row invoice paginates with
+   headers repeated on every page carrying rows, not just page 1.
+   Prints one, correctly-formatted total line after all rows (with
+   its own overflow check).
+
+3. renderInvoicePdf() now accepts a `locale` parameter (default
+   en-US), passed through to both the header text and the new table.
+
+PROOF
+=====
+$ npx vitest run src/modules/sales/tests/document-template-print-fidelity.service.spec.ts
+
+No PDF-parsing library (pdf-parse or similar) is a dependency in this
+checkout, and adding one was out of this fix's scope. Instead, the
+spec observes the REAL, unmocked pdfkit PDFDocument's own
+addPage()/text() API calls via prototype spies — pdfkit itself is not
+mocked, only its call sequence is captured, so this proves the actual
+rendering code path, not a stand-in.
+
+4/4 pass:
+  - "formats a large total using hi-IN lakh grouping and the ₹
+    symbol": asserts the rendered text stream contains
+    "₹12,34,567.89" and does NOT contain the un-localized
+    "1,234,567.89".
+  - "a 200-line-item invoice renders across MULTIPLE pages": asserts
+    pageCount > 1 (a single 200-row page would be unreadable).
+  - "every page repeats the table column headers": asserts
+    "Description" is drawn on more than one distinct page (allowing
+    the LEGITIMATE case where a trailing total-only page has no
+    header of its own).
+  - "the invoice total is printed once, correctly, at the end":
+    asserts the formatted total string appears exactly once across
+    the whole document, not per-page or omitted.
+
+BREAK/RESTORE
+=============
+Reverted formatCurrency() to a raw `.toFixed(2)` (no Intl, no
+currency symbol) — backed up first, reproducing the exact original
+defect.
+
+  $ npx vitest run src/modules/sales/tests/document-template-print-fidelity.service.spec.ts
+  2 failed | 2 passed (4)
+  (exactly the 2 locale/currency-formatting tests — pagination and
+  header-repetition still pass since those don't depend on
+  formatCurrency, correctly isolating what the break actually
+  touched)
+
+Restored from backup:
+  $ grep -c "BROKEN FOR PROOF" document-template-engine.service.ts
+  0
+  $ npx vitest run src/modules/sales/tests/document-template-print-fidelity.service.spec.ts src/modules/sales/tests/document-template-engine.service.spec.ts
+  2 files, 10/10 tests pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/sales/
+Test Files  26 passed (26)
+     Tests  213 passed (213)
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors — fixed 9 strict-mode "possibly undefined" errors from
+array-index column access by destructuring named consts instead)
+
+$ git status --short
+(clean after commit — exactly document-template-engine.service.ts +
+the new spec file)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+- PDF/A (archival format) is not implemented — pdfkit does not
+  natively produce PDF/A-conformant output; that would need a
+  post-processing conversion step or a different PDF library, stated
+  as a real gap not addressed in this pass.
+- Only Invoice documents (via renderInvoicePdf) gained this fix — any
+  other document type rendered through the template engine (were one
+  built) would need the same table/locale treatment, not
+  automatically inherited.
+- Real PDF-byte verification (parsing the actual output bytes rather
+  than observing pdfkit's own API call sequence) was not possible
+  without adding a new dependency — stated as a testing-infrastructure
+  limitation, not silently worked around by claiming stronger proof
+  than what was actually done.
+
+COMMANDS
+========
+$ npx vitest run src/modules/sales/tests/document-template-print-fidelity.service.spec.ts
+$ npx vitest run src/modules/sales/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  2c90df5  document-template-engine.service.ts,
+                     document-template-print-fidelity.service.spec.ts (new)
+```
+

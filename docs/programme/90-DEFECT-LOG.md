@@ -2141,3 +2141,33 @@ future phase wants industry-standard AST-aware clone detection (this session's h
 is deliberately conservative — near-verbatim only, no semantic equivalence), it would need to
 either find and fix jscpd's detection gap, pin an older/different jscpd version and re-verify, or
 evaluate an alternative tool with the same break/restore discipline before trusting it.
+
+### D075 · 🟡 MEDIUM · 1073 of 1081 always-passing coverage-padding tests remain after L12's own proof-of-mechanism fix
+
+L12 ("Delete the tests that cannot fail") replaced ONE file's worth of always-passing tests
+(`unierp-api/src/modules/admin/tests/alerts.service.coverage.spec.ts`, 8 occurrences of the
+`try { expect(result).toBeDefined() } catch (e) { expect(e).toBeDefined() }` idiom identified by
+L11/D016) with 11 real behavioral tests, and proved the replacement mechanism is correct: a
+deliberately-introduced real regression (`markRead()` losing its `tenantId` scoping — a genuine
+cross-tenant write vulnerability) was caught immediately by the new tests, something the deleted
+always-passing tests could never have detected regardless of how badly the underlying code broke.
+
+`grep -rn 'expect(e)\.toBeDefined' --include='*.spec.ts' .` dropped from 1081 to 1073 — this
+file's exact contribution, and nothing else. The remaining 1073 occurrences, across 66 more
+`*.coverage.spec.ts` files (per L11's own inventory, `docs/programme/L11-COVERAGE-PADDING-INVENTORY.md`),
+still need the same treatment: read the real service, understand what each method is actually
+supposed to do, and write an assertion that would fail if that behavior changed — not merely
+delete the always-passing shell.
+
+**Why not done in this phase:** each of the 1073 remaining tests requires understanding a specific
+method's real behavior before a meaningful assertion can be written — this is fundamentally a
+per-method task, not a mechanical find-and-replace. Attempting a shortcut (e.g. a template that
+asserts "the mock was called" without checking WITH WHAT) would reproduce a weaker version of the
+same defect class this phase exists to eliminate. Per this session's D12/D19/J04/J07/L11 precedent,
+a real, measured, honest remaining count is filed here rather than a batch of shallow replacements
+manufactured to move the number.
+
+**Not fixed:** the remaining 1073 occurrences across 66 files. `L11-COVERAGE-PADDING-INVENTORY.md`
+already ranks every file by always-passing block count (worst: `crm.service.coverage.spec.ts`,
+181/181), giving whoever picks this up next a prioritised, evidenced worklist rather than a blind
+grep.

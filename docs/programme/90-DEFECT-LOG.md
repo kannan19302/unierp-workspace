@@ -3629,3 +3629,53 @@ content-permission level E46's own `requiredPermission` mechanism established fo
 reconciling these two into one consistent permission-filtering approach for report delivery is a real,
 unaddressed remaining gap. No actual delivery channel (SMTP, webhook, in-app notification) is wired up for
 either service — this fix proves recipients are correctly *scoped*, not that anything is actually *sent*.
+
+### D109 · 🔴 CRITICAL · Report builder had a real, saved-query data model but no execution method at all — "respects the viewer's permissions, not the author's" was unenforceable because nothing could run a saved report; a separate cross-tenant delete IDOR was also found
+
+Found while claiming and building E35 (Ad-hoc report builder), whose own exit criterion names the exact
+scenario a shared saved report must guard against: "A tenant user builds a cross-module report without
+SQL, and it respects their permissions, not the author's." `unierp-api/src/modules/reporting/
+reporting.service.ts` already had a real `Report` model backing it (`type: "BUILDER"`, `query: Json` —
+the semantic-layer query definition, built by an author, meant to be saved and shared) with full CRUD
+(`getReports`, `createReport`, `cloneReport`, `deleteReport`), but **no method anywhere executed a saved
+report's query**. The exit criterion's own scenario — a report built by one user, later viewed by
+another, whose permissions must gate what's returned — was not merely unenforced, it was **impossible to
+even trigger**, since there was no code path that ran a saved report at all.
+
+A second, independent defect was found while reading the same file: `deleteReport(id)` had **no `tenantId`
+scoping whatsoever** — `prisma.report.delete({ where: { id } })` — meaning any tenant with the generic
+`reporting.delete` permission could delete another tenant's report by guessing or observing its id, a
+straightforward cross-tenant IDOR.
+
+**How it was caught:** reading `reporting.service.ts` in full while investigating the exit criterion's
+own scenario; the absence of any `runReport`/`executeReport` method is directly observable, and the
+`deleteReport` IDOR was spotted in the same pass by comparing it against the tenant-scoped pattern every
+sibling CRUD method in the file correctly uses.
+
+**Fixed:** new `runReport(tenantId, id, viewerPermissions)` loads the `Report` scoped to `{ id, tenantId
+}`, parses its saved `query` (the same `{entity, filters, groupBy, aggregations}` shape
+`AiCopilotService.askData()` uses — E46/D105), resolves the target semantic-layer entity, and — before
+executing anything — checks the **calling viewer's** permissions against that entity's
+`requiredPermission`, throwing `ForbiddenException` if the viewer lacks it, regardless of who authored
+and saved the report. This reuses the exact governed permission gate E46 established for the AI copilot
+rather than inventing a second, independently-drifting check. New `GET /reporting-bulk/reports/:id/run`
+endpoint. `deleteReport` now takes `tenantId` and is scoped accordingly, throwing `NotFoundException` for
+a report belonging to another tenant; its controller call site (`reporting-bulk.controller.ts`) updated
+to pass it through. Proven via break/restore (reverted the viewer-permission check, confirmed the exact
+original defect reproduces — the report ran through instead of refusing for a viewer without the required
+permission — restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 4/4 tests pass, including one
+proving a viewer WITH the permission can run a report they did not author, and one proving non-gated
+entities remain unaffected). Full regression: `src/modules/reporting/`, all 13 test files / 39 tests pass
+cleanly. Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fully investigated — E35's own deliverable is much larger than one execution method.** This
+phase's own deliverable names "fields, filters, grouping, totals, drill-through, save, share" — only
+"save" (already existed) and now "respects the viewer's permissions" on execution were addressed. Not
+built or investigated in this pass: drill-through, a real UI/API surface for interactively constructing
+filters/grouping/totals (the `Report.query` shape supports these fields per the AI copilot's own
+`GeneratedQuery` type, but no dedicated builder endpoint exists beyond raw JSON `query` storage via
+`createReport`), and the sharing mechanism itself (whether `saved-views-sharing.service.ts`'s share
+records are actually consulted anywhere to gate `runReport` access beyond the tenant/permission check
+built here — not investigated). This fix closes the specific, named exit-criterion scenario; the broader
+"ad-hoc report builder" feature remains largely a metadata CRUD surface without an interactive builder UI
+contract behind it.

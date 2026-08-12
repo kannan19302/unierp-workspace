@@ -3958,3 +3958,50 @@ No session revocation exists — a token issued before a role change or account 
 until its natural 8h expiry (item 1, minor). These are named explicitly per this phase's own exit criterion
 ("the duplication stays, deliberately — but it is now reviewed"), not left implied by an otherwise-clean-
 looking review.
+
+### D117 · 🔴 CRITICAL · Mobile biometric unlock is fabricated (a stored flag with zero enforcement, no local_auth dependency), and certificate pinning, jailbreak/root detection, screenshot policy, and remote wipe are entirely absent from unierp-mobile
+
+Found while claiming and building I11 (Mobile security), whose deliverable names seven items: biometric
+unlock, secure storage, certificate pinning, jailbreak/root detection, screenshot policy, remote wipe, and
+enforced session policy. Static investigation (no Flutter SDK is installed in this environment — see release
+note below) confirmed:
+
+- **Secure storage: real.** `lib/core/storage/secure_session_store.dart` uses `flutter_secure_storage`
+  (Keychain on iOS, `encryptedSharedPreferences: true` on Android); the refresh token is deliberately kept out
+  of it entirely, staying an httpOnly cookie mirroring web's pattern. Credentials are provably not in plain
+  storage.
+- **Biometric unlock: FABRICATED**, the exact "looks implemented, does nothing" pattern this session has
+  repeatedly found (D090/D098/D108/D110). `SecureSessionStore.readBiometricEnabled()`/
+  `writeBiometricEnabled()` exist and persist a real flag, but `grep -rln "readBiometricEnabled\|
+  writeBiometricEnabled\|local_auth\|LocalAuthentication" lib` returns only the definition file itself —
+  neither method is called anywhere else in the app, and `local_auth` (the standard Flutter biometric-prompt
+  plugin) is not even a `pubspec.yaml` dependency. A user can flip a stored preference that nothing ever
+  reads, and no biometric prompt exists anywhere in the codebase.
+- **Certificate pinning: ABSENT.** No pinning package, no manual pin-set verification anywhere; `dio` (the
+  HTTP client in use) trusts the platform's default certificate store unmodified.
+- **Jailbreak/root detection: ABSENT.** No detection package or custom check exists anywhere in the repo.
+- **Screenshot policy: ABSENT.** No `FLAG_SECURE` on Android, no capture-protection on iOS, no in-app
+  screenshot-block package.
+- **Remote wipe: ABSENT.** No mechanism exists to remotely invalidate a lost/stolen device's session from any
+  admin surface this repo controls, beyond the access token's own natural expiry.
+- **Session-policy parity with web: unverified**, not confirmed either passing or failing. The token-refresh
+  interceptors (`jwt_auth_interceptor.dart`/`auth_interceptor.dart`) show real single-flight refresh locking
+  and 401-triggered request queuing — the mechanics look deliberately built — but whether the token TTL and
+  MFA step-up requirements actually match web's own session policy (an 8h JWT with no revocation, per this
+  session's own H04 review) could not be confirmed via static reading alone; it requires running both clients
+  side by side against a live backend.
+
+**Released, not fixed — this environment provides no Flutter/Dart SDK** (confirmed: `which flutter dart`
+finds neither). unierp-mobile is a Flutter app; per this programme's own protocol every one of these six
+unbuilt/unverified items requires writing and proving Dart source via a real `flutter test` run
+(FAIL-first → PASS → break/restore) — none of that is executable without the SDK, the same class of
+environment blocker as E44/E38 (a live PostgreSQL instance), for a different piece of missing infrastructure.
+The investigation itself was completed in full via static source and dependency inspection, which genuinely
+answers "credentials are provably not in plain storage" without needing to run anything — but building the
+six missing/fabricated mechanisms and proving them via the mandated break/restore cycle cannot happen here.
+A genuine follow-up needs, at minimum: a Flutter SDK installation with Android/iOS toolchains; adding
+`local_auth` and wiring the existing (real) `readBiometricEnabled()` flag to an actual prompt gating app
+resume — the single most tractable of the six, since its storage foundation already exists; a certificate-
+pinning layer on the `dio` client; a jailbreak/root-detection package with a documented response policy;
+`FLAG_SECURE`/iOS capture-protection; a server-driven remote-wipe mechanism; and a live side-by-side run of
+both clients to confirm session-policy parity.

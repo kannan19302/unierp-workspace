@@ -4314,3 +4314,47 @@ but access reviews, change management, and vulnerability management have no auto
 anywhere in this codebase, confirmed by grep, and were not investigated in depth. This fix stops the API from
 lying; it does not yet make the evidence "generated continuously" in the sense of a running, coherent
 evidence-collection pipeline an auditor could actually point to.
+
+### D126 · 🔴 CRITICAL · A cryptographically signed "Deletion Certificate" was issued for a tenant deletion that never actually happened — no data was ever deleted anywhere, and nothing in the codebase reacts to the OFFBOARDED status
+
+Found while claiming and building K15 (Data portability and exit rights), whose exit criterion (G-4) is: "A
+tenant exits fully unaided and receives a deletion certificate. Verified by rehearsal, not by clause."
+Investigated the exit criterion's own named artefact directly: `TenantExportOffboardingService.
+offboardTenant()` (`src/platform/v1/tenant-export-offboarding.service.ts`), reachable via
+`POST /:tenantId/offboard` (gated by `system.offboarding.write` and two-person control). The method sets
+`tenant.status = 'OFFBOARDED'`, cancels active subscriptions, creates a `DataExportJob` row that is never
+itself processed, and then cryptographically signs (HMAC-SHA256) and returns an artefact literally TYPED
+`"DELETION_CERTIFICATE"` with a `deletedAt` timestamp — claiming, with a signature meant to look tamper-
+evident and legally significant, that tenant data was deleted. Confirmed via `grep -rln "OFFBOARDED" src` that
+**no cron, worker, queue processor, or any other code anywhere in this repository reacts to a tenant's status
+becoming OFFBOARDED** — nothing was ever actually deleted after this ran, at any point. This directly and
+severely violates G-4's own wording: "verified by rehearsal, not by clause" — nothing here was verified;
+it was asserted and cryptographically signed as though it had been. Of every fabrication defect found this
+session (D090, D098, D108, D110, D118, D125), this is the most consequential: a signed artefact intended to
+carry legal/regulatory weight, certifying something false. A sibling method,
+`TenantLifecycleService.offboardTenant()` (a separate implementation), was checked for comparison and found
+honest by design — it sets status to `"OFFBOARDING"` (not `"OFFBOARDED"`), computes a future `autoPurgeDate`,
+and issues no certificate at all; it was not touched.
+
+**Fixed:** a full cascading purge across this platform's confirmed ~1000+ tenant-scoped tables is out of scope
+for a single pass, and a partial ad hoc delete risked introducing new correctness bugs without closing the
+real gap — the tractable, honest fix is to stop the signed artefact from claiming something unverified.
+Renamed the artefact from `"DELETION_CERTIFICATE"` to `"OFFBOARDING_RECEIPT"`: it now accurately describes
+only what actually happened (status change, subscription cancellation, export queued), explicitly sets
+`dataDeleted: false`, and includes a `dataRetentionNote` stating plainly that tenant data has not been deleted
+and that a real deletion certificate will only be issued once deletion has actually occurred and been
+verified. Proven via break/restore: reverted the artefact type back to `"DELETION_CERTIFICATE"` with
+`dataDeleted: true` (marked "BROKEN FOR PROOF"), confirmed the exact fabrication-detection test reproduces
+the original false claim, restored, confirmed 0 `BROKEN FOR PROOF` markers remain, 3/3 tests pass (including
+a test confirming the genuinely real side effects — status change, subscription cancellation — still work
+correctly). Full regression: `src/platform/v1/`, 35 test files / 154 tests pass cleanly. Typecheck: 0 errors.
+
+**Not fixed — the honest remaining gap.** No real tenant-data deletion mechanism exists anywhere in this
+codebase — "a tenant exits fully unaided and receives a deletion certificate" remains genuinely unmet; there
+is now an honest receipt instead of a false certificate, but no path to an actual, verified deletion
+certificate exists yet. Building one requires a real cascading-purge mechanism (or a documented, narrower
+"regulated data" subset) plus a verification step before a genuine `DELETION_CERTIFICATE` could honestly be
+issued. `startExport()`'s `DataExportJob` rows are confirmed, via the same grep sweep, to have no worker that
+ever processes them to completion — "complete export" (the deliverable's other named requirement) may itself
+be equally unfulfilled, not independently verified in this pass. "Assisted migration away" (the deliverable's
+third named requirement) was not investigated at all.

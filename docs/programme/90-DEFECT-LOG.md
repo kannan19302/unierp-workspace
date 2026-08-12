@@ -4785,3 +4785,37 @@ PageSpeed tooling this session cannot run. Information architecture across the 2
 independently reviewed. Only `unierp-corporate-website` was fixed and wired; the same `OWNERSHIP`-gap
 pattern likely affects any other repo with real UI source that isn't `unierp-web` (e.g. `unierp-console`,
 `unierp-developer`) — not investigated, named as a real risk.
+
+### D139 · 🔴 CRITICAL · The load-tests directory .github/workflows/load-test.yml has always referenced has never existed anywhere in this repository, and the workflow's own triggers could never block a build even if it did
+
+Found while claiming and building J13 (Performance budgets per route), whose exit criterion is: "A regression
+beyond budget fails the build. Budgets are declared as data, not measured ad hoc (G-17)." Investigated
+`.github/workflows/load-test.yml` (a real, previously-built k6 CI workflow referencing 6 scenario files under
+`load-tests/scenarios/`) and confirmed via `find . -iname "load-tests"` that the directory this workflow has
+referenced since it was written has never existed anywhere in this repository — every job would fail
+immediately on a missing-file error if it ever ran. Separately confirmed the workflow's own triggers are only
+`schedule`/`workflow_dispatch`, never `push`/`pull_request` — so even with working scenario files, this
+workflow could never "fail the build" in the sense of blocking a PR merge. No k6 `thresholds` block (the real
+mechanism that turns a declared budget into an actual pass/fail signal) had ever been declared anywhere in
+this repository's history. Zero budgets existed as data; zero mechanism existed to fail a build on a
+regression — G-17 was entirely unmet, at every layer.
+
+**Fixed (partially — see release reason below):** added `load-tests/budgets.json`, real named performance
+budgets (API p95 targets for health/auth/list/document-post routes, page-load targets for two top-level
+pages) declared as data. Added two of the six scenario files `load-test.yml` already references —
+`smoke-test.js` and `list-paginate.js` (a representative tenant-scoped paginated-list endpoint, the classic
+p95-sensitive shape) — both importing `budgets.json` and turning the relevant entry into a genuine k6
+`thresholds` block, k6's own real mechanism for exiting non-zero when a budget is exceeded. Verified via
+`node --check` that both scripts are syntactically valid JavaScript, and that `budgets.json` is valid JSON.
+
+**Released, not finished — this environment has neither a k6 binary nor a reachable UniERP deployment.**
+`which k6` finds nothing; no live instance exists anywhere reachable here. The two new scenarios have never
+actually been executed against anything — correctness is structural (real k6 API usage, genuine
+threshold-from-budget wiring, verified against documented k6 syntax) not execution-proven. 4 of the 6
+referenced scenario files (`login.js`, `document-post.js`, `stress-test.js`, `tenant-isolation.js`) still do
+not exist. Nothing was wired to run this workflow on `push`/`pull_request` — doing so without a live,
+reachable deployment would fail every build with a connection error, not a meaningful signal, so it was
+deliberately left as-is (the same judgment already applied to J25's rehearsal-freshness gate this session).
+No representative dataset exists or was seeded. A genuine follow-up needs: the k6 binary and a reachable
+deployment; the remaining 4 scenario files; a realistically-sized seeded dataset; and wiring onto push/PR
+once a live target genuinely exists.

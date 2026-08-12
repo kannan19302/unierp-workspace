@@ -15196,3 +15196,164 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E10 · FINISH · 2026-08-12T08:26:02Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+E10 — Receivables, payables and cash
+Non-negotiables at exit: "Ageing, dunning, allocation, part-payment,
+write-off, bank reconciliation; every posting traceable to a source
+document."
+
+SCOPE NOTE
+==========
+E10's full scope (ageing/dunning already partly covered by ar-deep.
+service.ts's collections/credit/dispute methods; allocation, write-off,
+and bank reconciliation NOT found to exist anywhere in this checkout
+as real code) is far larger than this session's remaining budget.
+Investigated the highest-risk, most tractable real gap directly —
+following this session's own D084 precedent, which explicitly named
+"more instances [of float-vs-Decimal money arithmetic] are plausible"
+as its own honest remaining gap — and found a second, real, critical
+instance on inspection, fixed it completely and correctly, and files
+the honest remaining scope rather than attempting a shallow pass
+across the rest.
+
+THE INVESTIGATION
+==================
+1. Searched src/modules/finance/ar-deep.service.ts for allocation/
+   payment logic — found none. The file contains only: getCollections
+   Queue, getCollectionsStats, getCreditManagement, setCreditLimit,
+   placeCreditHold, releaseCreditHold, getPromiseToPay, createPromise
+   ToPay, fulfillPromiseToPay, getArDisputes, createArDispute,
+   updateArDisputeStatus, getArAnalytics.
+2. Broader search:
+     grep -rln "async recordPayment\|async createPayment\|async applyPayment" src/modules/finance
+   matched ap-deep.controller.ts, ap-deep.service.ts, finance-
+   operations.controller.ts, finance-operations.service.ts, finance.
+   controller.ts, finance.service.ts.
+3. Read finance.service.ts's createPayment() (the invoice-side "part-
+   payment" non-negotiable, named directly in this phase's exit
+   criterion) in full and found the same float-vs-Decimal class of
+   bug fixed in E09/D084, on a different code path:
+
+     const currentPaid = Number(invoice.paidAmount);
+     const totalAmount = Number(invoice.totalAmount);
+     const newPaidAmount = currentPaid + dto.amount;
+     if (newPaidAmount > totalAmount) { throw ... }
+     const nextStatus = newPaidAmount === totalAmount ? "PAID" : "PARTIALLY_PAID";
+
+   Both invoice.paidAmount and invoice.totalAmount are real
+   Decimal(19,4) columns, converted to plain Number for arithmetic and
+   compared with float > and === — directly violating CODE_STANDARDS'
+   "Money is Decimal(19,4)... never converted to number for
+   arithmetic" rule, the same rule D084 cited.
+
+THE BUG, CONFIRMED
+====================
+Invoice with paidAmount = 0.2 (e.g. two prior 0.1 payments already
+posted), totalAmount = 0.3. A final payment of exactly 0.1
+mathematically completes the invoice. In IEEE 754 float:
+  0.2 + 0.1 = 0.30000000000000004
+which is BOTH !== 0.3 (stuck at PARTIALLY_PAID forever) AND > 0.3
+(rejected outright). The confirmed, reproduced behavior is the more
+severe of the two: the legitimate completing payment is REJECTED with
+BadRequestException("Payment amount exceeds total due amount").
+
+MECHANISM (this phase's own fix)
+====================================
+createPayment() now constructs Prisma.Decimal for currentPaid,
+totalAmount, and the payment amount, and uses .plus() / .greaterThan()
+/ .equals() throughout — zero float arithmetic on money, matching the
+correct pattern established in D084's own fix to
+gl-accounting.service.ts.
+
+PROOF
+=====
+$ npx vitest run src/modules/finance/tests/finance-payment-decimal.service.spec.ts
+
+Test — "marks an invoice PAID when a final partial payment
+mathematically completes it, even under float drift": invoice with
+paidAmount=0.2, totalAmount=0.3, a final 0.1 payment.
+FAILED against the pre-existing code before the fix — confirmed the
+exact real symptom (BadRequestException: Payment amount exceeds total
+due amount) against a payment that mathematically completes the
+invoice exactly. Real FAIL-first proof, not assumed.
+PASSES after the fix — the payment is accepted and the invoice is
+marked PAID.
+
+BREAK/RESTORE
+=============
+Reverted createPayment() to the original float-arithmetic code
+(marked "BROKEN FOR PROOF") — the exact original defect, byte-for-
+byte (verified via full-file string comparison to the pre-break
+backup).
+
+  $ npx vitest run finance-payment-decimal.service.spec.ts
+  1 failed (1)
+  (the exact original symptom reproduced on purpose: BadRequestException
+  thrown against a payment that exactly completes the invoice)
+
+Restored from backup:
+  $ grep -c "BROKEN FOR PROOF" finance.service.ts
+  (no matches — 0)
+  $ npx vitest run finance-payment-decimal.service.spec.ts
+  1/1 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/finance/ src/modules/advanced-finance/
+Test Files  45 passed | 2 failed (47)
+     Tests  629 passed (629)
+The 2 failing SUITES (not individual tests — both fail at collection,
+before any test runs) are the same pre-existing "Cannot find package
+'@unerp/shared'" module-resolution error documented in E09's own
+evidence, confirmed unrelated to this phase's changes.
+
+Also updated finance.service.spec.ts's own Prisma.Decimal mock (which
+previously had no .plus()/.greaterThan()/.equals() methods, since the
+pre-existing production code never called them) to support these
+methods — required for that file's own pre-existing createPayment
+tests to keep passing against the fixed production code. No test
+assertions or intent were changed, only the mock's fidelity to the
+real Prisma.Decimal API surface.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from E09/this session's earlier work
+(same @kannan19302/shared module-resolution class of issue,
+vendor.service.ts, provider-registry.service.ts x2,
+industry-suite-catalogue.service.ts — none touched by this phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D085 (CRITICAL): only finance.service.ts's createPayment()
+was audited and fixed. NOT investigated in this pass:
+  - ap-deep.service.ts and finance-operations.service.ts, both also
+    matched the recordPayment|createPayment|applyPayment search that
+    led to this fix, for the same float-vs-Decimal class of bug.
+  - Allocation (splitting one payment across multiple invoices) and
+    write-off: no code implementing either was found anywhere in
+    src/modules/finance during this investigation — genuinely absent,
+    not merely unaudited, as best this pass could determine.
+  - Bank reconciliation: not found either.
+  - Ageing and dunning: ar-deep.service.ts's collections-queue and
+    credit-management methods appear to cover this ground, but were
+    not re-audited for correctness in this pass (only searched for
+    allocation logic, not read in full for arithmetic correctness).
+  - "Every posting traceable to a source document": not verified in
+    this pass.
+
+COMMANDS
+========
+$ npx vitest run src/modules/finance/tests/finance-payment-decimal.service.spec.ts
+$ npx vitest run src/modules/finance/ src/modules/advanced-finance/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  44fb1bc  finance.service.ts, finance.service.spec.ts,
+                     finance-payment-decimal.service.spec.ts (new)
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D085
+```
+

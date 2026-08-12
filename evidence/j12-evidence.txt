@@ -1,0 +1,150 @@
+J12 — State-machine and lifecycle testing
+Deliverable: "Exhaustive transition testing per entity lifecycle,
+including every forbidden transition."
+Exit: "Every forbidden transition is proven to be rejected. A new
+state added without tests fails CI."
+
+SCOPE NOTE
+==========
+The literal full deliverable ("per entity lifecycle" - every
+stateful entity across 45 modules) is not achievable in one pass.
+Picked the most concrete, already-partially-guarded example
+(SalesOrder status, which D091/E16 this session already touched for
+one specific forbidden transition) and built the real, exhaustive
+mechanism for it: a complete allowed-transition state machine plus a
+schema-sync CI gate satisfying the exit criterion's second sentence,
+proven via two separate break/restore cycles. The remaining ~44
+modules' own lifecycles are filed as the honest remaining scope.
+
+THE INVESTIGATION
+==================
+Read updateSalesOrderStatus() (src/modules/sales/sales.service.ts).
+Found ONE specific transition blocked - leaving CREDIT_HOLD via the
+generic endpoint, guarded from D091/E16 this session - and otherwise
+ZERO validation: `status` (any string matching the schema's enum) was
+written directly with `prisma.salesOrder.update({ data: { status } })`
+regardless of the order's CURRENT status. Confirmed via the zod schema
+(@kannan19302/shared's updateSalesOrderStatusSchema) the real status
+universe: DRAFT, CONFIRMED, PROCESSING, PARTIALLY_DELIVERED,
+DELIVERED, CANCELLED (plus CREDIT_HOLD, set internally at order
+creation, not part of the caller-settable enum).
+
+THE BUG, CONFIRMED
+====================
+Every transition except the one already-guarded CREDIT_HOLD case was
+silently accepted, including:
+  - DELIVERED -> DRAFT (reviving a completed order backwards)
+  - CANCELLED -> CONFIRMED (reviving a cancelled order)
+  - DRAFT -> DELIVERED (skipping every intermediate fulfillment stage)
+This directly and provably violates "every forbidden transition is
+proven to be rejected" - almost nothing was actually forbidden in
+practice, despite these being nonsensical for a real order lifecycle.
+
+MECHANISM (this phase's fix)
+====================================
+Added an exported ORDER_STATUS_TRANSITIONS map naming every allowed
+edge explicitly:
+  DRAFT -> CONFIRMED, CANCELLED, CREDIT_HOLD
+  CREDIT_HOLD -> (none; must go through approveCreditHold())
+  CONFIRMED -> PROCESSING, CANCELLED
+  PROCESSING -> PARTIALLY_DELIVERED, DELIVERED, CANCELLED
+  PARTIALLY_DELIVERED -> DELIVERED, CANCELLED
+  DELIVERED -> (none; terminal)
+  CANCELLED -> (none; terminal)
+updateSalesOrderStatus() now rejects with BadRequestException any
+transition not in this map, generalizing (not replacing the intent
+of) the existing CREDIT_HOLD-specific guard into one real mechanism.
+
+For "a new state added without tests fails CI": exported the map and
+added sales-order-transitions-schema-sync.spec.ts, which asserts
+every status value in the SHARED PACKAGE'S OWN schema enum has a
+corresponding key in the map (and vice versa for named targets) - a
+new status added to the schema without a matching map entry now fails
+this test.
+
+PROOF (FAIL-first)
+====================
+$ npx vitest run src/modules/sales/tests/sales.service.spec.ts
+Added 4 new tests:
+  - "J12: rejects a terminal-state transition (DELIVERED cannot move
+    to DRAFT)"
+  - "J12: rejects a stage-skipping transition (DRAFT cannot jump
+    straight to DELIVERED)"
+  - "J12: rejects reviving a CANCELLED order back to CONFIRMED"
+  - "J12: allows every explicitly-named forward transition in the
+    lifecycle" (walks the full DRAFT->CONFIRMED->PROCESSING->
+    PARTIALLY_DELIVERED->DELIVERED happy path)
+18/18 tests in the file pass (14 pre-existing + 4 new).
+
+$ npx vitest run src/modules/sales/tests/sales-order-transitions-schema-sync.spec.ts
+2 new tests, both pass.
+
+BREAK/RESTORE — two separate cycles
+=======================================
+Cycle 1 (the transition enforcement itself): reverted the check to
+`allowed.includes("*") || allowed.includes(status)` with
+`allowed = ["*"]` (marked "BROKEN FOR PROOF") - every transition
+accepted again.
+
+  $ npx vitest run sales.service.spec.ts
+  4 failed | 14 passed (18)
+  (exactly the 4 new forbidden-transition tests - reproducing the
+  original defect on purpose)
+
+Restored, 0 markers, 18/18 pass.
+
+Cycle 2 (the schema-sync CI gate): temporarily omitted
+PARTIALLY_DELIVERED from ORDER_STATUS_TRANSITIONS (marked "BROKEN FOR
+PROOF"), simulating a new state added to the schema without a
+matching map entry.
+
+  $ npx vitest run sales-order-transitions-schema-sync.spec.ts
+  1 failed | 1 passed (2)
+  (expected [] to equal ['PARTIALLY_DELIVERED'] - the gate caught the
+  omission exactly as intended)
+
+Restored, 0 markers, 2/2 pass.
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/sales/
+Test Files  27 passed (27)
+     Tests  220 passed (220)
+Clean pass.
+
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+4 pre-existing errors, unchanged from every prior phase this session
+(same @kannan19302/shared resolution class of issue, none touched by
+this phase).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D121 (CRITICAL). Not fixed in this pass:
+  - Only SalesOrder's lifecycle got a real state machine + schema-sync
+    gate. The deliverable's own words, "per entity lifecycle," name
+    dozens of other stateful entities across the platform (purchase
+    orders, invoices, work orders, tickets, workflow tasks, project
+    milestones, and more) - none were audited or fixed in this pass.
+    Given this session's own recurring pattern of finding the identical
+    bug class duplicated across sibling entities (D084-086, D088-092,
+    D097-099, D107), it is very likely several of these have the exact
+    same "one special-cased guard, everything else silently accepted"
+    shape - not confirmed, named as a real risk to check next.
+  - No repo-wide "does every stateful entity have a real transition
+    matrix" audit or gate was built - only this one entity's own gate
+    exists.
+
+COMMANDS
+========
+$ npx vitest run src/modules/sales/tests/sales.service.spec.ts
+$ npx vitest run src/modules/sales/tests/sales-order-transitions-schema-sync.spec.ts
+$ npx vitest run src/modules/sales/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+$ grep -c "BROKEN FOR PROOF" src/modules/sales/sales.service.ts
+
+COMMITS
+=======
+unierp-api  b012174  sales.service.ts, tests/sales.service.spec.ts
+unierp-api  4f0890c  sales.service.ts,
+                     tests/sales-order-transitions-schema-sync.spec.ts
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D121

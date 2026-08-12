@@ -4126,3 +4126,37 @@ Redis instance's real terminal-job-return behavior, the same class of infrastruc
 `sequence` field, but whether consumers correctly handle events arriving out of order was not tested. No
 dedicated eventual-consistency test suite covers the deliverable's full named list; only this one replay-path
 defect was found and fixed.
+
+### D121 · 🔴 CRITICAL · Sales order status accepted almost any transition — DELIVERED could revert to DRAFT, CANCELLED could revive to CONFIRMED, DRAFT could jump straight to DELIVERED — with only one specific transition (leaving CREDIT_HOLD) ever actually blocked
+
+Found while claiming and building J12 (State-machine and lifecycle testing), whose exit criterion is "Every
+forbidden transition is proven to be rejected. A new state added without tests fails CI." `updateSalesOrderStatus()`
+(`src/modules/sales/sales.service.ts`) only ever blocked leaving `CREDIT_HOLD` through the generic endpoint
+(D091/E16, earlier this session) — every other status pair was silently accepted regardless of the order's
+current status: `DELIVERED` could revert to `DRAFT`, `CANCELLED` could be revived to `CONFIRMED`, `DRAFT`
+could jump straight to `DELIVERED` skipping every intermediate fulfillment stage (`CONFIRMED`, `PROCESSING`,
+`PARTIALLY_DELIVERED`). Confirmed the real status universe via `@kannan19302/shared`'s
+`updateSalesOrderStatusSchema` enum: `DRAFT, CONFIRMED, PROCESSING, PARTIALLY_DELIVERED, DELIVERED,
+CANCELLED` (plus `CREDIT_HOLD`, set only internally at order creation).
+
+**Fixed:** added an exported `ORDER_STATUS_TRANSITIONS` map naming every allowed edge explicitly (`DRAFT` →
+`CONFIRMED`/`CANCELLED`/`CREDIT_HOLD`; `CONFIRMED` → `PROCESSING`/`CANCELLED`; `PROCESSING` →
+`PARTIALLY_DELIVERED`/`DELIVERED`/`CANCELLED`; `PARTIALLY_DELIVERED` → `DELIVERED`/`CANCELLED`; `DELIVERED`
+and `CANCELLED` terminal; `CREDIT_HOLD` with zero generic outgoing edges, preserving the existing
+`approveCreditHold()`-only release path via the same general mechanism rather than a one-off special case).
+`updateSalesOrderStatus()` now rejects any transition not in the map. For the exit criterion's second
+sentence, added `sales-order-transitions-schema-sync.spec.ts`, asserting every status value in the shared
+package's own schema enum has a corresponding map entry — a new status added to the schema without updating
+the map now fails this test. Proven via two separate break/restore cycles: reverting the enforcement check
+(marked "BROKEN FOR PROOF") reproduced exactly the 4 new forbidden-transition tests failing; separately,
+temporarily omitting `PARTIALLY_DELIVERED` from the map reproduced exactly the schema-sync test failing.
+Both restored, 0 markers remain, all tests pass. Full regression: `src/modules/sales/`, 27 test files / 220
+tests pass cleanly. Typecheck: same 4 pre-existing unrelated errors, unchanged.
+
+**Not fixed — the honest remaining gap.** Only `SalesOrder`'s own lifecycle got a real state machine and
+schema-sync gate. The deliverable's own words, "per entity lifecycle," name dozens of other stateful entities
+across the platform (purchase orders, invoices, work orders, tickets, workflow tasks, project milestones, and
+more) — none were audited in this pass. Given this session's own recurring pattern of finding the identical
+bug class duplicated across sibling entities (D084-086, D088-092, D097-099, D107), it is a real, named risk
+that several of these have the exact same "one special-cased guard, everything else silently accepted" shape
+— not confirmed, but worth checking next rather than assumed fine.

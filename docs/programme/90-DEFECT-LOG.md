@@ -2391,3 +2391,33 @@ no reliable per-module boundary to extract mechanically, and `unierp-contracts` 
 directory structure to match against. The true "must load" size for any of these 16 modules is
 LARGER than the 10,000-line code-plus-tests figure reported here, not smaller — this measurement is
 a floor, not a ceiling.
+
+### D083 · 🟢 LOW · Real architecture findings surfaced by L18's generated maps: 1 direct cross-module import bypassing the outbox pattern, and 63 of 80 events with no listener found anywhere in scope
+
+Found while building L18 (Generated architecture and dependency maps) — exactly the kind of finding
+these maps exist to surface mechanically rather than leave buried in 2,000+ files no single read
+would catch.
+
+1. **`advanced-finance` imports directly from `finance`** (`docs/architecture/module-dependency-graph.md`).
+   The other 3 real cross-module import edges found (`blockchain`→`outbox`, `ecommerce`→`outbox`,
+   `sales`→`outbox`) are the CORRECT pattern this platform requires for cross-module effects — a
+   module importing the shared `outbox` module directly is expected. `advanced-finance`→`finance` is
+   different: one business module importing another business module's own files directly, bypassing
+   the outbox/event pattern `IMPLEMENTATION_PLAN` and this track's own invariant require.
+
+2. **63 of 80 distinct event names have zero listeners found anywhere in `unierp-api/src/modules`**
+   (`docs/architecture/event-flow.md`). Some of these are legitimately consumed outside the scanned
+   scope (a listener in `src/developer` or `src/platform`, or a consumer in a different repo
+   entirely via a message queue this static scan cannot see) — not automatically dead code. But a
+   79% "no listener found" rate is a real signal worth triaging, not assumed benign.
+
+**How it was caught:** this phase's own real, mechanical generation — the entire point of building
+a machine-generated map instead of trusting prose, per this phase's own exit criterion citing D004
+and D013 as the class of claim this replaces.
+
+**Not fixed — investigation, not remediation, is this phase's own scope.** Whether the
+`advanced-finance`→`finance` coupling is a genuine violation needing a refactor, or a legitimate
+same-domain relationship the outbox pattern doesn't apply to, needs a read of the actual import and
+its call site — not assumed either way from the map alone. Similarly, triaging which of the 63
+apparently-unconsumed events are genuinely dead vs. consumed outside this scan's scope needs a
+broader search (other repos, message-queue configuration) this phase did not perform.

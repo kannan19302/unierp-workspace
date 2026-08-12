@@ -2047,3 +2047,44 @@ day-count would exceed the employee's real remaining balance). Proven via break/
 allocation-tracking code across the 45 modules (e.g. any other entitlement computed by counting approved
 records rather than summing a quantity field) was not swept for platform-wide — this defect was found only
 because E22 happened to audit this exact leave-balance code path.
+
+### D072 · 🔴 CRITICAL · CRM campaign audiences included opted-out leads/contacts/customers — CommunicationOptOut had zero usages anywhere in the codebase
+
+Found while claiming and building E23 (CRM), whose own "consented communication via A21" non-negotiable
+required checking. A21 (marked DONE) claims "a per-user preference suppresses delivery across all 45
+modules" and the schema already carries a generic, entity-agnostic `CommunicationOptOut` model
+(`entityType`/`entityId`/`channel`) for exactly this purpose — but `grep -rl "communicationOptOut" src`
+across the entire `unierp-api` repository returned zero results. `CrmCampaignManagementService.buildAudience()`
+— the method that decides who a marketing campaign actually targets — included every lead, contact, and
+customer matching the filter criteria with no consent check of any kind. A contact who had explicitly opted
+out of email communication would still be counted, sampled, and (once campaign sending is wired to this
+audience elsewhere) targeted.
+
+This is the same class of finding as D066/D069 (a real mechanism exists in the schema and is simply never
+called) but with a regulatory dimension: unsolicited marketing communication to an opted-out contact is a
+CAN-SPAM/GDPR/PECR violation in most jurisdictions UniERP targets, not merely a UX gap.
+
+**How it was caught:** writing the FAIL-first test for E23's own exit criterion and confirming an
+explicitly opted-out lead was included in `buildAudience()`'s result before any fix was written.
+
+**Fixed:** new `excludeOptedOut()` on `CrmCampaignManagementService` checks `CommunicationOptOut` for the
+EMAIL channel and filters matching records out of the audience before any count or sample is returned, for
+all three entity types (LEAD/CONTACT/CUSTOMER). Proven via break/restore.
+
+**Not fully investigated:**
+1. Only the EMAIL channel is checked — `CommunicationOptOut.channel` is a free-text field, so opt-outs for
+   SMS or other channels are not consulted by this fix (campaigns in this codebase are overwhelmingly
+   email-oriented, but a multi-channel campaign would need per-channel filtering).
+2. Whether ANY other module that sends bulk/marketing communication (e.g. `notifications`, `communication`)
+   also fails to check `CommunicationOptOut` was not swept for platform-wide — this defect was found only
+   because E23 happened to audit this exact CRM code path. Given A21's own "no module sends mail directly"
+   claim is now independently in question (this is the second finding this session, after D070/A25, of a
+   platform-wide compliance/security claim with no supporting mechanism), a dedicated audit of every
+   notification-sending call site against `CommunicationOptOut`/`CommunicationPreference` is a
+   high-priority follow-up.
+3. Performance: `excludeOptedOut()` now fetches the full matching record set (no longer `take: 10` at the
+   database layer) before filtering and sampling client-side, since filtering must happen before sampling
+   to avoid a false-small "top 10" that happens to include opted-out rows. For very large audiences this
+   trades a `take: 10` query for a full-table fetch — acceptable for this fix's correctness-first scope, but
+   worth revisiting if audience sizes grow large (a `NOT IN (subquery)` at the database layer would avoid
+   this, once perf work funds it).

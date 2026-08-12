@@ -1,0 +1,122 @@
+E23 — CRM
+Non-negotiables at exit: "Lead -> opportunity -> account lifecycle,
+pipeline, activity, duplicate detection and merge (E07), consented
+communication via A21."
+
+SCOPE NOTE
+==========
+Investigated each named non-negotiable against the real, pre-existing
+code:
+
+  - Lead -> opportunity -> account lifecycle, pipeline, activity:
+    pre-existing schema and service support confirmed present (not
+    individually rubric-scored in this pass).
+  - Duplicate detection and merge (E07): E07 (this session) already
+    built the scale-safe bulk-operations framework; CRM's own
+    duplicate-detection code was not separately audited in this pass.
+  - Consented communication via A21: INVESTIGATED DIRECTLY and found
+    to have a real, critical gap. Filed as D072 and fixed.
+
+THE CONSENT INVESTIGATION
+============================
+A21's own exit criterion: "a per-user preference suppresses delivery
+across all 45 modules... no module sends mail directly."
+
+  $ grep -rl "communicationOptOut" unierp-api/src
+  (zero results)
+
+The schema already has a generic, entity-agnostic
+CommunicationOptOut model (entityType/entityId/channel — the exact
+same shape as ApprovalRequest, SalesDocumentTemplate, and
+saved-views' own generic tables this session has repeatedly found and
+reused), but nothing in the codebase ever queries it.
+CrmCampaignManagementService.buildAudience() — the method deciding
+who a marketing campaign targets — included every matching lead,
+contact, and customer with zero consent check. Filed as D072
+(CRITICAL) — this is a regulatory-compliance gap (CAN-SPAM/GDPR/PECR),
+not just a UX one.
+
+MECHANISM (this phase's own work)
+====================================
+New private excludeOptedOut(tenantId, entityType, records) on
+CrmCampaignManagementService: queries CommunicationOptOut for the
+EMAIL channel against the candidate record ids, and filters out any
+match. Called from buildAudience() for all three entity types
+(LEAD/CONTACT/CUSTOMER) before any count or sample is computed —
+filtering happens BEFORE sampling, so a "top 10" result can never
+happen to include opted-out rows that a naive filter-after-sample
+would miss.
+
+PROOF
+=====
+$ npx vitest run src/modules/crm/tests/crm-campaign-consent.service.spec.ts
+
+Test 1 — "REFUSES to include an opted-out lead in a campaign
+audience": 2 leads, 1 opted out for EMAIL; buildAudience() returns
+totalCount=1, the opted-out lead absent from the sample.
+
+Test 2 — "includes everyone when no one has opted out": confirms the
+filter never over-excludes when there are no opt-outs on file.
+
+2/2 pass.
+
+BREAK/RESTORE
+=============
+Disabled excludeOptedOut() (backed up first) — made it a no-op
+pass-through, reproducing the exact original defect.
+
+  $ npx vitest run src/modules/crm/tests/crm-campaign-consent.service.spec.ts
+  1 failed | 1 passed (2)
+  (exactly the opted-out-lead test — the original bypass, reproduced
+  on purpose)
+
+Restored from backup:
+  $ grep -c "BROKEN FOR PROOF" crm-campaign-management.service.ts
+  0
+  $ npx vitest run src/modules/crm/tests/crm-campaign-consent.service.spec.ts
+  2/2 pass
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/crm/
+Test Files  59 passed | 2 failed (61)
+     Tests  1036 passed | 3 failed (1039)
+The 2 pre-existing failures (crm-communication-deep,
+crm-contract-deep — DB-dependent integration tests requiring a real
+tenant context) are confirmed untouched by this phase: `git status
+--short src/modules/crm/` shows only crm-campaign-management.service.ts
+and the new spec file changed.
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+WHAT THIS PHASE DOES NOT COVER
+=================================
+Filed D072 (CRITICAL) with three explicit follow-ups:
+1. Only the EMAIL channel is checked — CommunicationOptOut.channel is
+   free-text, so SMS/other-channel opt-outs are not yet consulted.
+2. Whether the SAME gap exists in other modules that send bulk
+   communication (notifications, communication) was not swept
+   platform-wide — this is the SECOND finding this session (after
+   D070/A25) of a platform-wide compliance claim (A21's "no module
+   sends mail directly") with no verified supporting mechanism. A
+   dedicated cross-module audit is a high-priority follow-up, stated
+   not silently assumed resolved by this one fix.
+3. excludeOptedOut() now fetches the full matching record set rather
+   than a database-level take:10, since filtering must happen before
+   sampling for correctness. Acceptable for this fix's
+   correctness-first scope; a `NOT IN` at the database layer would
+   avoid the full-fetch for very large audiences, noted as future
+   perf work.
+
+COMMANDS
+========
+$ npx vitest run src/modules/crm/tests/crm-campaign-consent.service.spec.ts
+$ npx vitest run src/modules/crm/
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  91ee43d  crm-campaign-management.service.ts,
+                     crm-campaign-consent.service.spec.ts (new)
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D072

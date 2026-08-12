@@ -22210,3 +22210,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### J13 · RELEASED · 2026-08-12T16:25:28Z · kannan19302@MSI/unierp-workspace
+
+```
+status → BLOCKED
+
+load-test.yml has referenced a load-tests/scenarios directory that has never existed anywhere in this repo, and its own triggers (schedule/workflow_dispatch only) could never block a build regardless. Built real, structurally-correct artifacts this pass: load-tests/budgets.json declaring real API p95/page-load budgets as data, and 2 of the 6 referenced k6 scenarios with genuine thresholds blocks wired to those budgets. Not execution-proven - no k6 binary and no reachable UniERP deployment exist in this environment. Findings and remaining scope filed as D139.
+```
+

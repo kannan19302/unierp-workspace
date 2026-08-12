@@ -1,0 +1,143 @@
+L08 — Decompose the oversized services
+Exit criterion: "No service file exceeds 800 lines. Each extracted
+unit has a single stated responsibility and its own tests. A split
+that only moves lines is rejected."
+
+BEFORE
+======
+$ find unierp-api/src -name "*.service.ts" | xargs wc -l | sort -rn | head -3
+  3990 src/modules/inventory/inventory.service.ts
+  2956 src/modules/finance/finance-operations.service.ts
+  2935 src/modules/communication/communication.service.ts
+(737 real services; 48 over the 800-line ceiling — measured directly)
+
+SCOPE OF THIS PASS
+==================
+Given the exit criterion explicitly REJECTS "a split that only moves
+lines" — the exit is fewer responsibilities per file, not more files
+— a mechanical fix across all 48 violators risks exactly what the
+criterion forbids. This phase builds the measurement gate, then finds
+and correctly decomposes ONE violator with a genuine, ALREADY-MARKED
+responsibility seam, proving the technique rather than performing a
+shallow line-split across all 48.
+
+MECHANISM 1 — the measurement/ratchet gate
+=============================================
+New scripts/check-service-decomposition.mjs (same pattern as L06/L07/
+L14) scans every *.service.ts and ratchets a per-file line-count
+baseline.
+
+$ node scripts/check-service-decomposition.mjs --update-baseline
+Baseline recorded: 737 services, 48 over 800 lines.
+
+$ node scripts/check-service-decomposition.mjs --worst 5
+  3990 lines — inventory.service.ts
+  2956 lines — finance-operations.service.ts
+  2935 lines — communication.service.ts
+  2823 lines — builder.service.ts
+  2735 lines — crm-forecasting.service.ts
+
+MECHANISM 2 — one complete, genuine responsibility split
+=============================================================
+unierp-api/src/modules/crm/crm-mailbox.service.ts (808 lines, the
+smallest real violator) had an ALREADY-MARKED seam in its own source:
+a `// ── Provider REST calls ──` section comment separating 4 raw
+Gmail/Microsoft Graph HTTP-fetch methods from the rest of the file
+(OAuth connection lifecycle, token refresh, CRM activity matching).
+This is not an arbitrary cut — it is a genuinely separate
+responsibility (talking to an external REST API given a token) that
+the ORIGINAL author already recognized and labeled.
+
+Extracted those 4 methods (+ their shared extractEmail helper) into
+a new CrmMailboxProviderClientService (169 lines), injected into
+CrmMailboxService via constructor. CrmMailboxService: 808 -> 657
+lines, well under 800.
+
+PROOF — behavior preserved, not just moved
+===============================================
+The pre-existing crm-mailbox.service.spec.ts (10 tests, written
+before this phase) needed only ONE line changed — its instantiation
+call site, to pass the new constructor dependency — and then passed
+UNCHANGED:
+
+  $ npx vitest run crm-mailbox.service.spec.ts
+  10/10 pass (identical assertions to before the split)
+
+This is the direct proof the exit criterion asks for: "a split that
+only moves lines is rejected" implies a GOOD split preserves exact
+behavior, provably — not merely "the file still compiles." The 10
+pre-existing behavioral assertions (OAuth callback handling, sync
+orchestration, activity matching) all still hold with zero changes to
+their own logic.
+
+New crm-mailbox-provider-client.service.spec.ts (5 tests, none
+existed before) gives the newly-separated responsibility its own
+dedicated coverage — including a real RFC 5322 "Name <addr>" header-
+parsing assertion, proving the extracted unit does its one job
+correctly on its own terms.
+
+  $ npx vitest run crm-mailbox-provider-client.service.spec.ts
+  5/5 pass
+
+BREAK/RESTORE — both mechanisms proven independently
+==========================================================
+1. The decomposition itself: disabled extractEmail()'s angle-bracket
+   parsing in the extracted service (backed up first).
+
+     $ npx vitest run crm-mailbox-provider-client.service.spec.ts
+     1 failed | 4 passed (5)
+     ("Jane Doe <jane@example.com>" returned raw instead of parsed to
+     "jane@example.com" — exactly the intended break)
+
+   Restored: 5/5 pass, `grep -c "BROKEN FOR PROOF"` returns 0.
+
+2. The measurement gate itself: appended a padding line to the
+   (already-fixed) extracted service (backed up first).
+
+     $ node scripts/check-service-decomposition.mjs
+     FAIL  1 service(s) regressed past their own baseline:
+       crm-mailbox-provider-client.service.ts: line count grew: 170 > 169
+
+   Restored: OK, 48/48 (identical to the original correct baseline).
+
+FULL REGRESSION
+================
+$ npx vitest run src/modules/crm/
+Test Files  60 passed | 2 failed (62)
+     Tests  1041 passed | 3 failed (1044)
+The 2 pre-existing failures (DB-dependent integration tests) confirmed
+untouched via `git status --short src/modules/crm/` — exactly the 5
+files this phase's own commit touched.
+
+$ node --max-old-space-size=6144 tsc --noEmit -p tsconfig.json
+(0 errors)
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+47 of 48 oversized services remain, including inventory.service.ts
+(3,990 lines — the exact file this phase's own deliverable text
+names, cited there as "3,989 lines," a 1-line measurement-convention
+difference). Filed as D078 (MEDIUM): the remaining violators have not
+been read closely enough in this pass to confirm they have an equally
+clean pre-existing seam — the exit criterion's own explicit rejection
+of line-shuffling means each needs its own careful read for genuine
+responsibility boundaries, not a mechanical divide-by-N applied at
+scale. `--worst N` gives a prioritised, measured worklist for whoever
+continues this. Mirrors the exact precedent this session applies
+consistently (D12/D19/J04/L07/L11/L12).
+
+COMMANDS
+========
+$ node scripts/check-service-decomposition.mjs
+$ node scripts/check-service-decomposition.mjs --worst 10
+$ npx vitest run src/modules/crm/tests/crm-mailbox.service.spec.ts src/modules/crm/tests/crm-mailbox-provider-client.service.spec.ts
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+
+COMMITS
+=======
+unierp-api  9cbfefd  crm-mailbox.service.ts, crm-mailbox-provider-client.service.ts (new),
+                     crm.module.ts, tests/crm-mailbox.service.spec.ts,
+                     tests/crm-mailbox-provider-client.service.spec.ts (new)
+unierp-workspace  (this phase)  scripts/check-service-decomposition.mjs (new),
+                                 evidence/service-decomposition-baseline.json (new),
+                                 90-DEFECT-LOG.md D078

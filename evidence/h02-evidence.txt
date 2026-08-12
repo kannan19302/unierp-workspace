@@ -1,0 +1,137 @@
+H02 — Product narrative and messaging
+Deliverable: "Positioning that states what UniERP is, for whom, and
+against which alternatives - including the honest differentiators
+03-GAP-ANALYSIS § 3 identifies: open-source and self-hostable,
+local-first AI with no data egress, one design system across three
+clients."
+Exit: "Every claim on the site maps to a shipped, verifiable
+capability. Nothing aspirational is stated in the present tense."
+
+THE INVESTIGATION
+==================
+Swept the public site for unverifiable, falsifiable present-tense
+claims beyond compliance certifications (K03/D118 already fixed
+those). Checked for social-proof superlatives ("trusted by,"
+"industry-leading," "#1," "Fortune 500") - none found, this site had
+already been reasonably scrubbed. Checked for the honest
+differentiators the deliverable names (open-source/self-hostable,
+local-first AI, one design system) - none currently claimed at all,
+so nothing false to fix there (an absent claim isn't a violation of
+"every claim maps to a shipped capability").
+
+Then checked app/(site)/about/AboutClient.tsx and found two severe,
+specific, falsifiable fabrications:
+
+  const TEAM = [
+    { name: 'Priya Krishnamurthy', role: 'CEO & Co-Founder', ... },
+    { name: 'Akira Tanaka', role: 'CTO & Co-Founder', ... },
+    ... 6 more invented named individuals with specific executive
+    titles ...
+  ];
+
+  const STATS = [
+    { num: '2,500+', label: 'Businesses served' },
+    { num: '24', label: 'ERP modules' },
+    { num: '19', label: 'Countries' },
+    { num: '99.97%', label: 'Uptime SLA' },
+  ];
+
+Both rendered directly on the live "About" page: an 8-person
+"Leadership Team" section titled "Meet the builders" with a "View
+open roles" careers CTA, and a stats row with specific, falsifiable
+numbers - a business-metric claim of comparable severity to K03's
+certification fabrication, but arguably worse: it invents the
+existence of named human executives for a platform that (per this
+session's own extensive investigation across ~30 phases) has no
+verified customer base, no confirmed team, and no measured uptime
+history.
+
+THE FIX
+========
+Removed both the TEAM array and STATS array and their rendered
+sections entirely - not replaced with different invented numbers or
+names, since there is no honest substitute content available (no way
+to know or state a real team roster or real customer count). This
+mirrors K03's own approach: state nothing, or state the true "not
+yet," rather than fabricate an alternative.
+
+Extended scripts/ci/check-compliance-claims.mjs (the ratchet gate
+built in K03/D118) with two more prohibited patterns matching this
+same shape of unverified metric claim: a specific uptime percentage
+("\d+(\.\d+)?%\s*Uptime") and a specific customer-count claim
+("\d[\d,]*\+?\s*Businesses\s+served"). Kept in the same file/gate
+rather than a new one, since it is the same underlying principle
+(G-3: a prospect is never misled by an unearned claim) applied to a
+slightly wider class of statement.
+
+PROOF (FAIL-first)
+====================
+$ node scripts/ci/check-compliance-claims.mjs
+(against the ORIGINAL, unmodified AboutClient.tsx, before any edit)
+FAILED: 1 unearned certification/audit claim(s) found... (the
+fabricated uptime stat, caught on the gate's own first real run -
+genuine FAIL-first, not staged)
+
+After the fix:
+$ node scripts/ci/check-compliance-claims.mjs
+Compliance-claim gate: 0 unearned certification/audit claims on the
+public site. (exit 0)
+
+BREAK/RESTORE
+=============
+Injected a scratch file containing the exact original fabricated
+stats:
+  export const stat = "99.97% Uptime SLA";
+  export const stat2 = "2,500+ Businesses served";
+
+  $ node scripts/ci/check-compliance-claims.mjs
+  FAILED: 2 unearned certification/audit claim(s) found ...
+  (exit 1 - reproduces the original defect on purpose)
+
+Removed the scratch file:
+  $ node scripts/ci/check-compliance-claims.mjs
+  0 unearned certification/audit claims (exit 0)
+
+REGRESSION
+==========
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit
+Clean, exit 0. No pre-existing errors in this repo (confirmed
+consistent with K03's own earlier finding for this repo).
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as D131 (CRITICAL). Not fixed in this pass:
+  - The deliverable's named honest differentiators (open-source and
+    self-hostable, local-first AI with no data egress, one design
+    system across three clients) are NOT currently stated anywhere on
+    the site - this pass did not add them. Whether they are even true
+    today was not independently verified (e.g. whether the AI copilot
+    genuinely has "no data egress," given this session's own
+    knowledge that AI features in this platform generally call
+    external model providers, was not checked against the actual AI
+    service implementation - if the claim would be false if added,
+    that is itself worth investigating before H02 is claimed
+    complete).
+  - Only the About page was checked for fabricated team/metric
+    claims. Other pages (home, features, pricing) were spot-checked
+    for the specific superlative patterns already covered by K03's
+    gate, but not exhaustively re-read for this SAME class of
+    fabrication (invented named people, invented specific numbers)
+    beyond what the new gate patterns catch.
+  - The new gate patterns are a denylist of the exact shape found,
+    not a general "any hardcoded array of named people/numbers"
+    detector - a differently-worded fabrication (e.g. a founder bio
+    written in prose rather than the TEAM array shape) would not be
+    caught.
+
+COMMANDS
+========
+$ node scripts/ci/check-compliance-claims.mjs
+$ node --max-old-space-size=6144 ./node_modules/typescript/bin/tsc --noEmit
+$ grep -rn "trusted by\|industry.leading\|#1 \|99\.9%\|guaranteed" app --include=*.tsx -i
+
+COMMITS
+=======
+unierp-corporate-website  5cf9276  app/(site)/about/AboutClient.tsx,
+                          scripts/ci/check-compliance-claims.mjs
+unierp-workspace  (this phase)  90-DEFECT-LOG.md D131

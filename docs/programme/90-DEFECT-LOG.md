@@ -4508,3 +4508,40 @@ tractable without live infrastructure, buildable and property-testable as a pure
 database, the natural first build in a follow-up pass; a provisioned source/destination database pair to
 build and prove the actual refresh-and-mask pipeline against; and a "promote to production" mechanism that
 moves a validated change out of the sandbox without ever moving tenant data the other direction.
+
+### D131 · 🔴 CRITICAL · The public About page fabricated an 8-person named "Leadership Team" and specific business-metric statistics ("2,500+ Businesses served," "99.97% Uptime SLA") — none of which are true
+
+Found while claiming and building H02 (Product narrative and messaging), whose exit criterion is: "Every claim
+on the site maps to a shipped, verifiable capability. Nothing aspirational is stated in the present tense."
+Swept the public site beyond K03/D118's already-fixed compliance claims and found
+`app/(site)/about/AboutClient.tsx` hardcoded a `TEAM` array — 8 invented named individuals with specific
+executive titles (CEO & Co-Founder, CTO & Co-Founder, Chief Product Officer, etc.) — rendered as a "Meet the
+builders" / "Leadership Team" section with a "View open roles" careers CTA, and a `STATS` array claiming
+`"2,500+ Businesses served"`, `"24 ERP modules"`, `"19 Countries"`, `"99.97% Uptime SLA"` — both rendered
+directly on the live page. This platform has no verified customer base, no measured uptime history, and no
+confirmed team roster to publish — arguably a more severe fabrication than K03's certification claims, since
+it invents the existence of named human executives for a company that does not have them.
+
+**Fixed:** removed both the `TEAM` and `STATS` arrays and their rendered sections entirely, not replaced with
+different invented numbers or names — there is no honest substitute content available, so removal (matching
+K03's own precedent) is the correct move rather than fabricating an alternative. Extended
+`scripts/ci/check-compliance-claims.mjs` (the ratchet gate built in K03/D118) with two more prohibited
+patterns matching this same shape of unverified metric claim — a specific uptime percentage and a specific
+customer-count claim — kept in the same gate rather than a new one, since it is the same underlying G-3
+principle applied slightly wider. Proven: the gate's own first run against the original, unmodified page
+genuinely failed on the fabricated uptime stat (true FAIL-first, not staged); passes after the fix.
+Break/restore: injected a scratch file containing the exact original fabricated stats, confirmed the gate
+reproduces the failure, removed it, confirmed pass. Typecheck clean, 0 errors (this repo carries no
+pre-existing debt, consistent with K03's own earlier finding).
+
+**Not fixed — the honest remaining gap.** The deliverable's named honest differentiators (open-source and
+self-hostable, local-first AI with no data egress, one design system across three clients) are not currently
+stated anywhere on the site — this pass did not add them, and whether they would even be TRUE if added (e.g.
+whether the AI copilot genuinely has "no data egress," given this platform's AI features generally call
+external model providers) was not independently verified against the actual AI service implementation — worth
+investigating before claiming that differentiator, not just before adding the words. Only the About page was
+checked for this specific fabrication class (invented named people, invented specific numbers); other pages
+were spot-checked against K03's existing patterns but not exhaustively re-read for this same class beyond
+what the two new gate patterns catch. The gate itself is a denylist of the exact shape found, not a general
+detector — a differently-worded fabrication (e.g. a founder bio in prose rather than a `TEAM` array) would not
+be caught.

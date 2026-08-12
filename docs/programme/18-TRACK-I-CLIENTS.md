@@ -48,7 +48,7 @@ Two problems define this track:
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **I01** | Mobile repo hygiene and CI | A14 | The 11 repair scripts and 3 error dumps removed; `mobile-ci.yml` running analyse, test, and build for all three platforms as blocking steps | `git ls-files` matches an allowlist. `flutter analyze` exits 0 with no baseline suppressions. CI builds Android, iOS and Windows artefacts (**D006**) | OPEN |
+| **I01** | Mobile repo hygiene and CI | A14 | The 11 repair scripts and 3 error dumps removed; `mobile-ci.yml` running analyse, test, and build for all three platforms as blocking steps | `git ls-files` matches an allowlist. `flutter analyze` exits 0 with no baseline suppressions. CI builds Android, iOS and Windows artefacts (**D006**) | WIP |
 | **I02** | Mobile correctness pass | I01 | An independent review of the routing and controller layer that the `fix_router*.py` history touched, with tests for what those scripts changed | Every route resolves to a real screen; every controller referenced in `missing_controllers.txt` either exists or its route is removed. No silent dead route | OPEN |
 | **I03** | Mobile test foundation | I01 | Widget, integration and golden tests with an enforced coverage threshold — the mobile equivalent of A06 | Coverage threshold enforced in `mobile-ci.yml`; deleting a test fails the build. Golden tests cover the primitives from B19 | OPEN |
 | **I04** | Token and theme adoption | B18, B19 | Generated Dart tokens consumed throughout; every hardcoded colour, spacing and type value removed | A hardcoded `Color(0x...)` or raw padding value fails `flutter analyze` via a custom lint. All 7 themes and both densities render | BLOCKED |

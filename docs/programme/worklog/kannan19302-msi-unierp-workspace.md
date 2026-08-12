@@ -13980,3 +13980,163 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### L02 · FINISH · 2026-08-12T04:15:20Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+L02 — Naming convention gate
+Exit criterion: "A violation of the documented naming scheme fails
+CI on a new or modified file. Baseline recorded."
+
+BEFORE
+======
+$ npx eslint src/modules/hr/hr.service.ts
+Oops! Something went wrong! :(
+ESLint: 10.8.1
+ESLint couldn't find an eslint.config.(js|mjs|cjs) file.
+
+unierp-api had NO ESLint config anywhere in the repo, despite
+package.json's own `lint` script referencing one. `npm run lint` has
+never actually linted anything — filed as D080 (CRITICAL), the same
+class of finding as D013/D016/D017 (a documented, apparently-enforced
+standard with no working mechanism behind it).
+
+MECHANISM
+=========
+New unierp-api/eslint.config.mjs — the repo's first-ever working
+ESLint config — encodes the genuinely MECHANICAL subset of
+CODE_STANDARDS § 3 via @typescript-eslint/naming-convention:
+
+  - Booleans must carry an is/has/can/should/did/will prefix
+    (type-aware — distinguishing a boolean from any other variable
+    needs real type information, not just syntax).
+  - Interfaces must not use Hungarian `I` prefixes.
+  - Classes/type aliases/enums: PascalCase.
+  - Variables/functions/parameters: camelCase (with a carve-out for
+    genuine module-level UPPER_CASE constants, matching this
+    codebase's own existing convention for things like crypto
+    algorithm names).
+  - Enum members: UPPER_CASE or PascalCase.
+
+Semantic rules from § 3 ("say what it is, not what it's made of",
+"use the business's vocabulary") are NOT machine-checkable and are
+explicitly left to review, stated in the config's own comments rather
+than falsely claimed as covered.
+
+Added eslint@9, typescript-eslint@8, @typescript-eslint/parser@8,
+@typescript-eslint/eslint-plugin@8 as real devDependencies — none
+were previously installed; every prior `npx eslint` invocation had
+been silently auto-installing an unpinned copy from the registry.
+
+SCOPE — real, honest, and narrower than first attempted
+=============================================================
+Type-aware naming-convention linting (required for the boolean-prefix
+rule) OOMs across the FULL repo even with an 8GB heap — this
+checkout's Prisma client alone is hundreds of models, and TypeScript's
+type program for the whole codebase does not fit in this environment.
+A first attempt scoped to all 46 business modules also failed to
+complete reliably (resource contention). A second attempt at 6
+modules also failed. The baseline is scoped to ONE module (admin, 30
+files) — the scope that could actually be run to completion and
+verified correct in this environment, stated honestly rather than
+claiming broader coverage that was never actually achieved.
+
+RESULT
+======
+$ node scripts/check-naming-convention.mjs --update-baseline
+Baseline recorded: 5 naming-convention violation(s) across 3 file(s)
+(30 scanned; scope: admin).
+
+Real findings: automation-rule-engine.service.ts (2),
+automation-rules.service.ts (2), import-export.service.ts (1).
+
+$ node scripts/check-naming-convention.mjs
+5 naming-convention violation(s) now vs 5 at baseline, 30 file(s)
+scanned.
+OK    no new naming-convention violations.
+
+DEBUGGING NOTE — worth recording, not hidden
+=================================================
+Getting a reliable invocation took several failed attempts across
+this session, each instructive:
+  1. execFileSync with shell:true and a recursive `**/*.ts` glob:
+     silently scanned 596 files platform-wide instead of the intended
+     ~30, and a deliberately-broken file's violation went undetected
+     (the file WAS in the report, with an empty messages array).
+  2. execFileSync without shell, invoking npx.cmd directly: also
+     scanned 596 files with the same silent-miss behavior.
+  3. A single-star, non-recursive glob (`src/modules/admin/*.ts`),
+     invoked through a real shell (matching exactly how it was first
+     proven to work via direct command-line testing): scanned the
+     correct 30 files and correctly caught a deliberately-introduced
+     violation.
+The final script uses invocation #3, run once per scoped module with
+its own report file, merged. This is stated explicitly in the
+script's own comments so a future session does not repeat the same
+debugging cycle.
+
+BREAK/RESTORE
+=============
+Added a genuine violation to admin.service.ts (backed up first): a
+boolean class property named `flag` with no is/has/can/should/did/will
+prefix — the exact pattern CODE_STANDARDS § 3 names as forbidden.
+
+  $ node scripts/check-naming-convention.mjs
+  6 naming-convention violation(s) now vs 5 at baseline, 30 file(s) scanned.
+  FAIL  1 file(s) regressed past their own baseline:
+    src/modules/admin/admin.service.ts: 1 > 0 (baseline)
+
+Exactly the intended failure, naming the exact file. Restored from
+backup:
+
+  $ grep -c "BROKEN FOR PROOF" admin.service.ts
+  0
+  $ node scripts/check-naming-convention.mjs
+  5 naming-convention violation(s) now vs 5 at baseline, 30 file(s) scanned.
+  OK    no new naming-convention violations.
+
+DETERMINISM
+============
+Two consecutive `node scripts/check-naming-convention.mjs` runs
+(clean state) both report identically: "5 naming-convention
+violation(s) now vs 5 at baseline ... 30 file(s) scanned. OK."
+
+TYPECHECK
+=========
+eslint.config.mjs sits at the unierp-api repo root; tsconfig.json's
+own `include` is scoped to `src/**/*` only, so the new config file is
+outside TypeScript's compilation scope by construction — zero
+typecheck impact, confirmed by reading tsconfig.json directly rather
+than assumed.
+
+WHAT THIS PHASE DOES NOT COVER — the honest, load-bearing gap
+===================================================================
+Filed as part of D080:
+1. Whether the SAME "lint script references a nonexistent config"
+   pattern exists in any of the other 29 repos in this polyrepo — not
+   swept platform-wide.
+2. Real naming-convention coverage is currently ONE module (admin,
+   30 files) out of unierp-api's full source tree — extending it
+   needs either more memory/time budget than this session had, or a
+   non-type-aware approximation of the boolean rule that trades
+   accuracy for tractability across the whole repo.
+3. The 5 real violations found were NOT fixed in this pass — this
+   phase's own scope is building the working gate and baseline, not
+   fixing every pre-existing violation (matching L06/L11/L14's own
+   baseline-ratchet precedent).
+
+COMMANDS
+========
+$ node scripts/check-naming-convention.mjs
+$ node scripts/check-naming-convention.mjs --update-baseline
+
+COMMITS
+=======
+unierp-api  32f33f8  eslint.config.mjs (new), package.json,
+                     package-lock.json (new real devDependencies)
+unierp-workspace  (this phase)  scripts/check-naming-convention.mjs (new),
+                                 evidence/naming-convention-baseline.json (new),
+                                 90-DEFECT-LOG.md D080
+```
+

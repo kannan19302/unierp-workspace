@@ -92,7 +92,7 @@ non-negotiables.
 | **E09** | General ledger and core accounting | `finance` | E05–E08, L08 | Double-entry provably balanced; multi-currency with revaluation; period close (E06); trial balance, P&L and balance sheet reconciling to the ledger; **100 %** coverage on all arithmetic | DONE |
 | **E10** | Receivables, payables and cash | `finance` | E09 | Ageing, dunning, allocation, part-payment, write-off, bank reconciliation; every posting traceable to a source document | DONE |
 | **E11** | Advanced finance | `advanced-finance` | E09 | Budgets, cost centres, allocations, consolidation, intercompany, deferred revenue, accruals — each reconciling to the GL | DONE |
-| **E12** | Tax and statutory determination | `finance`, `localization` | E09 | Jurisdiction-correct determination; per-country statutory reports; rate changes versioned by effective date, never retroactive (**G-15**) | WIP |
+| **E12** | Tax and statutory determination | `finance`, `localization` | E09 | Jurisdiction-correct determination; per-country statutory reports; rate changes versioned by effective date, never retroactive (**G-15**) | DONE |
 | **E13** | Fixed assets | `fixed-assets` | E09 | Acquisition, depreciation schedules, revaluation, impairment, insurance, transfer, disposal — every event posting to the GL | OPEN |
 
 ### Supply chain and operations

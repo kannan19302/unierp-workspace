@@ -35,12 +35,6 @@ const ROOT = path.resolve(
   "..",
   "..",
 );
-const BASELINE = path.join(
-  ROOT,
-  "scripts",
-  "ci",
-  "decimal-arithmetic-baseline.json",
-);
 /* ── Polyrepo awareness — phase A30, defect D024/D025 ────────────────────────
  *
  * These were monorepo paths. `readdirSync` on the missing schema directory THREW
@@ -55,6 +49,23 @@ const BASELINE = path.join(
  */
 const TARGET = process.env.POLICY_ROOT ? path.resolve(process.env.POLICY_ROOT) : ROOT;
 const SELF = process.env.POLICY_REPO || path.basename(TARGET);
+
+/* The baseline must live IN the target repo, not beside this script.
+ *
+ * This used to resolve to `<this-script's-own-repo>/scripts/ci/decimal-
+ * arithmetic-baseline.json` regardless of which repository TARGET pointed
+ * at — a single shared number for every caller of the reusable workflow
+ * (unierp-api, unierp-data, unierp-web, unierp-idp all point POLICY_ROOT at
+ * their own checkout, but all reused the SAME baseline file, checked out
+ * fresh and throwaway in CI's `gate/` directory every run). A repo whose
+ * real violation count sat well under that shared number could add new
+ * violations up to the gap without ever tripping the gate — the ratchet
+ * could not actually ratchet per repo. Mirrors the sibling
+ * `.quality-policy-baseline.json` convention already committed at each
+ * target repo's own root (see check-policy.mjs / policy-gate.yml § "ratchet
+ * baseline must be committed").
+ */
+const BASELINE = path.join(TARGET, ".decimal-arithmetic-baseline.json");
 
 // Post-extraction homes. A repo not listed here simply has none of these paths.
 const SCHEMA_CANDIDATES = [

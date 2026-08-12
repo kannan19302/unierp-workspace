@@ -2421,3 +2421,35 @@ same-domain relationship the outbox pattern doesn't apply to, needs a read of th
 its call site — not assumed either way from the map alone. Similarly, triaging which of the 63
 apparently-unconsumed events are genuinely dead vs. consumed outside this scan's scope needs a
 broader search (other repos, message-queue configuration) this phase did not perform.
+
+### D084 · 🔴 CRITICAL · GlAccountingService.postJournalToBook() accepted unbalanced journals up to a full cent — float-with-epsilon balance check, not exact Decimal comparison
+
+Found while claiming and building E09 (General ledger and core accounting), whose own exit criterion
+opens with "Double-entry provably balanced." `unierp-api/src/modules/advanced-finance/services/gl-
+accounting.service.ts`'s `postJournalToBook()` — one of at least two journal-posting code paths in
+this service — checked balance via `Math.abs(totalDebit - totalCredit) > 0.01` on raw JavaScript
+floating-point numbers summed from caller-supplied `debit`/`credit` values. This is doubly wrong: (1)
+an epsilon-TOLERANT check silently accepts any real imbalance up to a full cent as "close enough" —
+double-entry accounting requires debits to equal credits EXACTLY, to the last minor unit, with zero
+tolerance; (2) `CODE_STANDARDS`' own explicit rule ("Money is `Decimal(19,4)`... never converted to
+`number` for arithmetic") was violated directly. The same file's own `reverseJournalToBook()` path
+elsewhere correctly uses `Prisma.Decimal` and `.equals()` for an equivalent check — this was a live
+inconsistency within one file, not a hypothetical.
+
+**How it was caught:** writing the FAIL-first test for E09's own "provably balanced" exit criterion
+and confirming a journal deliberately off by half a cent (100.00 debit vs 99.995 credit — genuinely,
+mathematically unbalanced) was accepted and posted by the pre-existing code before any fix was written.
+
+**Fixed:** `postJournalToBook()` now sums both sides as `Prisma.Decimal` and requires exact
+`.equals()`, matching the correct pattern already present elsewhere in the same file. Proven via
+break/restore.
+
+**Not fully investigated — E09's full scope, deliberately not attempted at scale in this pass.** This
+phase's own exit criterion is far larger than the one bug found and fixed here: multi-currency
+revaluation, period-close integration (E06 already built, not re-verified against this fix), trial
+balance/P&L/balance sheet reconciliation to the ledger, and 100% test coverage on ALL arithmetic in
+this 1,248-line service. Only `postJournalToBook()`'s own balance check was audited and fixed in this
+pass. A dedicated, wider audit of every OTHER money-arithmetic path in `gl-accounting.service.ts` (and
+the broader `advanced-finance`/`finance` modules) for the same float-vs-Decimal class of bug is a
+high-priority follow-up — this defect's own discovery, by inspecting one function closely rather than
+assuming the file was internally consistent, suggests more instances are plausible.

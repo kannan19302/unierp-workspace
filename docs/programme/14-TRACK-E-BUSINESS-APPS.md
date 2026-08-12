@@ -104,7 +104,7 @@ non-negotiables.
 | **E16** | Sales and order management | `sales` | E14, E10 | Quote → order → fulfilment → invoice, with credit limits, backorders, allocation, returns and RMA | DONE |
 | **E17** | Supply-chain planning | `supply-chain` | E14–E16 | Demand and supply planning, reorder policy, lead times, MRP suggestions traceable to their inputs | DONE |
 | **E18** | Manufacturing | `manufacturing` | E14 | BOM versioning, routing, work orders, capacity, WIP valuation to the GL, scrap and yield, quality gates | DONE |
-| **E19** | Point of sale and retail | `pos`, `ecommerce` | E14, E16 | Offline-capable POS with reconciled sync; shifts, cash drawer, refunds; store and online inventory as one truth | OPEN |
+| **E19** | Point of sale and retail | `pos`, `ecommerce` | E14, E16 | Offline-capable POS with reconciled sync; shifts, cash drawer, refunds; store and online inventory as one truth | WIP |
 
 ### People
 

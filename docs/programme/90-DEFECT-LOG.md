@@ -4404,3 +4404,45 @@ substantially larger build than this pass's tractable scope (closing the type su
 schema). This repo's version bump is local — `unierp-api`'s own dependency is still pinned to the published
 1.0.6 in its lockfile (confirmed via `node_modules/.pnpm`, not a workspace symlink); publishing 1.1.0 and
 bumping the consumer's dependency is a separate, deliberate step not attempted here.
+
+### D128 · 🔴 CRITICAL · Denied undeclared-capability attempts were audited only with a generic error-name label — the specific scope an extension tried to reach was discarded before it ever reached the audit trail
+
+Found while claiming and building G02 (Permission and consent model for extensions), whose exit criterion is:
+"An extension attempting an undeclared operation is denied and the attempt is audited. Escalating its own
+grants is impossible." Reading the real sandbox implementation (`unierp-sandbox`'s `SandboxRunner.run()`)
+confirmed both the denial mechanism and the anti-escalation guarantee are genuine and not fabricated: every
+host-capability case calls `requireScope(scope)` first, re-checked on the host side of the isolate boundary
+at call time (not trusted from anything the isolate asserts — "the bridge is the authority"), and
+`effectiveScopes()` computes the grant once at install time as an intersection with the installer's own
+permissions, with nothing anywhere re-reading or widening it from something the extension itself could
+influence. The gap was in "the attempt is audited": a `SandboxScopeError` thrown on denial does propagate to
+`ExtensionRegistryService.invoke()`'s catch block, which calls `recordUsage(...)` — so a denial genuinely
+reaches `ExtensionInvocationUsage` (readable via this session's own G04 fix) — but `recordUsage()` only ever
+stored `error.name`, the literal string `"SandboxScopeError"` for every single denial regardless of which
+capability was attempted. An auditor could see "a scope violation happened, N times" but never which scope —
+the detail that makes an audit record actionable. The detail existed and was simply discarded:
+`SandboxScopeError`'s own constructor already builds a message string containing the exact scope and
+extensionId; it just never exposed them as properties.
+
+**Fixed:** added `readonly scope: Scope` and `readonly extensionId: string` as real properties on
+`SandboxScopeError` (`unierp-sandbox/src/index.ts`), bumped `@kannan19302/sandbox` from 1.0.4 to 1.1.0.
+Proven via break/restore against the real test suite: removed the property assignments (marked "BROKEN FOR
+PROOF"), confirmed the exact new property test fails, restored, confirmed 0 `BROKEN FOR PROOF` markers
+remain, full regression 106/106 tests pass across all 4 test files (including the mature escape-attempt and
+governor-limit suites already in this repo). Typecheck: 2 pre-existing, unrelated errors, confirmed unchanged
+via `git stash` before/after comparison.
+
+**A drafted consumer-side change was caught and correctly reverted, not shipped broken.** The natural next
+step — having `ExtensionRegistryService.recordUsage()`'s `errorKind` read `SandboxScopeError:${error.scope}`
+instead of the bare error name — was drafted in `unierp-api`, then reverted after `tsc --noEmit` failed
+immediately (`TS2339: Property 'scope' does not exist on type 'SandboxScopeError'`): `unierp-api`'s installed
+dependency is still pinned to the *published* 1.0.4 (confirmed via `node_modules/.pnpm`, not a workspace
+symlink — the same cross-repo situation as G01's `extension-api` package), which has no `scope` property.
+Confirmed the compile failure, reverted, confirmed clean typecheck and that the file is back to its exact
+originally-committed state via `git status --short`.
+
+**Not fixed — the honest remaining gap.** The actual audit-record improvement is built and proven in
+`unierp-sandbox` but not live anywhere yet — publishing 1.1.0 and bumping `unierp-api`'s dependency is a
+separate, deliberate step not attempted here, the same pattern as G01. "A tenant admin sees them at install
+and consents" (the deliverable's other named requirement) was not investigated — whether any install UI
+actually displays the manifest's requested scopes to an admin before installation was not checked.

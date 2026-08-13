@@ -4929,3 +4929,35 @@ are fixed once, centrally, not worked around per-consumer — better done as its
 silently into G09. Reproduction: create any extension or custom object, then run
 `node unierp-data/scripts/check-rls-verify.mjs` and note neither its table nor its RLS state appears
 anywhere in the output.
+
+### D144 · 🟠 HIGH · `two-person-control.spec.ts`'s Gate-3 mock predates the M49 `approvedBy` requirement — the C04 exit-criterion test failed deterministically and left the API `pnpm test` gate red
+
+`unierp-api/src/common/guards/tests/two-person-control.spec.ts`, Gate 3 (`allows operation with a valid
+approval token`), mocks `controlPlaneApproval.findUnique` returning `{id, status: APPROVED, requestedBy,
+expiresAt}` without `approvedBy`. M49 (D049 CRITICAL, commit 9279487) added the two-person invariant to
+`two-person-control.guard.ts` — the guard now throws `ForbiddenException("Approval token has no recorded
+approver — it was never actually approved by anyone")` when `approvedBy` is missing, and a second check
+rejects `approvedBy === requestedBy`. The test was never updated, so it failed 100% of the time
+(confirmed by running it in isolation: `1 failed | 5 passed`). This is not a G11 defect — it predates G11
+and was blocking the API `pnpm test` gate that G11 needs to finish. Fixed inline because it blocked this
+phase (per 90-DEFECT-LOG § 1 rule 6): the mock now sets `approvedBy: "operator-2"`, a genuinely different
+second person, making Gate 3 test the real two-person contract instead of the pre-M49 single-person one.
+The other five gates in the file already covered the rejected paths (`approvedBy` absent → refused,
+`approvedBy === requestedBy` → refused, per two-person-control-separation.spec.ts). Reproduction before
+fix: `cd unierp-api && pnpm exec vitest run src/common/guards/tests/two-person-control.spec.ts` → `1
+failed | 5 passed` with `ForbiddenException: Approval token has no recorded approver`. After fix: `6
+passed`. Owning phase: none — already fixed as a G11 gate-blocker; a reviewer should confirm the fix
+preserves the M49 invariant.
+
+### D145 · 🟠 HIGH · `unierp-loop-b` has a committed `evidence-M38.txt` at its repository root, violating R5 / A14 repo hygiene and blocking `verify.mjs` for every other working tree
+
+`unierp-loop-b/evidence-M38.txt` is tracked in git (`git -C D:\UniERP\unierp-loop-b ls-files evidence-M38.txt`
+returns the filename). The repo-hygiene gate (`check-repo-hygiene.mjs`) forbids `.txt` at a repository
+root (`FORBIDDEN_EXT`), so `node scripts/ci/verify.mjs` run from ANY sibling working tree fails at "Repo
+hygiene" with `1 violation(s) ... FAIL unierp-loop-b/evidence-M38.txt`. The `--finish` protocol reads the
+evidence file and pastes its content into `WORKLOG.md` — the file itself is never meant to be committed.
+The M38 agent appears to have committed it. Not fixed here: it lives in another agent's working tree
+(`unierp-loop-b`), and per the one-agent-per-tree rule it should be removed by whoever holds or next
+passes through that tree (`git rm evidence-M38.txt`, commit, push). Reproduction: from any tree, `node
+scripts/ci/verify.mjs` → `BLOCKED at: Repo hygiene`. Owning phase: whichever agent next touches
+`unierp-loop-b`; until then G11 finishes with `--despite-red-gate` and this documented reason.

@@ -22244,3 +22244,104 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G09 · FINISH · 2026-08-13T17:17:37Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+G09 — Data/object builder — evidence
+
+EXIT CRITERION (16-TRACK-G-DEVELOPER-PLATFORM.md § Wave 4, quoted in the work order):
+"A customer-created object gets tenantId, both indexes and an RLS policy automatically;
+check-rls-verify.mjs passes afterwards. A custom object can never be created without isolation."
+
+────────────────────────────────────────────────────────────────────────────
+1) WATCHED IT FAIL FIRST (before any code existed)
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-data && node scripts/check-rls-verify.mjs
+RLS verification — schema-derived, per-table
+  expected tenant tables (from schema): 1815
+  F5 tables confirmed individually:     364/364
+  failures:                             19
+  (19 pre-existing, unrelated failures — 19-table schema/migration drift
+  spanning phases D04/D11/D12/D17/M31/M33/M35-37/M44, filed as D141. No
+  CustomObjectDefinition/CustomObjectFieldDefinition/co_* mechanism existed
+  at all — grep for "CustomObject" across unierp-api/unierp-developer
+  returned zero hits.)
+
+────────────────────────────────────────────────────────────────────────────
+2) THE MECHANISM, PROVEN PASSING — dedicated two-tenant Vitest suite
+   (custom-object-schema.service.spec.ts), run against the real unerp_api
+   (NOBYPASSRLS) role, not the migration-owner superuser role
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-api && DATABASE_URL=postgresql://unerp:unerp_password@localhost:5432/unerp_dev \
+    npx vitest run src/developer/builder/tests/custom-object-schema.service.spec.ts
+
+ ✓ src/developer/builder/tests/custom-object-schema.service.spec.ts (8 tests) 481ms
+   ✓ creates the definition and the real table in one step — never one without the other
+   ✓ gives the generated table tenant_id, RLS ENABLED, FORCED and a policy — both indexes present
+   ✓ maps a decimal field to Decimal(19,4), not a float
+   ✓ refuses a field that redeclares a platform-supplied column
+   ✓ refuses an object id that could not be a safe SQL identifier
+   ✓ adds a field additively without dropping existing columns
+   ✓ rolls back the definition if the DDL step fails — a custom object can never exist without its table
+   ✓ isolates rows between tenants at the database, not in application code
+       (asserted as role unerp_api: rolsuper=false, rolbypassrls=false;
+        tenant A saw ['a-row'], never 'b-row')
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+
+────────────────────────────────────────────────────────────────────────────
+3) DELIBERATELY BROKEN — commented out CustomObjectSchemaService.provision()'s
+   `await this.applyRls(tx, table);` call, confirmed the same suite catches a
+   REAL cross-tenant leak, not a false negative
+────────────────────────────────────────────────────────────────────────────
+$ npx vitest run src/developer/builder/tests/custom-object-schema.service.spec.ts
+
+ ❯ src/developer/builder/tests/custom-object-schema.service.spec.ts (8 tests | 2 failed)
+   × gives the generated table tenant_id, RLS ENABLED, FORCED and a policy — both indexes present
+     → expected false to be true // Object.is equality   (meta.enabled)
+   × isolates rows between tenants at the database, not in application code
+     → expected [ 'a-row', 'b-row' ] to not include 'b-row'
+       (tenant A's query returned tenant B's row — the real leak the whole
+        phase exists to prevent)
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 passed (8)
+
+Restored `await this.applyRls(tx, table);` — re-ran the same command — 8/8 passed again (see § 2).
+
+────────────────────────────────────────────────────────────────────────────
+4) check-rls-verify.mjs AFTER the mechanism exists and a real object was
+   created and cleaned up through it — same 19 PRE-EXISTING failures, zero
+   new ones; the new metadata tables (custom_object_definitions,
+   custom_object_field_definitions) are visible and pass individually
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-data && node scripts/check-rls-verify.mjs
+RLS verification — schema-derived, per-table
+  expected tenant tables (from schema): 1817        <- was 1815; +2 new metadata tables
+  F5 tables confirmed individually:     364/364
+  failures:                             19          <- unchanged; same pre-existing 19, filed as D141
+
+────────────────────────────────────────────────────────────────────────────
+5) TYPECHECK — both consumers, clean
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-api && node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
+(exit 0, no output)
+
+$ cd unierp-developer && npx tsc --noEmit -p tsconfig.json
+(only pre-existing, unrelated `recharts` module-not-found errors in
+erp/page.tsx, builder/page.tsx, manage/page.tsx, web/(hub)/page.tsx —
+none in the new data-objects files)
+
+────────────────────────────────────────────────────────────────────────────
+6) unierp-workspace gates
+────────────────────────────────────────────────────────────────────────────
+$ node scripts/ci/verify.mjs
+  ✓ All gates green — 8 passed, 1 skipped, 10 DELEGATED (not run here)
+
+$ node scripts/check-plan-integrity.mjs
+OK    359 phases intact across 13 tracks; every phase retains an exit criterion; no undeclared files.
+```
+

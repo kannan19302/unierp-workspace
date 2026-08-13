@@ -93,6 +93,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-repo-hygiene.mjs"]],
   },
   {
+    name: "Test taxonomy",
+    why: "J01 — every spec file is classified; an unclassifiable test is reclassified or deleted with a reason.",
+    cmd: ["node", ["scripts/ci/check-test-taxonomy.mjs"]],
+  },
+  {
     name: "Programme integrity",
     why: "Phase IDs are permanent; plan documents are amended, never regenerated. docs/programme/README.md § 0.",
     // Listed here as well as in ci.yml deliberately. ROADMAP.md's "close the

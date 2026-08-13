@@ -22354,3 +22354,110 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### G10 · FINISH · 2026-08-13T17:50:00Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+G10 — Form builder and editor — evidence
+
+EXIT CRITERION: "A 40-field multi-step form with conditional logic is built
+visually and renders identically on web, mobile and desktop."
+
+────────────────────────────────────────────────────────────────────────────
+1) WATCHED IT FAIL FIRST
+────────────────────────────────────────────────────────────────────────────
+grep -n "step\|condition" unierp-developer/src/stores/builderStore.ts -> no matches (pre-change)
+BuilderForm Prisma model (core-part-4.prisma) had `fields`/`settings` only —
+no `pages`, no `conditions`. The live end-user renderer
+(unierp-web/app/(dashboard)/app/[module]/[slug]/page.tsx) passed only
+`schema={formFields}` to DynamicFormRenderer — no multi-step, no conditional
+show/hide anywhere in the pipeline. Confirmed via grep across
+unierp-developer and unierp-web for step/condition/visible/showIf/dependsOn.
+
+────────────────────────────────────────────────────────────────────────────
+2) MECHANISM PROVEN — web conditional-logic engine (unit, pure functions)
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-web && npx vitest run src/components/builder/tests/DynamicFormRenderer.logic.spec.ts
+
+ ✓ src/components/builder/tests/DynamicFormRenderer.logic.spec.ts (16 tests)
+   ✓ evaluateOperator > equals/notEquals/contains/greaterThan/lessThan/isEmpty (10 cases)
+   ✓ resolveConditionStates > a matching hide condition makes the target invisible
+   ✓ resolveConditionStates > re-evaluated as the source value changes — no stale state
+   ✓ resolveConditionStates > a require condition adds requiredness even when optional
+   ✓ resolveConditionStates > a disable condition takes effect without hiding
+   ✓ resolveConditionStates > scales to a 40-field form with multiple conditions
+   ✓ resolveConditionStates > ignores a condition targeting a nonexistent field
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+
+DELIBERATELY BROKEN (hide action inverted to visible=true) — re-ran the same
+command:
+ ❯ ... (3 tests | 3 failed)
+   × ... expected false, received true  (hidden.enterprise_seats.visible)
+   × ... expected false, received true  (states.field_39.visible — 40-field case)
+ Tests  3 failed | 13 passed (16)
+Restored the line — re-ran — 16/16 passed again.
+
+────────────────────────────────────────────────────────────────────────────
+3) MECHANISM PROVEN — API publish passthrough (pages/conditions -> PageRegistry)
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-api && npx vitest run src/developer/builder/tests/builder-forms.service.publish.spec.ts
+
+ ✓ carries pages and conditions into the PageRegistry layout on first publish
+ ✓ carries pages and conditions on re-publish (existing page update path)
+ ✓ defaults to empty pages/conditions for a form that predates G10
+ Test Files  1 passed (1)  |  Tests  3 passed (3)
+
+DELIBERATELY BROKEN (`pages: form.pages || []` -> `pages: []`) — re-ran:
+ Tests  2 failed | 1 passed (3)   (both create- and update-path assertions caught it)
+Restored — re-ran — 3/3 passed again.
+
+Full builder suite unaffected: 19 test files, 389 tests, all green
+(unierp-api, src/developer/builder/tests/).
+
+────────────────────────────────────────────────────────────────────────────
+4) MECHANISM PROVEN — mobile runtime renderer (unierp-mobile, Flutter)
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-mobile && flutter test test/features/builder/form_runtime_page_test.dart
+
+00:00 +0: a hide condition removes the target field from the tree
+00:00 +1: Next is blocked when a required field on the current page is empty
+00:00 +2: Next advances to page 2 once the required field is filled
+00:00 +3: submit is blocked when a require-conditioned field is empty
+00:00 +4: submit succeeds once the require-conditioned field is filled
+00:00 +5: surfaces a failure message when the repository submit fails
+00:01 +6: All tests passed!
+
+$ flutter analyze lib/features/builder/ lib/core/network/api_paths.dart lib/app/router/app_router.dart
+No issues found!
+
+Full app suite unaffected: flutter test (whole repo) — 255/255 pass.
+
+────────────────────────────────────────────────────────────────────────────
+5) TYPECHECK — clean across all three TS repos (new/changed files)
+────────────────────────────────────────────────────────────────────────────
+unierp-api:       node --max-old-space-size=8192 tsc --noEmit  -> exit 0
+unierp-developer: npx tsc --noEmit  -> 0 errors in FormLogicModal/
+                  FormBuilderWorkspace/builderStore (pre-existing recharts
+                  errors elsewhere unaffected)
+unierp-web:       npx tsc --noEmit  -> 0 errors in DynamicFormRenderer/
+                  page.tsx/builderStore (pre-existing errors in
+                  RolesTab/AdminAlertsTab/OnboardingChecklist/AppHeader
+                  unaffected)
+
+────────────────────────────────────────────────────────────────────────────
+6) RLS gate unchanged (only additive columns on an existing table)
+────────────────────────────────────────────────────────────────────────────
+$ cd unierp-data && node scripts/check-rls-verify.mjs
+  expected tenant tables (from schema): 1817
+  failures: 19   (same pre-existing 19, filed as D141 — unchanged by G10)
+
+────────────────────────────────────────────────────────────────────────────
+7) unierp-workspace gates
+────────────────────────────────────────────────────────────────────────────
+$ node scripts/check-plan-integrity.mjs
+OK    359 phases intact across 13 tracks; every phase retains an exit criterion; no undeclared files.
+```
+

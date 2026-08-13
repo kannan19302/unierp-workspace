@@ -4861,3 +4861,71 @@ unilaterally, the same judgment already applied to several gates this session (t
 failure here is genuine missing coverage, not missing infrastructure). "Tagged by criticality" was not
 addressed. No spec in this suite has actually been executed — this environment has no running `unierp-web`
 instance to run Playwright against.
+
+### D141 · 🔴 CRITICAL · 19 tenant tables declared in `unierp-data/prisma/schema/*.prisma` across 10 historical phases have no migration and do not exist in the database
+
+Found while claiming G09 (data/object builder), proving its exit criterion's gap: `node
+scripts/check-rls-verify.mjs` (delegated to `unierp-data/scripts/check-rls-verify.mjs`) reports 19 blocking
+failures on a freshly-migrated database — `ApprovalRoutings`, `OrgPosition`, `OrgUnit`
+(org-structure.prisma), `SubjectErasureKey`, `RecordLegalHold`, `SettingChangeApproval`,
+`ImpersonationSession`, `TenantConsent`, `TenantFeatureOverride` (core-part-5/10.prisma), `BudgetPolicy`,
+`Incident`, `SloDefinition`, `StickyRouteAssignment`, `ProviderConsumptionReport`,
+`TenantProviderOverride` (provider-registry.prisma), `CatalogueProvisioning` (catalogue.prisma),
+`EstateGrant`, `ResourceAttribution` (resource-model.prisma), `MeteringEvent` (core-part-3.prisma) — all
+declared as `model` blocks with `tenantId` but with zero corresponding migration file: `grep` across every
+`prisma/migrations/*/migration.sql` for each table's snake_case name returns no matches. `git log --oneline`
+on the owning schema files traces every one back to a real historical phase commit (D04, D11, D12, D17,
+M31, M33, M35, M36, M37, M44) that added the Prisma model but apparently never ran `prisma migrate dev`
+against it — the model was committed, the migration was not.
+
+**Not fixed — filed, per the instruction to file architectural findings rather than absorb unrelated scope
+into the current phase.** Attempting `prisma migrate dev --schema prisma/schema` to auto-generate the
+missing migrations is unsafe to run blind: on this database it proposed *dropping* `api_keys`,
+`email_verification_tokens`, `roles`, `user_roles`, `user_sessions`, and `users` — live IDP tables the main
+schema's migration history does not know about, meaning `prisma/schema`'s migration history and the
+database's actual IDP-owned tables have diverged in a second, separate way. A correct fix needs someone to
+hand-author 19 (or fewer, if some are genuinely obsolete) `CREATE TABLE` + RLS migrations in the
+`20260805130000_extension_installations` style — never `migrate dev`'s destructive auto-diff — and to
+separately resolve why the IDP tables aren't visible to that diff. Reproduction: `cd unierp-data && npx
+prisma migrate deploy --schema prisma/schema && DATABASE_URL=... node scripts/check-rls-verify.mjs`.
+
+### D142 · 🟡 MEDIUM · `next dev` throws "Functions cannot be passed directly to Client Components" on existing builder pages, independent of any single page's code
+
+Found while manually verifying G09's new `/builder/erp/data-objects` page in a browser
+(`unierp-developer`, `npx next dev`, no Docker). The page compiled (`next build`: "Compiled successfully"
+before an unrelated pre-existing `recharts` type error in a different file), and its breadcrumb rendered
+correctly ("Home / Studio / App Studio / Data Objects"), but the page body then threw: "Functions cannot be
+passed directly to Client Components unless you explicitly expose it by marking it with 'use server'. ...
+{$$typeof: ..., render: function Package}". The same error reproduces identically, verbatim, on the
+pre-existing `/builder/erp/data` page (Data & Import) — confirming this is not caused by G09's new files.
+Likely cause: `unierp-developer/src/navigation/moduleNav.tsx` stores `lucide-react` icon *components* (e.g.
+`icon: Database`) as plain object values inside a nav-item array that crosses a Server→Client Component
+boundary somewhere in the builder layout, which the React Server Components runtime rejects when it cannot
+serialize the reference. Not reproduced against the Docker-built image (`unerp-developer` container, port
+3004, healthy) — only against a native `next dev` run outside Docker, so the packaged build may already
+avoid this path, or may share it silently. Not fixed: the fix (moving icon resolution to the client side of
+the boundary, or resolving icon names to components inside a Client Component rather than passing the
+component reference itself across the boundary) touches shared navigation data consumed by every builder
+page, well outside G09's scope. Reproduction: `cd unierp-developer && npx next dev -p 3010`, navigate to
+`/builder/erp/data` or `/builder/erp/data-objects`.
+
+### D143 · 🟡 MEDIUM · `check-rls-verify.mjs` cannot see runtime-DDL-generated tables — now true of `co_*` custom-object tables as well as `ext_*` extension tables
+
+`unierp-data/scripts/check-rls-verify.mjs` derives its "expected tenant tables" set by parsing `model`
+blocks in `prisma/schema/*.prisma` for a `tenantId` field. G01's `ext_<id>_<entity>` extension tables
+(`ExtensionSchemaService`, generated via raw DDL with no Prisma model) were already invisible to this gate
+— confirmed by the same limitation applying now to G09's `co_<objectId>` custom-object tables
+(`CustomObjectSchemaService`, `unierp-api/src/developer/builder/services/custom-object-schema.service.ts`),
+generated the same way for the same reason (the columns are decided by end-user input at request time, so
+no fixed Prisma model can describe them). Both families of table get real `tenant_id` + `ENABLE`/`FORCE ROW
+LEVEL SECURITY` + a `tenant_isolation_<table>` policy — proven per-table by dedicated two-tenant Vitest
+suites (`extension-schema.service.spec.ts`, `custom-object-schema.service.spec.ts`) run against the
+`unerp_api` (`NOBYPASSRLS`) role — but the platform-wide gate that CI and every other phase relies on to
+answer "is RLS coverage complete" cannot confirm either family exists, is isolated, or has been dropped.
+Not fixed: extending `check-rls-verify.mjs` to also enumerate `information_schema.tables` for `ext_%`/`co_%`
+prefixes and check each against `pg_policies`/`pg_class.relrowsecurity`/`relforcerowsecurity` is a real,
+scoped fix to a shared gate (`unierp-data/scripts/check-rls-verify.mjs`), and D019 already establishes gates
+are fixed once, centrally, not worked around per-consumer — better done as its own phase than folded
+silently into G09. Reproduction: create any extension or custom object, then run
+`node unierp-data/scripts/check-rls-verify.mjs` and note neither its table nor its RLS state appears
+anywhere in the output.

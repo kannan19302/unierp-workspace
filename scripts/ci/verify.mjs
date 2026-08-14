@@ -465,6 +465,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-api-versioning-strategy.mjs", "--verify"]],
   },
   {
+    name: "Contract compatibility checking gate",
+    why: "P12-070: Automated classification and detection of contract breaking changes.",
+    cmd: ["node", ["scripts/check-contract-compatibility.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

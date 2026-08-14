@@ -41,6 +41,15 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface TenantPoolStats`
 - `class TenantConnectionFairnessGovernor`
 
+### `contract-compatibility.ts`
+
+- `interface ContractParameter`
+- `interface ContractResponse`
+- `interface CanonicalEndpointContract`
+- `type CompatibilityClassification = "COMPATIBLE" | "BREAKING";`
+- `interface ChangeClassificationResult`
+- `class BreakingContractChangeDetectedError extends Error`
+
 ### `db-performance.ts`
 
 - `interface QueryPerformanceBudget`

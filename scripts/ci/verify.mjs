@@ -510,6 +510,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-webhook-event-contracts.mjs", "--verify"]],
   },
   {
+    name: "Extension API contract gate",
+    why: "P12-079: Extension API as versioned contract with backward-compatibility within window.",
+    cmd: ["node", ["scripts/check-extension-api-contract.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

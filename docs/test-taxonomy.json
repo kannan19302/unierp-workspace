@@ -557,6 +557,7 @@
     "unierp-data/src/tenant-isolation-harness.test.ts": "isolation",
     "unierp-data/src/tenant-isolation.test.ts": "isolation",
     "unierp-data/src/tenant-rls-integration.test.ts": "integration",
+    "unierp-extension-api/src/versioning.spec.ts": "unit",
     "unierp-extensions/education/src/education.spec.ts": "unit",
     "unierp-extensions/field-service/src/field-service.spec.ts": "unit",
     "unierp-extensions/healthcare/src/healthcare.spec.ts": "unit",

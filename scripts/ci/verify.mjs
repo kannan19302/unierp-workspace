@@ -345,6 +345,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-field-encryption.mjs", "--verify"]],
   },
   {
+    name: "Retention architecture gate",
+    why: "P12-046: Shared retention execution, legal hold verification and rogue module purge prevention.",
+    cmd: ["node", ["scripts/check-retention-architecture.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

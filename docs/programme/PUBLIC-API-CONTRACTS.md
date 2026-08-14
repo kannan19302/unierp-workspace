@@ -108,6 +108,14 @@ Single source of truth for all external and platform contracts across UniERP.
 
 - `class ResidencyViolationError extends Error`
 
+### `retention.ts`
+
+- `type RetentionAction = "ANONYMIZE" | "HARD_DELETE" | "ARCHIVE_COLD" | "RETAIN_LEGAL_HOLD";`
+- `interface RetentionPolicy`
+- `interface LegalHoldRecord`
+- `interface PurgePlanItem`
+- `interface PurgeExecutionResult`
+
 ### `settings-migration.ts`
 
 - `interface SettingRename`

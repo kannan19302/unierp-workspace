@@ -138,6 +138,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-unowned-code-census.mjs", "--verify"]],
   },
   {
+    name: "Breaking-change rule",
+    why: "P12-003: Contract, type, event and auth changes classified, versioned, and consumer-checked before landing.",
+    cmd: ["node", ["scripts/check-breaking-changes.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

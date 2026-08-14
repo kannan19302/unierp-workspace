@@ -5120,3 +5120,45 @@ is asserted only in prose is a candidate for the same failure. The wave plan *lo
 every review because reviewers read the wave document and the track documents separately, and the
 defect lived only in the relationship between them. That is the class of defect a gate catches and
 a reading does not.
+
+---
+
+### D151 · 🟠 HIGH · `reusable-ci.yml`'s integration-test step is guarded by `if: hashFiles(...)` — D013's exact shape, reintroduced
+
+**Found during:** P12-001, by running `verify.mjs` before finishing.
+
+**Symptom.**
+
+```
+FAIL  reusable-ci.yml:49: `if: hashFiles(...)` on a step. If the file is missing the step is
+      SKIPPED and the job reports success — this is D013.
+```
+
+**The construct.** `.github/workflows/reusable-ci.yml:49`:
+
+```yaml
+      - name: Run integration tests
+        if: hashFiles('**/test/*.itest.ts') != ''
+```
+
+If no file matches, the step is skipped and **the job reports success**. A repository with zero
+integration tests passes the integration-test gate. That is D013 restated: *"21 repos run it
+behind `if: hashFiles(...)`. The script exists in **zero**. It has never executed."*
+
+**Introduced by** `4afacb9` — *"J06: Add integration test step to reusable CI workflow"*. The
+irony is exact: a phase adding an integration-test gate added it in the one shape this project
+has already documented as unable to fail.
+
+**Why it is filed rather than fixed.** It is a Track J concern and the correct fix is a real
+decision, not a one-liner: either remove the guard so a repository with no integration tests
+fails, or make the step unconditional with an explicit, justified skip. Choosing on J06's behalf
+from inside P12-001 is the programme creep `AGENTS.md § 2a` rule 3 forbids. The `# justified:`
+comment the gate offers as an escape is **not** the fix — using it here would be defanging a gate,
+which `AGENTS.md § 1` forbids outright.
+
+**Consequence while it stands.** `verify.mjs` is red for every repository and every phase, which
+pushes every agent toward `--despite-red-gate`. `verify.mjs`'s own header records that exact
+dynamic as the reason A30/D025 existed: *"a gate everyone routinely overrides has stopped being a
+gate."* This should be fixed early — it is currently taxing every phase in every programme.
+
+**Owner:** J06, or the next Track J phase to touch CI.

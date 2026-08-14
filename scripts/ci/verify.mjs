@@ -410,6 +410,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-api-coverage.mjs", "--verify"]],
   },
   {
+    name: "Request and response schema completeness gate",
+    why: "P12-059: Complete typed request, success, and RFC 7807 error response schema validation.",
+    cmd: ["node", ["scripts/check-schema-completeness.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

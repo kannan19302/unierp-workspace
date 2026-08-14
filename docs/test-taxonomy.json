@@ -531,6 +531,7 @@
     "unierp-contracts/src/outbox.spec.ts": "contract",
     "unierp-contracts/src/residency.spec.ts": "contract",
     "unierp-contracts/src/retention.spec.ts": "contract",
+    "unierp-contracts/src/schema-completeness.spec.ts": "contract",
     "unierp-contracts/src/settings-migration.spec.ts": "contract",
     "unierp-contracts/src/settings-promotion.spec.ts": "contract",
     "unierp-contracts/src/settings-resolution.spec.ts": "contract",

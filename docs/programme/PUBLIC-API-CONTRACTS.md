@@ -164,6 +164,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface PurgePlanItem`
 - `interface PurgeExecutionResult`
 
+### `schema-completeness.ts`
+
+- `interface Rfc7807ErrorResponse`
+- `interface CompleteEndpointContractSpec`
+- `class IncompleteContractSchemaError extends Error`
+
 ### `settings-migration.ts`
 
 - `interface SettingRename`

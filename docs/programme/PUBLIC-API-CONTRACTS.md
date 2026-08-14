@@ -20,6 +20,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface RestoreRehearsalResult`
 - `class RestorePointDivergenceError extends Error`
 
+### `client-generator.ts`
+
+- `interface ClientGenerationTarget`
+- `interface GeneratedClientManifest`
+- `class HandEditedGeneratedFileError extends Error`
+
 ### `connection-pool.ts`
 
 - `interface PoolConfig`

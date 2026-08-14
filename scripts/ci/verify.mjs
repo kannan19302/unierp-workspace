@@ -420,6 +420,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-runtime-contract-validation.mjs", "--verify"]],
   },
   {
+    name: "Client generation gate",
+    why: "P12-061: Typed client generation integrity and hand-edited modification detection.",
+    cmd: ["node", ["scripts/check-client-generation.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

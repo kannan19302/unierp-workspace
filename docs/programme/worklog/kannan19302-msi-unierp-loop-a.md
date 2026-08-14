@@ -73,3 +73,12 @@ tsc --noEmit clean in unierp-developer (pre-existing unrelated recharts import e
 in 4 other pages excluded) and unierp-api.
 ```
 
+### G12 · CLAIMED · 2026-08-14T00:47:20Z · kannan19302@MSI/unierp-loop-a
+
+```
+wave      0
+branch    autopilot/d01-plane2-boundary
+selected  explicitly requested
+Work has NOT started. This block exists so no other agent takes this phase.
+```
+

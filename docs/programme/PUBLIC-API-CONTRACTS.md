@@ -70,6 +70,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class OverFetchingDetectedError extends Error`
 - `const OVER_FETCH_RATIO_THRESHOLD = 3.0;`
 
+### `contract-security.ts`
+
+- `type SecurityRiskType = "MASS_ASSIGNMENT" | "OVER_EXPOSURE" | "ENUMERATION";`
+- `interface SecurityViolation`
+
 ### `db-performance.ts`
 
 - `interface QueryPerformanceBudget`

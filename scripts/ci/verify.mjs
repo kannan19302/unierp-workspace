@@ -530,6 +530,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-performance.mjs", "--verify"]],
   },
   {
+    name: "Contract security gate",
+    why: "P12-083: Contract exposing a field its permission model does not cover fails review.",
+    cmd: ["node", ["scripts/check-contract-security.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

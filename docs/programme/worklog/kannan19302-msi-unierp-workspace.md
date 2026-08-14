@@ -26301,3 +26301,33 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-081 · FINISH · 2026-08-14T17:57:58Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-081
+EXIT_CRITERION: A hand-maintained duplicate of any contract-derived artefact is detected and fails CI
+
+1. COMMAND THAT PASSES:
+node scripts/check-single-source-proof.mjs --verify
+
+PASSING OUTPUT:
+  ✓ single-source-proof.ts exists
+  ✓ single-source-proof.spec.ts exists
+  ✓ Spec suite: 8 tests pass, 0 fail
+  ✓ Hand-maintained duplicate detected and throws HandMaintainedDuplicateDetectedError
+  ✓ Clean generated artefact accepted without error
+  ✓ Registry covers TYPESCRIPT_TYPES, DART_TYPES, SDK_METHODS, API_DOCUMENTATION
+
+✓ Single-source proof gate passed (EP-1)
+
+2. COMMAND THAT FAILS (deliberate break — spec file removed):
+FAILING OUTPUT:
+✗ Single-source proof gate FAILED: Spec file not found
+
+3. FULL VERIFY SUITE:
+→ ✓ All gates green — 88 passed, 1 skipped, 9 DELEGATED, 32.5s
+   Including: ✓ Single-source proof gate (EP-1) (0.4s)
+```
+

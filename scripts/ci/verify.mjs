@@ -268,6 +268,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-schema-indexes.mjs", "--verify"]],
   },
   {
+    name: "Migration discipline and immutability gate",
+    why: "P12-033: Forward-only migrations, immutable checksums, and strict production deployment discipline.",
+    cmd: ["node", ["scripts/check-migration-discipline.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

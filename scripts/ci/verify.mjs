@@ -288,6 +288,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-seed-determinism.mjs", "--verify"]],
   },
   {
+    name: "Prisma client generation and distribution gate",
+    why: "P12-037: Identical packaging, distribution, and consumption of @kannan19302/database across backend services.",
+    cmd: ["node", ["scripts/check-prisma-distribution.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

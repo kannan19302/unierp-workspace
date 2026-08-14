@@ -164,6 +164,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface PurgePlanItem`
 - `interface PurgeExecutionResult`
 
+### `runtime-validator.ts`
+
+- `class RuntimeContractDivergenceError extends Error`
+- `interface RuntimeValidationContext`
+
 ### `schema-completeness.ts`
 
 - `interface Rfc7807ErrorResponse`

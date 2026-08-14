@@ -415,6 +415,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-schema-completeness.mjs", "--verify"]],
   },
   {
+    name: "Contract validation at runtime gate",
+    why: "P12-060: Runtime request and response contract validation and divergence detection.",
+    cmd: ["node", ["scripts/check-runtime-contract-validation.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

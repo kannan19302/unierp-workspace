@@ -500,6 +500,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-sdk-compatibility.mjs", "--verify"]],
   },
   {
+    name: "SDK documentation and examples gate",
+    why: "P12-077: Generated reference plus runnable, tested SDK examples executing in CI.",
+    cmd: ["node", ["scripts/check-sdk-documentation-and-examples.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

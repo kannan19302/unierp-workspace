@@ -648,6 +648,7 @@
     "unierp-sandbox/src/governor.spec.ts": "unit",
     "unierp-sandbox/src/hardening.spec.ts": "unit",
     "unierp-sandbox/src/sandbox.spec.ts": "unit",
+    "unierp-sdk/examples/basic-usage.spec.ts": "unit",
     "unierp-service-kit/placeholder.test.ts": "unit",
     "unierp-shared/src/capability-registry/registry.test.ts": "unit",
     "unierp-shared/src/contracts/contracts.test.ts": "contract",

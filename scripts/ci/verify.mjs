@@ -395,6 +395,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-stage-b-data-proof.mjs", "--verify"]],
   },
   {
+    name: "Contract ownership and source of truth gate",
+    why: "P12-056: unierp-contracts as single source of truth; zero duplicate hand-written types or clients.",
+    cmd: ["node", ["scripts/check-contract-source-of-truth.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

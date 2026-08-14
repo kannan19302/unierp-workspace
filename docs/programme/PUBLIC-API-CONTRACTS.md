@@ -124,3 +124,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class UnregisteredSettingError extends Error`
 - `class InvalidSettingScopeError extends Error`
 
+### `transactions.ts`
+
+- `type IsolationLevel =`
+- `interface TransactionOptions`
+- `interface RetryPolicy`
+- `const DEFAULT_OCC_RETRY_POLICY: RetryPolicy =`
+- `class OptimisticConcurrencyConflictError extends Error`
+

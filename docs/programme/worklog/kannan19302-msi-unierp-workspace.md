@@ -25340,3 +25340,47 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-059 · FINISH · 2026-08-14T16:48:58Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-059
+EXIT_CRITERION: A response shape absent from the contract fails a gate, including error responses
+
+1. COMMAND THAT PASSES:
+node scripts/check-schema-completeness.mjs --verify
+
+PASSING OUTPUT:
+✓ Request and response schema completeness gate passed: Complete request, success, and RFC 7807 error response schemas validated.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-schema-completeness.mjs').then(async (m) => {
+  const contracts = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/schema-completeness.ts');
+  const incompleteEndpoint = {
+    endpointId: 'api.v1.broken',
+    method: 'POST',
+    path: '/broken',
+    request: {},
+    responses: {
+      success: { statusCode: 200, schema: {} }
+      // error response schema absent
+    }
+  };
+  try {
+    contracts.assertEndpointSchemaCompleteness(incompleteEndpoint);
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT: ' + err.message.split('\n')[0]);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: Contract for endpoint "api.v1.broken" is incomplete:
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 66 gates passed (including Request and response schema completeness gate).
+```
+

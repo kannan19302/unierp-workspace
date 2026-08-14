@@ -385,6 +385,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-schema-impact-analysis.mjs", "--verify"]],
   },
   {
+    name: "Database backup and restore primitives gate",
+    why: "P12-054: Database backup, restore and point-in-time recovery rehearsal verification.",
+    cmd: ["node", ["scripts/check-backup-restore-primitives.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

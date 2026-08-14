@@ -12,6 +12,14 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface ImmutableAuditRecord`
 - `class AuditImmutabilityViolationError extends Error`
 
+### `backup-restore.ts`
+
+- `type BackupType = "FULL" | "INCREMENTAL" | "WAL_ARCHIVE" | "SNAPSHOT";`
+- `interface BackupManifest`
+- `interface RestorePointSpecification`
+- `interface RestoreRehearsalResult`
+- `class RestorePointDivergenceError extends Error`
+
 ### `connection-pool.ts`
 
 - `interface PoolConfig`

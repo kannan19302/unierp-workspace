@@ -25,6 +25,8 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface ClientGenerationTarget`
 - `interface GeneratedClientManifest`
 - `class HandEditedGeneratedFileError extends Error`
+- `interface DifferentialContractParity`
+- `class DartContractDivergenceError extends Error`
 
 ### `connection-pool.ts`
 

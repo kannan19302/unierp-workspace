@@ -430,6 +430,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-typescript-client-compatibility.mjs", "--verify"]],
   },
   {
+    name: "Dart client generation gate",
+    why: "P12-063: Dart mobile client generation from canonical contracts with differential parity verification.",
+    cmd: ["node", ["scripts/check-dart-client-generation.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -22809,3 +22809,46 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-004 · FINISH · 2026-08-14T13:58:29Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-orphaned-defects.mjs
+Output:
+OK    All 33 defect(s) impacting Programme 12 repositories are cleanly routed with owning phases or recorded justifications.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break 1: Removed defect routing entry (D001)
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('docs/programme/orphaned-defect-routing.json', 'utf8'); const reg = JSON.parse(txt); delete reg.routings['D001']; fs.writeFileSync('docs/programme/orphaned-defect-routing.json', JSON.stringify(reg)); try { require('child_process').execSync('node scripts/check-orphaned-defects.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on unrouted defect:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('docs/programme/orphaned-defect-routing.json', txt);"
+Output:
+EXPECTED FAILURE on unrouted defect:
+
+check-orphaned-defects: 1 unrouted defect violation(s) found:
+
+FAIL  D001: Defect D001 impacts P12 repo(s) [unierp-data] but has no entry in orphaned-defect-routing.json
+
+Break 2: Entry missing both owningPhase and noPhaseReason (D008)
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('docs/programme/orphaned-defect-routing.json', 'utf8'); const reg = JSON.parse(txt); delete reg.routings['D008'].owningPhase; delete reg.routings['D008'].noPhaseReason; fs.writeFileSync('docs/programme/orphaned-defect-routing.json', JSON.stringify(reg)); try { require('child_process').execSync('node scripts/check-orphaned-defects.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on unassigned routing:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('docs/programme/orphaned-defect-routing.json', txt);"
+Output:
+EXPECTED FAILURE on unassigned routing:
+
+check-orphaned-defects: 1 unrouted defect violation(s) found:
+
+FAIL  D008: Defect D008 entry in routing registry missing both owningPhase and noPhaseReason
+
+Restored clean dataset; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

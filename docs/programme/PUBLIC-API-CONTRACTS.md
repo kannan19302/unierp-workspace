@@ -132,6 +132,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface DeliveryLogQuery`
 - `interface DeliveryLogResponse`
 
+### `idempotency.ts`
+
+- `interface IdempotencyHeaderSpec`
+- `interface MutatingEndpointContract`
+- `class MissingIdempotencySupportError extends Error`
+
 ### `meta-schema.ts`
 
 - `interface ContractMetaSchema`

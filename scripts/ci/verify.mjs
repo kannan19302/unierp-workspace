@@ -450,6 +450,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-error-response-convention.mjs", "--verify"]],
   },
   {
+    name: "Idempotency convention gate",
+    why: "P12-067: Idempotency keys as a contract-level concern on every mutating endpoint.",
+    cmd: ["node", ["scripts/check-idempotency-convention.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

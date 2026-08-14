@@ -23384,3 +23384,39 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-015 · FINISH · 2026-08-14T14:25:36Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-error-handling.mjs
+Output:
+22 error-handling violation(s) now vs 22 at baseline (recorded 2026-08-12T04:31:32.290Z), 2137 file(s) scanned.
+OK    no new error-handling violations (22 <= 22 baseline) and platform error taxonomy active.
+
+Command: pnpm build (in unierp-contracts)
+Output:
+> @kannan19302/contracts@1.0.4 build D:\UniERP\unierp-contracts
+> tsc
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Removing PlatformError and PlatformErrorCode from unierp-contracts/src/errors.ts
+$ node scripts/check-error-handling.mjs
+Output:
+FAIL  check-error-handling: Platform error taxonomy missing in @kannan19302/contracts.
+
+Restored unierp-contracts errors.ts; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

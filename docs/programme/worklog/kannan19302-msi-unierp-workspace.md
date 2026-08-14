@@ -25393,3 +25393,42 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-060 · FINISH · 2026-08-14T16:51:04Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-060
+EXIT_CRITERION: A response diverging from its contract fails in test and is caught before release
+
+1. COMMAND THAT PASSES:
+node scripts/check-runtime-contract-validation.mjs --verify
+
+PASSING OUTPUT:
+✓ Contract validation at runtime gate passed: Runtime request and response contract validation active; divergences caught.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-runtime-contract-validation.mjs').then(async (m) => {
+  const contracts = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/runtime-validator.ts');
+  const context = {
+    endpoint: 'GET /api/v1/tenants/me',
+    expectedSchema: { type: 'object', required: ['tenantId', 'name', 'status'] }
+  };
+  const divergingResponse = { tenantId: 'tenant_1' }; // missing name & status
+  try {
+    contracts.validateRuntimePayload('RESPONSE', divergingResponse, context);
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT: ' + err.message.split('\n')[0]);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: Runtime contract divergence detected on RESPONSE for "GET /api/v1/tenants/me":
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 67 gates passed (including Contract validation at runtime gate).
+```
+

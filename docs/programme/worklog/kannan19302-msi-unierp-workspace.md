@@ -24703,3 +24703,37 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-045 · FINISH · 2026-08-14T16:06:13Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-045
+STATUS  DONE
+PROVEN  node scripts/check-field-encryption.mjs --verify
+
+PASS (clean baseline):
+  ? Field-level encryption primitives verified (AES-256-GCM envelope, key rotation, dump confidentiality).
+  Exit code: 0
+
+FAIL (deliberate break -- simulated plaintext PII leak in database dump inspection):
+  ? Field-level encryption verification failed: Field-level encryption test failed: plaintext PII leaked in DB dump: patient.secret@example.com
+  Exit code: 1
+  Break reverted; control confirmed active.
+
+BUILT   unierp-contracts:
+  - src/encryption.ts -- EncryptedPayload, KeyMetadata, KeyRing, serialization/deserialization helpers
+  - src/encryption.spec.ts -- Unit tests for encryption contracts
+  - src/index.ts -- Exported encryption contracts
+  - src/soft-delete.ts & src/transactions.ts -- TypeScript strict compilation cleanups
+
+BUILT   unierp-workspace:
+  - scripts/check-field-encryption.mjs -- Field-level encryption, rotation, tamper detection, DB dump inspection gate
+  - scripts/ci/verify.mjs -- Registered Field-level encryption primitives gate (52 gates green)
+  - docs/programme/PUBLIC-API-CONTRACTS.md -- Regenerated public API docs
+  - docs/test-taxonomy.json -- Classified encryption.spec.ts as unit test
+  - docs/ai/CHANGELOG.md -- Appended P12-045 changelog entry
+
+All 52 verify.mjs gates green; plan integrity OK (4571 phases).
+```
+

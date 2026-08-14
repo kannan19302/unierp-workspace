@@ -23796,3 +23796,37 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-024 · FINISH · 2026-08-14T14:41:14Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-remediation-backlog.mjs --verify
+Output:
+OK    Remediation backlog verified: All 11 measured defect classes are tracked, prioritised, and routed to owning phases.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Removing UNOWNED_CODE defect class from docs/programme/remediation-backlog.json
+$ node scripts/check-remediation-backlog.mjs --verify
+Output:
+EXPECTED FAILURE on unrouted defect class:
+
+FAIL  check-remediation-backlog: 1 unrouted or incomplete remediation backlog class(es):
+
+  - Missing measured defect class in remediation backlog: UNOWNED_CODE
+
+Restored remediation-backlog.json; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

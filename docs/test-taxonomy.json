@@ -517,6 +517,7 @@
     "unierp-console/e2e/provision.spec.ts": "e2e",
     "unierp-console/src/lib/navigation.test.ts": "unit",
     "unierp-contracts/src/connection-pool.spec.ts": "contract",
+    "unierp-contracts/src/encryption.spec.ts": "contract",
     "unierp-contracts/src/errors.spec.ts": "contract",
     "unierp-contracts/src/fixtures.spec.ts": "contract",
     "unierp-contracts/src/health.spec.ts": "contract",

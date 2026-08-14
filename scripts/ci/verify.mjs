@@ -340,6 +340,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-pii-registry.mjs"]],
   },
   {
+    name: "Field-level encryption primitives gate",
+    why: "P12-045: AES-256-GCM field-level encryption, key rotation, and DB dump confidentiality verification.",
+    cmd: ["node", ["scripts/check-field-encryption.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

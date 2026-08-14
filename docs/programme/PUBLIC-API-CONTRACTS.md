@@ -12,6 +12,15 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface TenantPoolStats`
 - `class TenantConnectionFairnessGovernor`
 
+### `encryption.ts`
+
+- `interface EncryptedPayload`
+- `interface KeyMetadata`
+- `interface FieldEncryptionConfig`
+- `interface EncryptOptions`
+- `interface DecryptOptions`
+- `interface KeyRing`
+
 ### `entities/index.ts`
 
 - `interface TenantEntity`

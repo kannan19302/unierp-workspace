@@ -174,3 +174,11 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### J08 · RELEASED · 2026-08-14T02:25:13Z · kannan19302@MSI/unierp-loop-c
+
+```
+status → BLOCKED
+
+J08 blocked: design-system has TypeScript errors preventing build; storybook cannot load stories from design-system repo due to path resolution issues. Visual regression infrastructure requires working design-system build and storybook. Need to fix design-system TS errors first (separate phase).
+```
+

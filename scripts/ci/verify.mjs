@@ -228,6 +228,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-remediation-backlog.mjs", "--verify"]],
   },
   {
+    name: "Schema ownership gate",
+    why: "P12-025: unierp-data as single source of truth for persistent schemas across estate.",
+    cmd: ["node", ["scripts/ci/check-schema-ownership.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

@@ -535,6 +535,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-security.mjs", "--verify"]],
   },
   {
+    name: "Contract testing infrastructure gate",
+    why: "P12-084: A contract test is writable without new infrastructure, and the harness has its own tests.",
+    cmd: ["node", ["scripts/check-contract-testing-infrastructure.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -62,6 +62,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `const BLAST_RADIUS_GOVERNANCE_POLICY: Record<BlastRadiusTier, GovernanceReviewRequirement> =`
 - `class ContractGovernanceReviewMissingError extends Error`
 
+### `contract-harness.ts`
+
+- `interface ContractInteraction`
+- `class ContractTestingHarness`
+
 ### `contract-performance.ts`
 
 - `interface ConsumerJourney`

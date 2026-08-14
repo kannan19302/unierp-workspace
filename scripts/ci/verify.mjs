@@ -485,6 +485,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-documentation-generation.mjs", "--verify"]],
   },
   {
+    name: "SDK architecture gate",
+    why: "P12-074: unierp-sdk as the supported public interface, layered over generated client with parity.",
+    cmd: ["node", ["scripts/check-sdk-architecture.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -23704,3 +23704,45 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-022 · FINISH · 2026-08-14T14:36:57Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: pnpm test (in unierp-kernel)
+Output:
+ RUN  v2.1.9 D:/UniERP/unierp-kernel
+
+ ✓ src/test-harness.spec.ts (4 tests) 5ms
+ ✓ src/governor.spec.ts (6 tests) 7ms
+ ✓ src/logger.spec.ts (3 tests) 7ms
+
+ Test Files  3 passed (3)
+      Tests  13 passed (13)
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Breaking clock invariant in unierp-kernel/src/test-harness.ts
+$ pnpm test (in unierp-kernel)
+Output:
+ ❯ src/test-harness.spec.ts (4 tests | 1 failed) 11ms
+   × Test Harness (P12-022) > TestClock > rejects negative time advancement 7ms
+     → expected [Function] to throw error including 'Cannot advance clock backwards.' but got 'wrong error'
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 12 passed (13)
+
+Restored test harness implementation; re-verified 13 tests passing.
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

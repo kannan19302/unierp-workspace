@@ -238,6 +238,11 @@ const GATES = [
     cmd: ["node", ["scripts/measure-schema.mjs", "--verify"]],
   },
   {
+    name: "Static tenant column and RLS universality gate",
+    why: "P12-027: Tenant column and RLS policy universality across all data models.",
+    cmd: ["node", ["scripts/check-rls-static-universality.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

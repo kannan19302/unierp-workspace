@@ -108,5 +108,16 @@ if (totalViolations > baseline.totalViolations) {
   process.exit(1);
 }
 
-console.log(`OK    no new error-handling violations (${totalViolations} <= ${baseline.totalViolations} baseline).`);
+// P12-015: Validate platform error taxonomy in @kannan19302/contracts
+const CONTRACTS_ERRORS = path.join(root, 'unierp-contracts', 'src', 'errors.ts');
+if (existsSync(CONTRACTS_ERRORS)) {
+  const content = readFileSync(CONTRACTS_ERRORS, 'utf-8');
+  if (!content.includes('PlatformError') || !content.includes('PlatformErrorCode')) {
+    console.error('FAIL  check-error-handling: Platform error taxonomy missing in @kannan19302/contracts.');
+    process.exit(1);
+  }
+}
+
+console.log(`OK    no new error-handling violations (${totalViolations} <= ${baseline.totalViolations} baseline) and platform error taxonomy active.`);
 process.exit(0);
+

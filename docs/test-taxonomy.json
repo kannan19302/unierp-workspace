@@ -530,6 +530,7 @@
     "unierp-contracts/src/money.spec.ts": "contract",
     "unierp-contracts/src/online-schema-change.spec.ts": "contract",
     "unierp-contracts/src/outbox.spec.ts": "contract",
+    "unierp-contracts/src/pagination.spec.ts": "contract",
     "unierp-contracts/src/residency.spec.ts": "contract",
     "unierp-contracts/src/retention.spec.ts": "contract",
     "unierp-contracts/src/runtime-validator.spec.ts": "contract",

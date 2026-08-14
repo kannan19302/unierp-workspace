@@ -440,6 +440,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-client-generation-determinism.mjs", "--verify"]],
   },
   {
+    name: "Pagination, filtering and sorting conventions gate",
+    why: "P12-065: Uniform list endpoint pagination ceiling (limit <= 100), sorting, and filter convention enforcement.",
+    cmd: ["node", ["scripts/check-pagination-conventions.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

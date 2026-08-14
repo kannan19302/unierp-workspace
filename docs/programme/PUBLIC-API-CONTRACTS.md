@@ -161,6 +161,16 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface OutboxDeliveryOptions`
 - `class DuplicateEventIgnoredException extends Error`
 
+### `pagination.ts`
+
+- `interface SortParameter`
+- `type FilterOperator =`
+- `interface FilterParameter`
+- `interface StandardListQuery`
+- `interface PaginationMetadata`
+- `interface PaginatedListResponse<T>`
+- `class OffConventionPaginationError extends Error`
+
 ### `residency.ts`
 
 - `class ResidencyViolationError extends Error`

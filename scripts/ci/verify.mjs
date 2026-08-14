@@ -278,6 +278,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-migration-safety.mjs", "--verify"]],
   },
   {
+    name: "Online schema change verification gate",
+    why: "P12-035: Non-blocking schema alteration strategies and write SLA verification on large tables.",
+    cmd: ["node", ["scripts/check-online-schema-change.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

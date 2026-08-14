@@ -76,6 +76,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `type CurrencyCode =`
 - `interface Money`
 
+### `online-schema-change.ts`
+
+- `type OnlineSchemaChangeStrategy =`
+- `interface OnlineSchemaChangeSpec`
+- `interface OnlineSchemaChangeMeasurement`
+
 ### `residency.ts`
 
 - `class ResidencyViolationError extends Error`

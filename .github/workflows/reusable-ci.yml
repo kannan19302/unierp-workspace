@@ -11,6 +11,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: unerp_test
+          POSTGRES_USER: unerp
+          POSTGRES_PASSWORD: unerp_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U unerp -d unerp_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ inputs.node-version }}
@@ -31,6 +45,14 @@ jobs:
           pnpm run build
           pnpm run lint
           pnpm run test
+      - name: Run integration tests
+        if: hashFiles('**/test/*.itest.ts') != ''
+        env:
+          DATABASE_URL: postgresql://unerp:unerp_password@localhost:5432/unerp_test?schema=public
+        run: |
+          cd unierp-data && pnpm db:deploy
+          cd .. && pnpm db:seed
+          pnpm test:integration:run
       - name: Check dependency licences
         run: node unierp-workspace/scripts/ci/check-licenses.mjs
       - name: Coverage ratchet

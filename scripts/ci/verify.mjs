@@ -445,6 +445,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-pagination-conventions.mjs", "--verify"]],
   },
   {
+    name: "Error response convention gate",
+    why: "P12-066: Uniform RFC 7807 error schema shape across all endpoints carrying canonical registry error codes.",
+    cmd: ["node", ["scripts/check-error-response-convention.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

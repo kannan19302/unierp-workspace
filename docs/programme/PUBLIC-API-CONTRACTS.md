@@ -193,6 +193,7 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface Rfc7807ErrorResponse`
 - `interface CompleteEndpointContractSpec`
 - `class IncompleteContractSchemaError extends Error`
+- `class OffConventionErrorResponseError extends Error`
 
 ### `settings-migration.ts`
 

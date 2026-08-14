@@ -191,3 +191,11 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E38 · RELEASED · 2026-08-14T02:25:57Z · kannan19302@MSI/unierp-loop-c
+
+```
+status → BLOCKED
+
+E38 still blocked: exit criterion requires live PostgreSQL under concurrent load (D100/D111). No DATABASE_URL in this environment. Cannot verify year-over-year query p95 impact without load test infrastructure.
+```
+

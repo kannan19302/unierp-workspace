@@ -24048,3 +24048,39 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-030 · FINISH · 2026-08-14T14:54:14Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-money-discipline.mjs --verify
+Output:
+OK    Money type discipline verified: Decimal(19,4) schema precision, exact string amounts, and ISO 4217 currency pairing enforced.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Injecting model with unbaselined Float money column into test schema
+$ node scripts/check-money-discipline.mjs --verify
+Output:
+EXPECTED FAILURE on Float money column:
+
+FAIL  check-money-discipline: 1 money discipline violation(s):
+
+  - check-schema-lints.mjs failed: Tracked money-as-Float debt (queued for Decimal in the Track A release): AiModelAccuracyMetric.value...
+    Schema lint failed (Track G.8): `Float` is forbidden in schema.prisma...
+      - TestFloatMoney.amount
+
+Removed invalid test model; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

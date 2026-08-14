@@ -520,6 +520,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-governance.mjs", "--verify"]],
   },
   {
+    name: "Single-source proof gate (EP-1)",
+    why: "P12-081: Every client, type, SDK method and document derived from contracts; hand-maintained duplicates detected and fail CI.",
+    cmd: ["node", ["scripts/check-single-source-proof.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

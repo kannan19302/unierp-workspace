@@ -547,6 +547,7 @@
     "unierp-contracts/src/settings-promotion.spec.ts": "contract",
     "unierp-contracts/src/settings-resolution.spec.ts": "contract",
     "unierp-contracts/src/settings.spec.ts": "contract",
+    "unierp-contracts/src/single-source-proof.spec.ts": "contract",
     "unierp-contracts/src/soft-delete.spec.ts": "contract",
     "unierp-contracts/src/transactions.spec.ts": "contract",
     "unierp-contracts/src/webhook-contracts.spec.ts": "contract",

@@ -271,6 +271,14 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class UnregisteredSettingError extends Error`
 - `class InvalidSettingScopeError extends Error`
 
+### `single-source-proof.ts`
+
+- `type ContractDerivedArtifactCategory =`
+- `interface ContractDerivedArtifactDescriptor`
+- `const CONTRACT_DERIVED_ARTIFACT_REGISTRY: ContractDerivedArtifactDescriptor[] = [`
+- `class HandMaintainedDuplicateDetectedError extends Error`
+- `interface SingleSourceProofResult`
+
 ### `soft-delete.ts`
 
 - `interface SoftDeletable`

@@ -24227,3 +24227,39 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-034 · FINISH · 2026-08-14T15:02:13Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-migration-safety.mjs --verify
+Output:
+OK    Migration safety verified: 187 migrations analyzed; 0 new unsafe locking/data risks (baseline: 34).
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing unsafe migration with table lock rewrite and no online strategy
+$ node scripts/check-migration-safety.mjs --verify
+Output:
+EXPECTED FAILURE on unsafe migration:
+
+FAIL  check-migration-safety: 1 NEW unsafe migration operation(s) detected:
+
+  - 20260901000000_test_unsafe_migration:1 [CRITICAL] Blocking table rewrite: ADD COLUMN NOT NULL without DEFAULT detected in "ALTER TABLE users ADD COLUMN phone TEXT NOT NULL;".
+
+High-lock/destructive operations must provide an '-- online-strategy: <plan>' comment annotation.
+
+Removed test migration; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

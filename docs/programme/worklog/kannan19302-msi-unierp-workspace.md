@@ -24794,3 +24794,43 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-047 · FINISH · 2026-08-14T16:14:10Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-047
+STATUS  DONE
+PROVEN  node scripts/check-audit-immutability.mjs --verify
+
+PASS (clean baseline):
+  ? Audit immutability gate passed (1619 files scanned, zero audit mutation pathways).
+  Exit code: 0
+
+FAIL (deliberate break -- simulated audit record update mutation in service code):
+  ? Audit immutability gate failed (1 forbidden mutation(s) found):
+    - unierp-api\src\modules\saas\test-mutation.service.ts: tenantAuditLog.update
+      Why: Disallowed update mutation on append-only audit model "tenantAuditLog"
+  Exit code: 1
+  Break reverted; control confirmed active.
+
+BUILT   unierp-contracts:
+  - src/audit.ts -- AuditEventPayload, ImmutableAuditRecord, assertAuditAppendOnly, computeAuditRecordHash
+  - src/audit.spec.ts -- Unit tests for audit immutability and hash-chaining verification
+  - src/index.ts -- Exported audit primitives
+
+BUILT   unierp-api:
+  - src/common/services/import.service.ts -- Refactored import completion audit from update to append-only create
+  - src/modules/saas/activity-feed.controller.ts -- Forbidden audit log deletion, returning 403
+  - src/modules/saas/audit-log.service.ts -- Preserved append-only audit records on retention cleanup
+
+BUILT   unierp-workspace:
+  - scripts/check-audit-immutability.mjs -- Audit immutability gate preventing UPDATE/DELETE on audit models
+  - scripts/ci/verify.mjs -- Registered Audit immutability gate (54 gates green)
+  - docs/programme/PUBLIC-API-CONTRACTS.md -- Regenerated public API docs
+  - docs/test-taxonomy.json -- Classified audit.spec.ts as contract test
+  - docs/ai/CHANGELOG.md -- Appended P12-047 changelog entry
+
+All 54 verify.mjs gates green; plan integrity OK (4571 phases).
+```
+

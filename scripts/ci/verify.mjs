@@ -350,6 +350,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-retention-architecture.mjs", "--verify"]],
   },
   {
+    name: "Audit immutability gate",
+    why: "P12-047: Append-only audit trails, zero mutation/deletion pathways across application services.",
+    cmd: ["node", ["scripts/check-audit-immutability.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

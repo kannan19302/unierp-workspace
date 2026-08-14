@@ -6,6 +6,12 @@
 ## Overview
 Single source of truth for all external and platform contracts across UniERP.
 
+### `audit.ts`
+
+- `interface AuditEventPayload`
+- `interface ImmutableAuditRecord`
+- `class AuditImmutabilityViolationError extends Error`
+
 ### `connection-pool.ts`
 
 - `interface PoolConfig`

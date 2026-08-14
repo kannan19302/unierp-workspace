@@ -22960,3 +22960,55 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-007 · FINISH · 2026-08-14T14:06:12Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-consumer-registry.mjs --verify
+Output:
+OK    Consumer registry verified: 1396 symbols indexed across 11 providers.
+
+Query examples:
+$ node scripts/check-consumer-registry.mjs --who-uses unierp-contracts
+=== Consumer Registry Query: unierp-contracts ===
+Repository: unierp-contracts (Owned by Programme 12)
+Exported Symbols: 60
+Consuming Repositories (9):
+  - unierp-api, unierp-console, unierp-contracts, unierp-data, unierp-design-system, unierp-extensions, unierp-idp, unierp-sdk, unierp-web
+
+$ node scripts/check-consumer-registry.mjs --who-uses hasPermission
+=== Consumer Registry Query: hasPermission ===
+Symbol: hasPermission (Provided by unierp-shared, P12)
+Total Occurrences: 47
+Consuming Repositories (7):
+  - unierp-api (Programme 4, 24 references)
+  - unierp-mobile (Programme 10, 2 references)
+  - unierp-idp (Programme 12, 5 references)
+  - unierp-data (Programme 12, 7 references)
+  - unierp-framework (Programme 12, 7 references)
+  - unierp-auth (Programme 12, 1 references)
+  - unierp-kernel (Programme 12, 1 references)
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Emptying registry dataset
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('docs/programme/P12-007-CONSUMER-REGISTRY.json', 'utf8'); fs.writeFileSync('docs/programme/P12-007-CONSUMER-REGISTRY.json', JSON.stringify({})); try { require('child_process').execSync('node scripts/check-consumer-registry.mjs --verify', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on empty registry:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('docs/programme/P12-007-CONSUMER-REGISTRY.json', txt);"
+Output:
+EXPECTED FAILURE on empty registry:
+FAIL  check-consumer-registry: No symbols indexed in registry.
+
+Restored clean dataset; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

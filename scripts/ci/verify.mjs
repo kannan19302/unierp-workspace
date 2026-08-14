@@ -183,6 +183,11 @@ const GATES = [
     cmd: ["node", ["scripts/generate-release-changelog.mjs", "--verify"]],
   },
   {
+    name: "Dependency governance gate",
+    why: "P12-012: Allowlisted dependencies, licence checks, and banned vulnerable packages with advisories named across all repositories.",
+    cmd: ["node", ["scripts/check-dependency-governance.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

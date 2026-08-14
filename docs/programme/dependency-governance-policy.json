@@ -1,0 +1,58 @@
+{
+  "$comment": "Dependency governance policy and allowlist for Programme 12. Enforced by scripts/check-dependency-governance.mjs. See P12-012.",
+  "generated": "2026-08-14",
+  "phase": "P12-012",
+  "policy": {
+    "maxPackageSizeMB": 100,
+    "bannedPackages": [
+      {
+        "name": "event-stream",
+        "advisory": "GHSA-m344-9w4v-6cwf",
+        "reason": "Known supply-chain compromised package."
+      },
+      {
+        "name": "flatmap-stream",
+        "advisory": "GHSA-4j47-2c9v-79m4",
+        "reason": "Malicious crypto-stealing payload injected into flatmap-stream."
+      },
+      {
+        "name": "left-pad",
+        "advisory": "DEP-POLICY-001",
+        "reason": "Deprecated trivial single-function dependency; use String.prototype.padStart."
+      },
+      {
+        "name": "colors",
+        "advisory": "GHSA-556v-x3vm-5w42",
+        "reason": "Compromised / corrupted release with infinite denial-of-service loop."
+      },
+      {
+        "name": "faker",
+        "advisory": "GHSA-wghg-5c2p-7389",
+        "reason": "Deprecated compromised release; use @faker-js/faker."
+      }
+    ],
+    "allowedLicenses": [
+      "MIT", "MIT-0", "ISC", "Apache-2.0", "Apache 2.0", "BSD", "BSD-2-Clause", "BSD-3-Clause",
+      "0BSD", "Unlicense", "CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "PostgreSQL", "Python-2.0",
+      "MPL-2.0", "LGPL-3.0", "LGPL-2.1", "LGPL-3.0-or-later", "LGPL-2.1-or-later",
+      "Zlib", "WTFPL", "BlueOak-1.0.0", "Artistic-2.0", "UNLICENSED"
+    ]
+  },
+  "allowlistedScopes": [
+    "@kannan19302",
+    "@nestjs",
+    "@prisma",
+    "@types",
+    "@typescript-eslint",
+    "@storybook",
+    "@playwright",
+    "@testing-library",
+    "@radix-ui",
+    "@lucide",
+    "@tanstack",
+    "@hookform",
+    "@floating-ui",
+    "@fastify",
+    "@opentelemetry"
+  ]
+}

@@ -24182,3 +24182,39 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-033 · FINISH · 2026-08-14T15:00:26Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-migration-discipline.mjs --verify
+Output:
+OK    Migration discipline verified: 187 forward-only migrations immutable and strictly ordered.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Tampering with SHA-256 checksum of initial migration
+$ node scripts/check-migration-discipline.mjs --verify
+Output:
+EXPECTED FAILURE on modified migration:
+
+FAIL  check-migration-discipline: Shipped migration tampering detected:
+
+  - Shipped migration "20260610153046_initial" was modified (checksum mismatch: expected 00000000, got 5a9ccef8).
+
+Migrations are immutable once shipped. Apply changes in a new forward migration.
+
+Restored original checksum; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

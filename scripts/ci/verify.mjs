@@ -163,6 +163,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-consumer-registry.mjs", "--verify"]],
   },
   {
+    name: "Standalone builds & workspace protocol gate",
+    why: "P12-008 / D008: Every claimed repository verified for standalone build capability and zero workspace:* protocol leaks.",
+    cmd: ["node", ["scripts/check-standalone-builds.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

@@ -203,7 +203,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **P12-056** | Contract ownership and source of truth | P12-006 | `unierp-contracts` as the single source every client, SDK and type is generated from | A hand-written client or type duplicating a contract fails an architecture gate | OPEN |
+| **P12-056** | Contract ownership and source of truth | P12-006 | `unierp-contracts` as the single source every client, SDK and type is generated from | A hand-written client or type duplicating a contract fails an architecture gate | WIP |
 | **P12-057** | Contract format and structure | P12-056 | The declared contract representation, its structure and its validation | A malformed contract fails the build. Every contract validates against the meta-schema | OPEN |
 | **P12-058** | Contract coverage of the API surface | P12-057 | Every endpoint across all services represented in the contracts | An endpoint absent from the contracts fails a gate, proven on a seeded endpoint | OPEN |
 | **P12-059** | Request and response schema completeness | P12-058 | Full typed schemas including error shapes, not only success paths | A response shape absent from the contract fails a gate, including error responses | OPEN |

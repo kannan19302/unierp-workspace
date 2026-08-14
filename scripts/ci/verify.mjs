@@ -273,6 +273,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-migration-discipline.mjs", "--verify"]],
   },
   {
+    name: "Migration safety analysis gate",
+    why: "P12-034: Lock risk classification, destructive operation detection, and online strategy enforcement.",
+    cmd: ["node", ["scripts/check-migration-safety.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

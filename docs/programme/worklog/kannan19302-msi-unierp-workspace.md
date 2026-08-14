@@ -23065,3 +23065,77 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-009 · FINISH · 2026-08-14T14:11:17Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-cross-repo-ci.mjs --verify
+Output:
+OK    Cross-repository CI verified: 9 provider libraries covered across 25 downstream dependency edges.
+
+Downstream matrix query examples:
+$ node scripts/check-cross-repo-ci.mjs --matrix unierp-contracts
+{
+  "target": "unierp-contracts",
+  "direct": [
+    "unierp-kernel",
+    "unierp-sdk"
+  ],
+  "transitive": [
+    "unierp-developer",
+    "unierp-kernel",
+    "unierp-sdk",
+    "unierp-web"
+  ],
+  "matrix": [
+    {
+      "repo": "unierp-kernel",
+      "owner": 12
+    },
+    {
+      "repo": "unierp-sdk",
+      "owner": 12
+    }
+  ]
+}
+
+$ node scripts/check-cross-repo-ci.mjs --test-downstream unierp-contracts
+Cross-Repo Downstream Verification for: unierp-contracts
+Dependents count: 2
+  [PASSED] unierp-kernel (Programme 12)
+  [PASSED] unierp-sdk (Programme 12)
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Corrupting dependency graph nodes
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('docs/programme/P12-006-DEPENDENCY-GRAPH.json', 'utf8'); fs.writeFileSync('docs/programme/P12-006-DEPENDENCY-GRAPH.json', JSON.stringify({ nodes: {} })); try { require('child_process').execSync('node scripts/check-cross-repo-ci.mjs --verify', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on missing graph nodes:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('docs/programme/P12-006-DEPENDENCY-GRAPH.json', txt);"
+Output:
+EXPECTED FAILURE on missing graph nodes:
+
+FAIL  check-cross-repo-ci: 9 violation(s):
+
+  - Provider 'unierp-contracts' missing from dependency graph.
+  - Provider 'unierp-auth' missing from dependency graph.
+  - Provider 'unierp-shared' missing from dependency graph.
+  - Provider 'unierp-kernel' missing from dependency graph.
+  - Provider 'unierp-data' missing from dependency graph.
+  - Provider 'unierp-framework' missing from dependency graph.
+  - Provider 'unierp-extension-api' missing from dependency graph.
+  - Provider 'unierp-design-system' missing from dependency graph.
+  - Provider 'unierp-sdk' missing from dependency graph.
+
+Restored clean dependency graph; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4421 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

@@ -375,6 +375,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-db-performance-volume.mjs", "--verify"]],
   },
   {
+    name: "Multi-tenant data isolation proof gate",
+    why: "P12-052: Programmatic two-tenant isolation proof for 100% of tenant tables asserting ZERO cross-tenant rows.",
+    cmd: ["node", ["scripts/check-multi-tenant-isolation-proof.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

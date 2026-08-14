@@ -143,6 +143,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-breaking-changes.mjs"]],
   },
   {
+    name: "Orphaned-defect sweep",
+    why: "P12-004: Every defect finding in a claimed repository routed to an owning phase with no orphans.",
+    cmd: ["node", ["scripts/check-orphaned-defects.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

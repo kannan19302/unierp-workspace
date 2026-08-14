@@ -22757,3 +22757,46 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-003 · FINISH · 2026-08-14T13:56:18Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-breaking-changes.mjs
+Output:
+OK    Breaking changes policy verified across 2 registered change(s).
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break 1: Invalid classification value
+$ node -e "const fs = require('fs'); const reg = JSON.parse(fs.readFileSync('docs/programme/breaking-changes-registry.json')); reg.entries.push({ id: 'BC-TEST', package: '@kannan19302/contracts', symbol: 'RemovedSymbol', classification: 'INVALID_TYPE' }); fs.writeFileSync('docs/programme/breaking-changes-registry.json', JSON.stringify(reg)); try { require('child_process').execSync('node scripts/check-breaking-changes.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on invalid classification:\n' + e.stderr.toString() + e.stdout.toString()); }"
+Output:
+EXPECTED FAILURE on invalid classification:
+
+check-breaking-changes: 1 violation(s) found:
+
+FAIL  Entry BC-TEST: Invalid classification 'INVALID_TYPE'. Must be BREAKING, DEPRECATED, or COMPATIBLE.
+
+Break 2: Breaking change with un-enumerated consumers
+$ node -e "const fs = require('fs'); const reg = JSON.parse(fs.readFileSync('docs/programme/breaking-changes-registry.json')); reg.entries = [{ id: 'BC-TEST-2', package: '@kannan19302/contracts', symbol: 'RemovedContract', classification: 'BREAKING', targetVersion: '2.0.0', migrationGuide: 'Migrate to v2', affectedConsumers: [] }]; fs.writeFileSync('docs/programme/breaking-changes-registry.json', JSON.stringify(reg)); try { require('child_process').execSync('node scripts/check-breaking-changes.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on un-enumerated consumers:\n' + e.stderr.toString() + e.stdout.toString()); }"
+Output:
+EXPECTED FAILURE on un-enumerated consumers:
+
+check-breaking-changes: 1 violation(s) found:
+
+FAIL  Entry BC-TEST-2 (BREAKING): Affected consumers not enumerated. Known consumers for @kannan19302/contracts are: unierp-kernel, unierp-sdk.
+
+Restored clean registry; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

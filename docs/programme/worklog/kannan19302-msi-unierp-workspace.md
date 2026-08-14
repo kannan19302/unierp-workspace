@@ -24537,3 +24537,41 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-041 · FINISH · 2026-08-14T15:16:11Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-soft-delete-primitives.mjs --verify
+Output:
+OK    Soft delete and archival primitives verified: 1908 data models inspected; 100% conform to canonical deletedAt standard.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing model with non-standard soft-delete boolean flag without canonical deletedAt
+$ node scripts/check-soft-delete-primitives.mjs --verify
+Output:
+EXPECTED FAILURE on non-standard soft-delete:
+
+FAIL  check-soft-delete-primitives: 1 soft-delete standard violation(s):
+
+  - D:\UniERP\unierp-data\prisma\schema\test-bad-soft-delete.prisma:4 Model "BadDeleteModel" defines non-standard soft-delete field without canonical `deletedAt`: "is_deleted Boolean".
+
+Unit tests in unierp-contracts:
+$ npx vitest run src/soft-delete.spec.ts
+ ✓ src/soft-delete.spec.ts (3 tests) 3ms
+ Test Files  1 passed (1)
+ Tests       3 passed (3)
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

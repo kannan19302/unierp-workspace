@@ -209,7 +209,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-059** | Request and response schema completeness | P12-058 | Full typed schemas including error shapes, not only success paths | A response shape absent from the contract fails a gate, including error responses | DONE |
 | **P12-060** | Contract validation at runtime | P12-059 | Services validating requests and responses against their own contracts | A response diverging from its contract fails in test and is caught before release | DONE |
 | **P12-061** | Client generation | P12-057 | Typed clients generated for every consuming language and runtime | Every consumer's client is generated; a hand-edited generated file fails CI | DONE |
-| **P12-062** | TypeScript client and types | P12-061 | The generated TypeScript client used by web, developer portal, console and sites | A contract change producing an incompatible call fails the consumer's build | WIP |
+| **P12-062** | TypeScript client and types | P12-061 | The generated TypeScript client used by web, developer portal, console and sites | A contract change producing an incompatible call fails the consumer's build | DONE |
 | **P12-063** | Dart client generation | P12-061 | The generated Dart client for the mobile application | The Dart client is generated from the same contracts, verified by differential test | OPEN |
 | **P12-064** | Client generation determinism | P12-061 | Identical contracts producing byte-identical clients | Two generations of one contract set are byte-identical, verified by hash | OPEN |
 | **P12-065** | Pagination, filtering and sorting conventions | P12-059 | One convention across every list endpoint | An endpoint deviating from the convention fails a gate | OPEN |

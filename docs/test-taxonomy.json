@@ -524,6 +524,7 @@
     "unierp-contracts/src/health.spec.ts": "contract",
     "unierp-contracts/src/money.spec.ts": "contract",
     "unierp-contracts/src/online-schema-change.spec.ts": "contract",
+    "unierp-contracts/src/outbox.spec.ts": "contract",
     "unierp-contracts/src/residency.spec.ts": "contract",
     "unierp-contracts/src/retention.spec.ts": "contract",
     "unierp-contracts/src/settings-migration.spec.ts": "contract",

@@ -355,6 +355,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-audit-immutability.mjs", "--verify"]],
   },
   {
+    name: "Transactional outbox gate",
+    why: "P12-048: Cross-module events and causing writes commit atomically; crash-invariance verified.",
+    cmd: ["node", ["scripts/check-transactional-outbox.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -110,6 +110,15 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface OnlineSchemaChangeSpec`
 - `interface OnlineSchemaChangeMeasurement`
 
+### `outbox.ts`
+
+- `type OutboxDeliveryStatus = "PENDING" | "LEASED" | "COMPLETED" | "DEAD";`
+- `interface OutboxEventRecord<T = unknown>`
+- `interface OutboxDeliveryRecord`
+- `interface OutboxWriteParams<T = Record<string, unknown>>`
+- `interface OutboxAtomicTx`
+- `class DualWriteNonAtomicError extends Error`
+
 ### `residency.ts`
 
 - `class ResidencyViolationError extends Error`

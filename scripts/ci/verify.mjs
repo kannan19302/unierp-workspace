@@ -370,6 +370,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-event-delivery-ordering.mjs", "--verify"]],
   },
   {
+    name: "Database performance at volume gate",
+    why: "P12-051: Reference query and write profile performance budgets verified at 100M-row production scale.",
+    cmd: ["node", ["scripts/check-db-performance-volume.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

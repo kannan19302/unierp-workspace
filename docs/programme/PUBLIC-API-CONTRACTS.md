@@ -18,6 +18,13 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface TenantPoolStats`
 - `class TenantConnectionFairnessGovernor`
 
+### `db-performance.ts`
+
+- `interface QueryPerformanceBudget`
+- `interface QueryPerformanceMeasurement`
+- `const PRODUCTION_100M_BUDGETS: Record<QueryPerformanceBudget["operationType"], QueryPerformanceBudget> =`
+- `class QueryBudgetBreachError extends Error`
+
 ### `encryption.ts`
 
 - `interface EncryptedPayload`

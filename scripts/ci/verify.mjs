@@ -148,6 +148,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-orphaned-defects.mjs"]],
   },
   {
+    name: "Runtime precondition gate",
+    why: "P12-005: Platform core toolchain, environment, and external capability preconditions verified with isolated graceful degradation.",
+    cmd: ["node", ["scripts/check-runtime-preconditions.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

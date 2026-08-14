@@ -258,6 +258,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-money-discipline.mjs", "--verify"]],
   },
   {
+    name: "Schema naming and modelling conventions gate",
+    why: "P12-031: Enforced PascalCase, camelCase, snake_case conventions across models, fields, enums, and mappings.",
+    cmd: ["node", ["scripts/check-schema-naming-conventions.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

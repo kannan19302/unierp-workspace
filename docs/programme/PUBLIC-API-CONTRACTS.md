@@ -127,6 +127,10 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface OutboxWriteParams<T = Record<string, unknown>>`
 - `interface OutboxAtomicTx`
 - `class DualWriteNonAtomicError extends Error`
+- `interface OutboxConsumerReceiptRecord`
+- `interface DeadLetterRecord`
+- `interface OutboxDeliveryOptions`
+- `class DuplicateEventIgnoredException extends Error`
 
 ### `residency.ts`
 

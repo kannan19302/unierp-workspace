@@ -365,6 +365,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-event-schema-registry.mjs", "--verify"]],
   },
   {
+    name: "Event delivery and ordering gate",
+    why: "P12-050: Redelivered event idempotency, offline queue durability and ordered event delivery.",
+    cmd: ["node", ["scripts/check-event-delivery-ordering.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

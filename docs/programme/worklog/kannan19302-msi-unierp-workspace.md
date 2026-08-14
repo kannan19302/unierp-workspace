@@ -23839,3 +23839,37 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-025 · FINISH · 2026-08-14T14:42:56Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/ci/check-schema-ownership.mjs --verify
+Output:
+OK    Schema ownership verified: unierp-data is the single source of truth for all persistent schemas (1961 models verified). Zero unauthorized models in sibling repos.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing unauthorized Prisma model outside unierp-data (in unierp-api)
+$ node scripts/ci/check-schema-ownership.mjs --verify
+Output:
+EXPECTED FAILURE on model defined outside unierp-data:
+
+FAIL  check-schema-ownership: 1 schema ownership violation(s):
+
+  - Model(s) [UnauthorizedTestModel] defined in 'unierp-api'. Only 'unierp-data' is permitted to define persistence models.
+
+Removed test schema; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

@@ -24584,3 +24584,35 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-042 · FINISH · 2026-08-14T15:42:55Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-042
+STATUS  DONE
+PROVEN  node scripts/check-schema-size.mjs
+
+PASS (normal run):
+  ? Schema size gate passed: all 42 schema files are under 3000 lines (1908 total models).
+  Exit code: 0
+  Largest file: core-part-10.prisma at 2,309 lines.
+
+FAIL (deliberate break -- added __test_oversized__.prisma with 3,001 lines):
+  ? SCHEMA FILE SIZE EXCEEDED (Max 3000 lines)
+     - __test_oversized__.prisma: 3001 lines (exceeds 3000)
+  Exit code: 1
+
+Test file removed. Gate confirmed to fail.
+
+BUILT   unierp-workspace:
+  - scripts/ci/verify.mjs -- added gate
+  - .github/workflows/reusable-ci.yml -- removed D013 hashFiles guard
+  - docs/programme/breaking-changes-registry.json -- added policy+classifications
+  - scripts/check-versioning-policy.mjs -- fixed ReferenceError
+  - docs/test-taxonomy.json -- regenerated
+  - docs/ai/CHANGELOG.md -- one line appended
+
+All 49 verify.mjs gates green; check-plan-integrity.mjs passed.
+```
+

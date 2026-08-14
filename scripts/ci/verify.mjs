@@ -198,6 +198,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-logging-standard.mjs", "--verify"]],
   },
   {
+    name: "Configuration standard gate",
+    why: "P12-016: Validated configuration schema with missing variables failing by name and 0 committed secrets across 21+ repos.",
+    cmd: ["node", ["scripts/check-config-standard.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

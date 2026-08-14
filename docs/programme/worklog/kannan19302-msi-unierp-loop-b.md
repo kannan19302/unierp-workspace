@@ -173,3 +173,76 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### J03 · FINISH · 2026-08-14T01:33:24Z · kannan19302@MSI/unierp-loop-b
+
+```
+verify.mjs: PASS
+
+J03 — Tenant-isolation test framework (Track J, Wave 0)
+Exit criterion: "Every protected table has an isolation test. Removing an RLS
+policy makes a test fail — verified by doing it."
+
+Deliverable: a reusable two-tenant harness so the DoD's "tenant B gets zero
+rows" test is one line per entity rather than bespoke each time.
+
+PASS — exit-criterion command and its output:
+  npx vitest run src/tenant-isolation-harness.test.ts   (in D:\UniERP\unierp-data)
+  → ✓ src/tenant-isolation-harness.test.ts (1819 tests)  48242ms
+    Test Files  1 passed (1)
+    Tests       1819 passed (1819)
+  Of the 1819: 1814 are the DB-derived catalogue — one isolation assertion per
+  protected public table (every table carrying tenant_id/tenantId), generated
+  via it.each(listProtectedTables(owner)); the rest are structural tests
+  (catalogue non-empty/shape), a drop-policy→fails→restore→passes proof, the
+  NOBYPASSRLS role guard, and post-run cleanup.
+
+  Catalogue size is DB-derived (pg_catalog), so it cannot go stale and cannot
+  shrink if a policy is dropped — the assertion itself fails first.
+
+FAIL — same assertion, deliberately broken by dropping a real policy:
+  DROP POLICY tenant_isolation_customers ON customers;
+  → verified absent via pg_policy.
+  npx tsx break-j03.ts   (assertTenantIsolation on customers over the unerp_api
+    NOBYPASSRLS connection)
+  → EXPECTED FAIL: customers: no RLS enforcement — rls/forced/policy
+    (tenant_isolation_customers) must all hold
+  The test suite embeds the same proof: the "customers policy can fail" test
+  drops tenant_isolation_customers, asserts the harness throws, then restores
+  the policy and asserts it passes again.
+
+RESTORE — policy recreated:
+  CREATE POLICY tenant_isolation_customers ON customers USING
+    (tenant_id = current_tenant_id()) WITH CHECK (tenant_id = current_tenant_id());
+  → verified present via pg_policy; harness assertion passes again.
+
+Full suite with the harness wired in (D:\UniERP\unierp-data):
+  npx vitest run → 7 files, 1896 tests passed
+  Coverage gate (all:true, thresholds lines85/funcs75/branch70/stmts85):
+    90.84% stmts, 81.6% branch, 91.66% funcs, 90.84% lines — above the floor.
+  npx tsc --noEmit → clean.  npm run build → clean.
+  node scripts/ci/verify.mjs (loop-b) → all gates green, suppression ratchet flat.
+  docs/test-taxonomy.json regenerated (prescribed by the J01 gate) → the new
+    harness test classified "isolation"; 4 pre-existing unclassified extension
+    specs (education/field-service/healthcare/real-estate) added as "unit".
+
+How the harness seeds any table: within a transaction,
+  SET LOCAL session_replication_role = replica  (superuser owner conn only)
+disables FK/check/application triggers so a single generic minimal-row seeder
+covers all 1814 tables — FK chains, 1536-dim vectors (array_to_vector with the
+column's declared dims), enums (quoted ::type cast — PG enum names are
+case-sensitive). Unique detection uses pg_index indisunique, not just
+information_schema. Text values carry per-row random suffixes to avoid
+collisions with leftover rows across runs. The app connection is always
+unerp_api (NOBYPASSRLS) so RLS is actually enforced during the assertion.
+
+One-line usage:
+  await assertTenantIsolation({ owner, app, table: "customers" });
+or the full catalogue:
+  const tables = await listProtectedTables(owner);  // then it.each(...)
+
+Architectural note filed, not fixed inline: none for this phase; the 19
+schema-declared-but-DB-absent tables flagged by check-rls-verify.mjs are
+pre-existing drift (D141-class), correctly excluded from the DB-derived
+catalogue because a table that does not exist cannot have an isolation test.
+```
+

@@ -263,6 +263,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-schema-naming-conventions.mjs", "--verify"]],
   },
   {
+    name: "Foreign key index policy and coverage gate",
+    why: "P12-032: Enforced indexing on foreign keys and compound query shapes with advisor proposals.",
+    cmd: ["node", ["scripts/check-schema-indexes.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

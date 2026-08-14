@@ -165,7 +165,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
-| **P12-025** | Schema ownership and structure | P12-002 | `unierp-data` as the single owner of the schema, with module boundaries inside it | A model defined outside `unierp-data` fails a gate | OPEN |
+| **P12-025** | Schema ownership and structure | P12-002 | `unierp-data` as the single owner of the schema, with module boundaries inside it | A model defined outside `unierp-data` fails a gate | WIP |
 | **P12-026** | Schema measurement | P12-025 | The real schema measured: models, fields, relations, indexes, file sizes, generated size | Every measurement is reproducible by command and tracked over time | OPEN |
 | **P12-027** | Tenant column and RLS universality | P12-026 | Every tenant-scoped table carrying `tenantId` and an RLS policy, with exemptions individually justified | A table without both fails `check-rls-verify.mjs`. Every exemption has a recorded reason | OPEN |
 | **P12-028** | RLS policy generation | P12-027 | Policies generated from the model rather than hand-written per table | A hand-written policy diverging from its model is detected. Generation is idempotent | OPEN |

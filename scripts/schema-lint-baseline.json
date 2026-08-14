@@ -1010,6 +1010,31 @@
       "model": "WorkflowMetric",
       "field": "avgSlaPct",
       "class": "metric"
+    },
+    {
+      "model": "SloDefinition",
+      "field": "targetPercent",
+      "class": "metric"
+    },
+    {
+      "model": "Incident",
+      "field": "actualPercent",
+      "class": "metric"
+    },
+    {
+      "model": "CapacityObservation",
+      "field": "value",
+      "class": "metric"
+    },
+    {
+      "model": "CapacityObservation",
+      "field": "capacity",
+      "class": "metric"
+    },
+    {
+      "model": "TelemetrySample",
+      "field": "value",
+      "class": "metric"
     }
   ]
 }

@@ -71,6 +71,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface DeliveryLogQuery`
 - `interface DeliveryLogResponse`
 
+### `money.ts`
+
+- `type CurrencyCode =`
+- `interface Money`
+
 ### `residency.ts`
 
 - `class ResidencyViolationError extends Error`

@@ -253,6 +253,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-runtime-ddl-rls.mjs", "--verify"]],
   },
   {
+    name: "Money type discipline gate",
+    why: "P12-030: Decimal(19,4) precision, exact string money values, and ISO 4217 currency pairing.",
+    cmd: ["node", ["scripts/check-money-discipline.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

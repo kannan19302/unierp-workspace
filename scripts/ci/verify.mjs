@@ -243,6 +243,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-rls-static-universality.mjs", "--verify"]],
   },
   {
+    name: "RLS policy generation and divergence gate",
+    why: "P12-028: Idempotent RLS policy generation and schema divergence verification.",
+    cmd: ["node", ["scripts/generate-rls-policies.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

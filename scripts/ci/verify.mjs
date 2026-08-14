@@ -168,6 +168,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-standalone-builds.mjs"]],
   },
   {
+    name: "Cross-repository CI gate",
+    why: "P12-009: Verified downstream dependent matrix and cross-repo compatibility checking across all published providers.",
+    cmd: ["node", ["scripts/check-cross-repo-ci.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

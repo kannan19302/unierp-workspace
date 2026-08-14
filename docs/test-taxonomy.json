@@ -524,6 +524,7 @@
     "unierp-contracts/src/consumer-contract-test.spec.ts": "contract",
     "unierp-contracts/src/contract-compatibility.spec.ts": "contract",
     "unierp-contracts/src/contract-governance.spec.ts": "contract",
+    "unierp-contracts/src/contract-performance.spec.ts": "contract",
     "unierp-contracts/src/db-performance.spec.ts": "contract",
     "unierp-contracts/src/deprecation.spec.ts": "contract",
     "unierp-contracts/src/encryption.spec.ts": "contract",

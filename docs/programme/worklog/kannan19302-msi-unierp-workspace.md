@@ -24137,3 +24137,39 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-032 · FINISH · 2026-08-14T14:58:54Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-schema-indexes.mjs --verify
+Output:
+OK    Index coverage verified: 888/1165 foreign keys indexed; 0 new un-indexed FKs (baseline: 277).
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing new un-indexed foreign key in test schema
+$ node scripts/check-schema-indexes.mjs --verify
+Output:
+EXPECTED FAILURE on unindexed FK:
+
+FAIL  check-schema-indexes: 1 NEW un-indexed foreign key(s) detected:
+
+  - test-unindexed-fk.prisma:7 Foreign key "ChildModel.parentId" (parent) has no index.
+
+Run `node scripts/check-schema-indexes.mjs --advise` for index proposals.
+
+Removed unindexed test model; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

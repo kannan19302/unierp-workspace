@@ -25109,3 +25109,47 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-054 · FINISH · 2026-08-14T16:39:27Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-054
+EXIT_CRITERION: A restore rehearsal reproduces a chosen point exactly, verified by comparison
+
+1. COMMAND THAT PASSES:
+node scripts/check-backup-restore-primitives.mjs --verify
+
+PASSING OUTPUT:
+✓ Database backup and restore primitives gate passed: Restore rehearsal reproduced chosen point exactly with cryptographic checksum verification.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-backup-restore-primitives.mjs').then(async (m) => {
+  const contracts = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/backup-restore.ts');
+  const brokenRehearsal = {
+    rehearsalId: 'broken',
+    restoredPoint: '2026-08-14T15:30:00.000Z',
+    walAppliedCount: 10,
+    dataIntegrityHash: 'sha256:corrupted',
+    expectedStateHash: 'sha256:target',
+    exactMatch: false,
+    tableChecksumsMatch: false,
+    durationMs: 100
+  };
+  try {
+    contracts.verifyRestoreRehearsal(brokenRehearsal);
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT: ' + err.message);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: Database restore rehearsal divergence at "2026-08-14T15:30:00.000Z": Restored state hash (sha256:corrupted) does not match expected state hash (sha256:target). Exact point-in-time state reproduction failed.
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 61 gates passed (including Database backup and restore primitives gate).
+```
+

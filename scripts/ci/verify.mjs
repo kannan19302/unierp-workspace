@@ -435,6 +435,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-dart-client-generation.mjs", "--verify"]],
   },
   {
+    name: "Client generation determinism gate",
+    why: "P12-064: Identical contracts multi-pass byte-identical hash determinism verification.",
+    cmd: ["node", ["scripts/check-client-generation-determinism.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

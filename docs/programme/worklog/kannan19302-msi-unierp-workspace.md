@@ -22861,3 +22861,50 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-005 · FINISH · 2026-08-14T14:00:14Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-runtime-preconditions.mjs
+Output:
+
+=== Programme 12 Precondition Gate (P12-005) ===
+Available capabilities (4):
+  ✅ Node.js Runtime Environment: v24.14.0
+  ✅ pnpm Package Manager: 9.15.4
+  ✅ Git CLI and Working Tree: true
+  ✅ Design Tokens & Design System (Track B): Found on disk at D:\UniERP\unierp-design-system\package.json
+
+Gracefully Degraded surfaces (1):
+  ⚠️  [MOCK_OR_OFFLINE] PostgreSQL Database Engine
+     Reason: Environment variable DATABASE_URL not set
+     Action: Live database connection is absent. Migrations, schema inspection and RLS verification fall back to static DDL validation and AST schema linting.
+
+OK    All precondition assertions passed; degraded surfaces explicitly isolated.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Seeded missing fatal toolchain capability
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('docs/programme/p12-preconditions.json', 'utf8'); const cfg = JSON.parse(txt); cfg.capabilities['test_fatal'] = { name: 'Nonexistent Fatal Tool', type: 'toolchain', check: { command: 'nonexistent-tool-xyz-123' }, degradation: { strategy: 'FATAL', message: 'Required compiler missing.' } }; fs.writeFileSync('docs/programme/p12-preconditions.json', JSON.stringify(cfg)); try { require('child_process').execSync('node scripts/check-runtime-preconditions.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on fatal capability:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('docs/programme/p12-preconditions.json', txt);"
+Output:
+EXPECTED FAILURE on fatal capability:
+
+FATAL: Missing non-degradable requirement(s):
+  ❌ Nonexistent Fatal Tool: Required compiler missing. ('nonexistent-tool-xyz-123' is not recognized as an internal or external command,
+operable program or batch file.)
+
+Restored clean manifest; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

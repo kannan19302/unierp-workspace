@@ -189,6 +189,48 @@ application repository fails CI.
 
 ---
 
+## 5b. Stage B-II · The claim protocol under adversarial concurrency (Wave 1)
+
+The one part of the harness that is demonstrably working — four agents took `P12-001` through
+`P12-008` concurrently with zero collisions while this document was written. This stage exists to
+keep it working as agent count rises, and to close the limits the protocol documents about itself
+rather than leaving them as footnotes.
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-061** | The claim protocol, specified | P14-040 | The protocol written as a specification — states, transitions, invariants — rather than only as code | Every implemented behaviour maps to a specified one; an unspecified behaviour is reported | OPEN |
+| **P14-062** | Claim invariants | P14-061 | The invariants stated: one holder per phase, one open phase per agent, no claim without a push | Each invariant has a test that fails when it is violated, proven per invariant | OPEN |
+| **P14-063** | Two-agent contention tests | P14-062 | Two agents claiming simultaneously, deterministically reproduced | Exactly one wins; the loser re-picks. Proven repeatedly, not once | OPEN |
+| **P14-064** | N-agent contention tests | P14-063 | Contention at the agent counts actually planned for | No double-claim at target agent count, proven under sustained contention | OPEN |
+| **P14-065** | Push-rejection handling | P14-063 | The pull-and-repick path exercised deterministically | A rejected push always results in a different phase, never a silent retry of the same | OPEN |
+| **P14-066** | Claim visibility | P14-256 | A claim visible to every other agent before work begins | An agent cannot begin work on a phase whose claim has not been observed remotely | OPEN |
+| **P14-067** | Agent identity correctness | P14-061 | Identity unique per working tree, verified — the failure that once handed session 2 session 1's phase | Two sessions on one machine never share an identity, proven by test | OPEN |
+| **P14-068** | Resume-before-claim | P14-062 | An agent holding an unfinished phase always receiving that one back | An agent with a WIP phase never receives a second, proven under every entry path | OPEN |
+| **P14-069** | Stale-claim reset correctness | P14-008 | The 72-hour reset exercised, including the boundary | A claim reset at the boundary is handled deterministically, proven against a controlled clock | OPEN |
+| **P14-070** | Stale-reset safety | P14-069 | A reset never destroying an active agent's work | A reset of a phase whose agent is still active is detectable and reversible | OPEN |
+| **P14-071** | Claim-branch model | P14-257 | The claim branch's role specified, with its constraint on mutual visibility stated | Agents on different branches see each other's claims, or are told plainly that they cannot | OPEN |
+| **P14-072** | `adp-state` ref integrity | P14-071 | The state ref verified, including its plumbing paths | A corrupted or diverged state ref is detected and reconciled, proven by seeding one | OPEN |
+| **P14-073** | Cross-worktree coordination | P14-171 | Worktrees coordinating correctly at the plan level | Four worktrees complete a batch each with no lost claim, proven under execution | OPEN |
+| **P14-074** | Cross-repository work registry | P14-073 | The registry preventing two agents overwriting each other in a shared repository | Two phases touching one repository are warned before work begins, proven by test | OPEN |
+| **P14-075** | File-level collision detection | P14-074 | Detecting collisions at file granularity, not only repository | Two agents editing one file are detected before the second commits | OPEN |
+| **P14-076** | Contributor-scope enforcement | P14-002 | The path scopes in `programme-claims.json` enforced, not merely declared | A programme writing outside its declared path scope fails, proven on a seeded commit | OPEN |
+| **P14-077** | Claim timeout and heartbeat | P14-069 | A held phase requiring periodic evidence of life | A silently abandoned claim is detected sooner than 72 hours, proven against a controlled clock | OPEN |
+| **P14-078** | Claim handoff | P14-214 | Transferring a live claim between agents without releasing it | A handoff preserves the claim and its progress notes, proven by test | OPEN |
+| **P14-079** | Forced release | P14-070 | An operator releasing another agent's claim, audited | A forced release is attributed and reversible, proven by test | OPEN |
+| **P14-080** | Claim audit trail | P14-054 | Every claim, reset, release and finish attributable | Any phase's full claim history is reconstructible from the record | OPEN |
+| **P14-081** | Dependency-race handling | P14-028 | Two agents where one's phase depends on the other's in-flight phase | The dependant is not handed out while its dependency is WIP, proven by test | OPEN |
+| **P14-082** | Wave-boundary races | P14-029 | Agents at a wave boundary as the last phase of a wave completes | Wave advancement is deterministic under concurrent completion, proven by test | OPEN |
+| **P14-083** | Plan-write serialisation | P14-046 | Serialising concurrent status writes to the same track file | Concurrent writes to one file never lose a status change, proven under parallel execution | OPEN |
+| **P14-084** | Optimistic-concurrency correctness | P14-083 | The push-based lock verified to have no lost-update window | No sequence of interleavings produces two holders, proven by exhaustive interleaving test | OPEN |
+| **P14-085** | Clock-skew tolerance | P14-069 | Behaviour when agents' clocks disagree | Skew within the declared bound does not misresolve a claim, proven by injection | OPEN |
+| **P14-086** | Network-partition behaviour | P14-256 | Behaviour when an agent is partitioned mid-claim | A partitioned agent cannot silently proceed, proven by injection | OPEN |
+| **P14-087** | Protocol version negotiation | P14-058 | Agents on different harness versions coexisting within a declared window | A version-skewed agent is told, rather than corrupting state, proven by test | OPEN |
+| **P14-088** | Protocol documentation | P14-061 | Generated protocol documentation from the specification | Documentation regenerates from the spec; drift fails CI | OPEN |
+| **P14-089** | Protocol conformance suite | P14-061 | A suite any harness implementation must pass to be considered correct | The current implementation passes; a deliberately weakened one fails, proven per invariant | OPEN |
+| **P14-090** | Stage B-II concurrency proof | P14-084 | An adversarial concurrency suite at target agent count with faults injected throughout | No double-claim, no lost completion and no corrupted state across the run; removing any guard is caught | OPEN |
+
+---
+
 ## 6. Stage C · Evidence integrity and audit (Wave 2)
 
 The stage the programme exists for. 194 phases are DONE on transcripts nobody has re-checked, and
@@ -278,7 +320,193 @@ rather than trusts.
 
 ---
 
-## 8. Amendment log
+## 8. Stage E · Orchestration and the batch runner (Wave 3)
+
+The loop. It does not exist today: `ls scripts/ | grep loop` returns nothing, so every phase is
+driven by hand. **HP-5 governs this whole stage** — automation may make an agent faster; it may
+never make an agent's assertion count for more.
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-161** | Runner architecture | P14-043 | The declared model: what the runner does, what it never does, and where a human decision is required | A runner capability outside the declaration fails an architecture gate | OPEN |
+| **P14-162** | Single-phase execution contract | P14-161 | The unit the runner drives: claim, hand to an agent, collect evidence, finish or release | Every unit ends in exactly one of finish, release or progress; a unit ending in none is detected | OPEN |
+| **P14-163** | Batch definition | P14-162 | A batch as a declared set — count, programme, stop conditions — rather than an open loop | A batch without a stop condition cannot start | OPEN |
+| **P14-164** | Stop conditions | P14-163 | Halting on gate failure, override attempt, blocked phase, budget exhaustion or a review checkpoint | Each stop condition halts the batch, proven per condition by seeding it | OPEN |
+| **P14-165** | Review checkpoints | P14-164 | Mandatory pauses where a human inspects evidence before the batch continues | A batch cannot exceed its checkpoint interval without an explicit continuation | OPEN |
+| **P14-166** | Batch reporting | P14-163 | What a batch did: phases, outcomes, evidence links, gates hit, time and cost | The report is generated from real execution and cannot be hand-edited | OPEN |
+| **P14-167** | Batch failure handling | P14-164 | A failed phase inside a batch handled without stranding it or corrupting the plan | A failure mid-batch leaves the phase released with a reason, not WIP forever | OPEN |
+| **P14-168** | The no-weakening guarantee | P14-161 | The HP-5 mechanism: the runner cannot override a gate, soften a criterion or finish without evidence | Every weakening path is unavailable to the runner, proven by attempting each | OPEN |
+| **P14-169** | Runner override prohibition | P14-168 | `--despite-red-gate` unavailable to automated execution; only a human may override | A runner attempting an override is refused, proven by test | OPEN |
+| **P14-170** | Parallel batch execution | P14-046 | Several batches across programmes and worktrees without contention | Four concurrent batches complete with zero collisions, proven under execution | OPEN |
+| **P14-171** | Worktree provisioning | P14-170 | Creating, using and retiring worktrees for parallel agents | A worktree is provisioned and cleaned up automatically; a leaked worktree is detected | OPEN |
+| **P14-172** | Agent assignment | P14-170 | Which agent takes which programme, and how contention is avoided by construction | Two agents are never assigned the same programme without explicit intent | OPEN |
+| **P14-173** | Budget enforcement | P14-164 | Time, token and cost budgets per batch, enforced | A batch exceeding its budget halts and reports, proven by seeding an overrun | OPEN |
+| **P14-174** | Cost measurement | P14-173 | Model spend per phase and per programme, measured | Cost per completed phase is answerable from data, not estimated | OPEN |
+| **P14-175** | Throughput measurement | P14-166 | Phases per hour, per agent and per programme | Throughput is measured and its trend visible | OPEN |
+| **P14-176** | Phase duration distribution | P14-175 | How long phases actually take, by programme and by kind | The distribution is published, replacing the estimate used for planning | OPEN |
+| **P14-177** | Batch scheduling | P14-170 | Running batches on a schedule with declared windows | A scheduled batch runs in its window and is skippable, proven by rehearsal | OPEN |
+| **P14-178** | Unattended-run policy | P14-165 | What may run unattended, what may not, and for how long | An unattended run past its limit halts pending review, proven by test | OPEN |
+| **P14-179** | Runner observability | P14-166 | Live visibility of what is running, where and how far along | An in-flight batch's state is answerable at any moment | OPEN |
+| **P14-180** | Runner interruption and resume | P14-167 | Stopping a batch cleanly and resuming without repeating completed phases | An interrupted batch resumes without redoing work, proven by injection | OPEN |
+| **P14-181** | Dependency-aware batching | P14-163 | Batches ordered so dependencies complete before dependants | A batch never hands out a phase whose dependency is inside the same unfinished batch | OPEN |
+| **P14-182** | Blocked-phase handling in batches | P14-152 | A batch encountering a blocked phase skipping it and reporting, not silently routing around | Skipped blocked phases are reported per batch with their blockers named | OPEN |
+| **P14-183** | Batch prioritisation | P14-181 | Which programme a batch opens, driven by `04-V1-RELEASE-DEFINITION § 3` | A batch opening out of the declared order requires explicit intent | OPEN |
+| **P14-184** | Runner safety limits | P14-168 | Hard limits: phases per batch, repositories touched, files changed | A batch exceeding a safety limit halts, proven per limit | OPEN |
+| **P14-185** | Blast-radius awareness | P14-184 | The runner refusing phases whose blast radius exceeds the batch's declared scope | A high-blast-radius phase requires explicit inclusion, proven by test | OPEN |
+| **P14-186** | Runner rollback | P14-167 | Reverting a batch's plan-state changes when a batch is abandoned | A rolled-back batch leaves the plan exactly as it was, verified by comparison | OPEN |
+| **P14-187** | Evidence collection in batches | P14-091 | Evidence captured per phase automatically where the criterion is machine-runnable | A batch-run criterion's output is captured verbatim, not summarised | OPEN |
+| **P14-188** | Batch audit integration | P14-095 | Batches feeding the re-verification sampler automatically | Every batch contributes to the audit sample; a batch that does not is reported | OPEN |
+| **P14-189** | Human handoff protocol | P14-165 | How a batch hands a decision to a human and resumes on the answer | A handoff preserves full context and resumes correctly, proven by rehearsal | OPEN |
+| **P14-190** | Runner failure modes | P14-180 | The declared behaviour when the runner itself crashes mid-phase | A runner crash leaves a recoverable claim, proven by injection at each stage | OPEN |
+| **P14-191** | Runner testing | P14-020 | The runner tested against a fixture plan without touching the real one | Every runner path is testable without real claims, and the harness has its own tests | OPEN |
+| **P14-192** | Runner documentation | P14-011 | Generated documentation of the runner's behaviour, limits and prohibitions | Documentation regenerates from the runner's declarations; drift fails CI | OPEN |
+| **P14-193** | Batch templates | P14-163 | Named batch shapes: a review batch, a programme batch, an audit batch | Each template is executable and its behaviour tested | OPEN |
+| **P14-194** | Estimate correction | P14-176 | Replacing planning estimates with measured durations as data accumulates | The published estimate is derived from measurement once enough phases are complete | OPEN |
+| **P14-195** | Stage E runner proof | P14-168 | A batch executed end to end with every weakening path attempted and refused | The batch completes, every override and softening attempt fails, and the checkpoint halts it as declared | OPEN |
+
+---
+
+## 9. Stage F · Agent ergonomics and context (Wave 3)
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-196** | Context budget model | P14-036 | The HP-7 mechanism: a declared budget for what an agent must hold to execute one phase | A brief exceeding the budget is reported before an agent receives it | OPEN |
+| **P14-197** | Brief size measurement | P14-196 | Every brief measured against the budget | The distribution is published; oversized briefs are named | OPEN |
+| **P14-198** | Brief decomposition | P14-197 | Phases whose briefs exceed the budget split, using the `A07a`/`A07b` rule rather than renumbering | An oversized phase is split without renumbering its neighbours, proven on a real case | OPEN |
+| **P14-199** | Brief relevance | P14-037 | Removing from the brief what an agent does not need, since noise costs the same as signal | Brief size falls without losing a required section, verified by the completeness test | OPEN |
+| **P14-200** | Self-containment verification | P14-037 | Verifying a brief truly needs no other document | A brief referencing content it does not quote is reported | OPEN |
+| **P14-201** | Repository orientation | P14-003 | What an agent needs to know about a repository before touching it, generated | An agent reaches the right file without searching the whole tree, verified by exercise | OPEN |
+| **P14-202** | Search guidance in the brief | P14-201 | The brief telling the agent where to look first for what already exists | Every brief names its likely-existing surfaces; "search before building" becomes actionable | OPEN |
+| **P14-203** | Prior-art detection | P14-202 | Detecting that a phase's deliverable may already exist before an agent starts | An already-satisfied criterion is flagged at claim time, saving the whole phase | OPEN |
+| **P14-204** | Onboarding a new agent | P14-011 | What a fresh session must read, in order, to be effective — and nothing more | A new agent reaches a correct first action from the documented path alone, verified by exercise | OPEN |
+| **P14-205** | Agent instruction consistency | P14-011 | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` and the skill verified to agree | A divergence between vendor entrypoints fails a gate. They exist to prevent exactly this | OPEN |
+| **P14-206** | Instruction accuracy gate | P14-205 | Every command, flag and count in the agent instructions verified against reality | A documented command that does not exist fails CI. "310 phases across 20 documents" survived for months | OPEN |
+| **P14-207** | Failure guidance | P14-012 | Every common failure path carrying its next action in the message itself | An agent hitting a common failure has its remedy without searching, verified across failure classes | OPEN |
+| **P14-208** | Anti-pattern detection | P14-030 | Detecting the recurring agent mistakes: scope creep, programme creep, gate weakening, hand-edited tables | Each anti-pattern is detected in a seeded commit, proven per pattern | OPEN |
+| **P14-209** | Scope-creep detection | P14-208 | Flagging a phase's diff touching files unrelated to its deliverable | A seeded unrelated change is flagged for justification, not silently accepted | OPEN |
+| **P14-210** | Programme-creep detection | P14-002 | Flagging a phase building another programme's deliverable | A P12 phase implementing a P9 deliverable is flagged, proven on a seeded case | OPEN |
+| **P14-211** | Hand-edit detection | P14-033 | Detecting hand edits to mechanically-written files | A hand-edited plan table or worklog is detected, proven by seeding one | OPEN |
+| **P14-212** | Progress-note quality | P14-007 | Progress notes that actually let the next agent resume | A note that does not state what is done and what is next is reported. Seven claims have zero notes | OPEN |
+| **P14-213** | Resume quality | P14-212 | An interrupted phase resumable by a different agent from the notes alone | A resumed phase is completed by a second agent without re-deriving state, verified by exercise | OPEN |
+| **P14-214** | Handoff between agents | P14-213 | Deliberate handoff of an in-flight phase with full context | A handoff preserves context; the receiving agent needs no further explanation, verified | OPEN |
+| **P14-215** | Session boundary handling | P14-196 | Behaviour when a phase genuinely exceeds one session | A phase spanning sessions loses nothing, proven by rehearsal | OPEN |
+| **P14-216** | Agent error taxonomy | P14-208 | Classifying what agents actually get wrong, from real data | The taxonomy is derived from observed failures, not imagined ones | OPEN |
+| **P14-217** | Guidance effectiveness | P14-216 | Measuring whether guidance changes reduce the errors they target | A guidance change's effect is measured against the error rate it addressed | OPEN |
+| **P14-218** | Agent feedback channel | P14-216 | How an agent reports that the plan or harness is wrong | An agent-reported plan defect reaches the defect log with its context | OPEN |
+| **P14-219** | Multi-vendor verification | P14-205 | The harness verified with more than one agent vendor, since instructions are vendor-neutral by design | The protocol works with a second vendor, verified by exercise | OPEN |
+| **P14-220** | Stage F proof | P14-206 | A suite asserting brief self-containment, size, instruction accuracy and anti-pattern detection | All four hold, and each fails when its mechanism is removed | OPEN |
+
+---
+
+## 10. Stage G · The harness observes itself (Wave 4)
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-221** | Harness metrics model | P14-006 | The HP-4 mechanism: the declared metric set with definitions and sources | A metric without a definition and a source cannot be published | OPEN |
+| **P14-222** | Throughput metrics | P14-175 | Phases completed per day, per agent, per programme | Throughput derives from worklog data and is reproducible by command | OPEN |
+| **P14-223** | Quality metrics | P14-113 | Rework rate, audit pass rate, override rate, evidence completeness | Each is computed from real records; none is self-assessed | OPEN |
+| **P14-224** | Flow metrics | P14-153 | Time from claim to finish, time blocked, time in review | The distribution is published per programme | OPEN |
+| **P14-225** | Blocked-work metrics | P14-153 | How much work is blocked, on what, and for how long | The oldest and largest blockers are visible without inspection | OPEN |
+| **P14-226** | Gate metrics | P14-135 | Firing rate, override rate, false-positive rate per gate | Every gate has all three measured; one without is reported | OPEN |
+| **P14-227** | Cost metrics | P14-174 | Model and infrastructure spend attributed to phases and programmes | Cost per phase is answerable; the aggregate reconciles to real spend | OPEN |
+| **P14-228** | Progress projection | P14-222 | Projected completion from measured throughput, with its uncertainty stated | The projection states its assumptions and its error bars, never a bare date | OPEN |
+| **P14-229** | Estimate accuracy tracking | P14-228 | Comparing projections against outcomes as they arrive | Projection error is measured and published, not quietly revised | OPEN |
+| **P14-230** | Programme health scoring | P14-223 | A per-programme health view: throughput, quality, blockage, drift | Every component is measured; the score is reproducible from data | OPEN |
+| **P14-231** | Plan-drift metrics | P14-156 | How far the plan has diverged from reality since it was written | Drift is measured per programme and reported for amendment | OPEN |
+| **P14-232** | Defect-log metrics | P14-118 | Defects found, routed, closed and carried, with ages | An unrouted or ageing defect is visible without reading the log | OPEN |
+| **P14-233** | Harness reliability metrics | P14-045 | Harness failure rate, recovery rate and mean time to detect | Every harness failure is recorded; the rate is published | OPEN |
+| **P14-234** | Agent effectiveness metrics | P14-217 | Which guidance, briefs and phase shapes produce good outcomes | Effectiveness is measured against real outcomes, not impressions | OPEN |
+| **P14-235** | Metrics dashboard | P14-221 | One view of the whole programme's health, drilling to source | Every figure drills to the records behind it | OPEN |
+| **P14-236** | Metrics alerting | P14-235 | Alerts when a metric crosses a declared threshold | Each alert has fired in rehearsal; an unfired alert is unproven | OPEN |
+| **P14-237** | Metrics accuracy verification | P14-221 | Verifying computed metrics against independently counted values | Each metric matches an independent count, proven per metric | OPEN |
+| **P14-238** | Historical metrics retention | P14-019 | Metrics retained so trends survive plan growth | A year of history remains queryable within budget, measured | OPEN |
+| **P14-239** | Metrics honesty gate | P14-237 | Preventing a metric from being redefined to look better | A metric definition change is recorded as an amendment; a silent redefinition is detected | OPEN |
+| **P14-240** | Vanity-metric review | P14-239 | Removing metrics that measure activity rather than progress | Every retained metric names the decision it informs; one that informs none is removed | OPEN |
+| **P14-241** | Reporting to the maintainer | P14-235 | A periodic report the maintainer can act on without reading the plan | The report is generated and states what needs a human decision | OPEN |
+| **P14-242** | Decision surfacing | P14-241 | Surfacing decisions only a human can make, rather than burying them | An outstanding human decision is visible and aged, never lost in a transcript | OPEN |
+| **P14-243** | Evidence of harness value | P14-233 | Measuring whether the harness's own controls are catching anything | Each control's catch count is published; a control catching nothing is reviewed | OPEN |
+| **P14-244** | Comparative measurement | P14-234 | Comparing phase outcomes with and without a given control | A control's effect is measured against a baseline, not asserted | OPEN |
+| **P14-245** | Metric-driven improvement | P14-244 | Harness changes justified by, and verified against, a metric | A harness change states the metric it targets and its measured effect | OPEN |
+| **P14-246** | Observability performance | P14-238 | Metric computation within budget at full plan and worklog size | Metrics compute within budget at projected full size, measured | OPEN |
+| **P14-247** | Metrics privacy | P14-121 | No secret or personal data in metrics or reports | A metrics export containing sensitive data is refused, proven on a seeded record | OPEN |
+| **P14-248** | Metrics API | P14-235 | Programmatic access to every published metric | Every dashboard figure is retrievable by command; a UI-only figure fails the parity test | OPEN |
+| **P14-249** | Metrics documentation | P14-221 | Generated definitions for every metric | Documentation regenerates from the metric registry; drift fails CI | OPEN |
+| **P14-250** | Stage G proof | P14-237 | A suite verifying every published metric against an independent count | Every metric matches, and a deliberately miscomputed metric is caught | OPEN |
+
+---
+
+## 11. Stage H · Resilience and recovery (Wave 4)
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-251** | Plan-state backup | P14-045 | The plan, worklog and baselines backed up with tested restore | A restore reproduces plan state exactly, verified by comparison | OPEN |
+| **P14-252** | Plan-state corruption detection | P14-045 | Detecting a corrupted or contradictory plan state before an agent acts on it | Each seeded corruption is detected at startup, proven per class | OPEN |
+| **P14-253** | Plan-state repair | P14-252 | Repairing detected corruption without losing completed work | Each corruption class is repairable, proven per class | OPEN |
+| **P14-254** | Claim-state recovery | P14-044 | Recovering from a lost, duplicated or orphaned claim | Each claim anomaly is recoverable, proven by injection | OPEN |
+| **P14-255** | Worklog recovery | P14-038 | Rebuilding worklog state from git history when a file is lost | The worklog is reconstructible from history, proven by deleting and rebuilding it | OPEN |
+| **P14-256** | Remote-loss tolerance | P14-040 | Behaviour when the remote is unreachable mid-claim | A claim that cannot push fails loudly rather than proceeding invisibly | OPEN |
+| **P14-257** | The offline-claim limit | P14-256 | The documented limit — an agent claiming offline is invisible — closed or explicitly bounded | The limit is either removed or stated with its bound enforced, not left as a footnote | OPEN |
+| **P14-258** | Divergent-branch recovery | P14-048 | Recovering when agents' claim state diverges across branches | Divergence is detected and reconciled, proven by seeding one | OPEN |
+| **P14-259** | Concurrent-modification recovery | P14-046 | Recovering when two agents modify plan state simultaneously | Concurrent modification never loses a completion, proven under parallel execution | OPEN |
+| **P14-260** | Harness rollback | P14-059 | Reverting a harness change that breaks execution | A bad harness change is revertible without stranding claims, proven by rehearsal | OPEN |
+| **P14-261** | Disaster rehearsal | P14-251 | A rehearsed recovery of the whole development system | The rehearsal restores plan, worklog and tooling to a consistent point, recorded | OPEN |
+| **P14-262** | Harness chaos testing | P14-044 | Failure injected at every harness boundary — git, filesystem, process, network | Every injection point leaves a recoverable state, proven per point | OPEN |
+| **P14-263** | Long-running soak | P14-019 | The harness driven continuously to detect degradation at scale | A long soak shows no state corruption and no unbounded growth | OPEN |
+| **P14-264** | Harness capacity limits | P14-016 | The declared ceiling on agents, phases and plan size, with behaviour at each | Each ceiling is reached in test and behaves as declared | OPEN |
+| **P14-265** | Stage H proof | P14-262 | A chaos suite across every harness failure mode with verified recovery | Every failure mode recovers, and a removed recovery path is caught | OPEN |
+
+---
+
+## 12. Stage I · Proof (Wave 5)
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **P14-266** | Harness coverage verification | P14-022 | The harness's own coverage measured against its threshold | The threshold is met and has been proven able to fail | OPEN |
+| **P14-267** | Gate-integrity verification | P14-034 | Every gate in the family proven able to fail, mechanically | A gate that cannot be made to fail is reported by name; the count is zero | OPEN |
+| **P14-268** | Override backlog closure | P14-134 | Every recorded override reviewed and resolved | Zero unreviewed overrides remain; new ones are reviewed within their window | OPEN |
+| **P14-269** | Stale-claim closure | P14-008 | Every inconsistent claim resolved and detection continuous | Zero claims inconsistent with plan status; a seeded inconsistency is detected | OPEN |
+| **P14-270** | Blocked-phase closure | P14-152 | Every blocked phase with a current blocker and a named unblocking condition | No blocker is untested past its window; the list is actionable | OPEN |
+| **P14-271** | Instruction-accuracy verification | P14-206 | Every documented command, flag and count verified against reality | A false statement in any agent instruction fails CI, proven on a seeded one | OPEN |
+| **P14-272** | Anti-pattern suite | P14-208 | Every recurring agent mistake detected by a seeded example | Each anti-pattern is caught; one that is not fails the suite | OPEN |
+| **P14-273** | Runner safety proof | P14-168 | Every weakening path attempted against the runner and refused | The runner cannot override, soften or finish without evidence, proven per path | OPEN |
+| **P14-274** | Metrics verification | P14-237 | Every published metric verified against an independent count | Every metric matches; a miscomputation is caught | OPEN |
+| **P14-275** | Recovery verification | P14-265 | Every harness failure mode rehearsed with verified recovery | Every mode recovers within its stated objective, recorded | OPEN |
+| **P14-276** | Harness security verification | P14-052 | The harness's own attack surface tested | Every injection attempt fails; each succeeds when its control is removed | OPEN |
+| **P14-277** | Regression-suite completeness | P14-030 | Every known harness defect represented by a failing-without-fix test | Every defect in the log with a harness cause has a test; one without is reported | OPEN |
+| **P14-278** | The audit proof | P14-130 | The programme's invariant made mechanical: a risk-weighted sample of DONE phases independently re-verified, with the pass rate published | The audit runs, its pass rate is published by phase, a seeded broken DONE phase is caught, and every failure is reopened or explained. **A pass rate below the declared threshold blocks the programme rather than being footnoted** | OPEN |
+| **P14-279** | Harness readiness review | P14-277 | Every harness capability evidenced by test or rehearsal rather than documentation | Every capability has a recorded proof within its review period; an unproven one blocks | OPEN |
+| **P14-280** | Programme 14 launch readiness | P14-278 | The final review: every exit criterion below evidenced by a command and its output, including its output when broken | Every box in § 13 is ticked with evidence. An unticked box blocks completion | OPEN |
+
+---
+
+## 13. Programme exit criteria
+
+- [ ] **A risk-weighted sample of DONE phases is independently re-verified and the pass rate published; a rate below threshold blocks** (P14-278)
+- [ ] Every past harness defect — D045, D149, D150, D151 — has a test that fails without its fix (P14-030, P14-277)
+- [ ] The harness meets its own coverage threshold, proven able to fail, from a 0 % baseline (P14-022, P14-266)
+- [ ] Every gate in the family is proven able to fail, mechanically, on every run (P14-034, P14-267)
+- [ ] Zero unreviewed overrides; the 33 existing ones each have a recorded outcome (P14-134, P14-268)
+- [ ] A gate whose override rate exceeds threshold is treated as defective, not endured (P14-135)
+- [ ] Zero claims inconsistent with plan status; the seven stale DONE claims are resolved (P14-008, P14-269)
+- [ ] Every BLOCKED phase has a current, re-tested blocker and a named unblocking condition (P14-152, P14-270)
+- [ ] Evidence is structured, complete, and refused when the deliberate break is missing (P14-039, P14-091)
+- [ ] An agent cannot audit its own phase (P14-120)
+- [ ] The runner cannot override a gate, soften a criterion, or finish without evidence (P14-168, P14-273)
+- [ ] A batch cannot run past its review checkpoint without explicit continuation (P14-165)
+- [ ] Every documented command, flag and count in the agent instructions is verified against reality (P14-206, P14-271)
+- [ ] Scope creep, programme creep, gate weakening and hand-edited tables are each detected by seeded example (P14-208, P14-272)
+- [ ] Every brief is self-contained and within the context budget (P14-196, P14-200)
+- [ ] A DONE phase broken by a later change is detected within its window (P14-098)
+- [ ] Every published metric matches an independent count (P14-237, P14-274)
+- [ ] Progress projection states its assumptions and error bars, never a bare date (P14-228)
+- [ ] Every harness failure mode is rehearsed with verified recovery (P14-262, P14-275)
+- [ ] A crafted phase ID or branch name cannot inject a command (P14-052, P14-276)
+- [ ] `verify.mjs` is green family-wide on D151's gate, without using the `# justified:` escape (P14-024)
+- [ ] The exit-criteria baseline shrinks and may not grow without a recorded amendment (P14-157)
+
+---
+
+## 14. Amendment log
 
 | Date | Change | By |
 | :--- | :----- | :- |

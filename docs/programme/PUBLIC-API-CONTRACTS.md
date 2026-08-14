@@ -123,6 +123,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface DeliveryLogQuery`
 - `interface DeliveryLogResponse`
 
+### `meta-schema.ts`
+
+- `interface ContractMetaSchema`
+- `class MalformedContractDefinitionError extends Error`
+
 ### `money.ts`
 
 - `type CurrencyCode =`

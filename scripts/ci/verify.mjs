@@ -400,6 +400,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-source-of-truth.mjs", "--verify"]],
   },
   {
+    name: "Contract format and structure gate",
+    why: "P12-057: Meta-schema validation across all declared API and event contracts.",
+    cmd: ["node", ["scripts/check-contract-meta-schema.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

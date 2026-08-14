@@ -525,6 +525,7 @@
     "unierp-contracts/src/events/schema-registry.spec.ts": "contract",
     "unierp-contracts/src/fixtures.spec.ts": "contract",
     "unierp-contracts/src/health.spec.ts": "contract",
+    "unierp-contracts/src/meta-schema.spec.ts": "contract",
     "unierp-contracts/src/money.spec.ts": "contract",
     "unierp-contracts/src/online-schema-change.spec.ts": "contract",
     "unierp-contracts/src/outbox.spec.ts": "contract",

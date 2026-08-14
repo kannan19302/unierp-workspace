@@ -380,6 +380,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-multi-tenant-isolation-proof.mjs", "--verify"]],
   },
   {
+    name: "Schema change impact analysis gate",
+    why: "P12-053: Automated consumer and service impact analysis for all proposed schema alterations.",
+    cmd: ["node", ["scripts/check-schema-impact-analysis.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

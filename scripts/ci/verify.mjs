@@ -158,6 +158,11 @@ const GATES = [
     cmd: ["node", ["scripts/generate-dependency-graph.mjs", "--verify"]],
   },
   {
+    name: "Consumer registry (EP-3)",
+    why: "P12-007: Mechanical consumer index answering 'Who uses this?' for every symbol, contract, and event across 12 programmes.",
+    cmd: ["node", ["scripts/check-consumer-registry.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

@@ -460,6 +460,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-rate-limit-headers.mjs", "--verify"]],
   },
   {
+    name: "API versioning strategy gate",
+    why: "P12-069: Enforced API version support windows and mechanical retirement validation.",
+    cmd: ["node", ["scripts/check-api-versioning-strategy.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

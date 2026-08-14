@@ -516,6 +516,7 @@
     "unierp-console/e2e/console.spec.ts": "e2e",
     "unierp-console/e2e/provision.spec.ts": "e2e",
     "unierp-console/src/lib/navigation.test.ts": "unit",
+    "unierp-contracts/src/api-versioning.spec.ts": "contract",
     "unierp-contracts/src/audit.spec.ts": "contract",
     "unierp-contracts/src/backup-restore.spec.ts": "contract",
     "unierp-contracts/src/client-generator.spec.ts": "contract",

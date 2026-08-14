@@ -6,6 +6,12 @@
 ## Overview
 Single source of truth for all external and platform contracts across UniERP.
 
+### `api-versioning.ts`
+
+- `type ApiVersionState = "ACTIVE" | "DEPRECATED" | "SUNSET_ANNOUNCED" | "RETIRED";`
+- `interface ApiVersionLifecycleSpec`
+- `class PrematureVersionRetirementError extends Error`
+
 ### `audit.ts`
 
 - `interface AuditEventPayload`

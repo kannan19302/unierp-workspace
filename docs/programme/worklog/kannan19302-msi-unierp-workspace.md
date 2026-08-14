@@ -23965,3 +23965,34 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-028 · FINISH · 2026-08-14T14:48:56Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/generate-rls-policies.mjs --verify
+Output:
+OK    RLS policy generation verified: 1819 policies derived, zero drift, 100% idempotent.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Injecting diverging policy definition into docs/programme/P12-028-RLS-POLICIES.sql
+$ node scripts/generate-rls-policies.mjs --verify
+Output:
+EXPECTED FAILURE on diverging RLS policy:
+FAIL  generate-rls-policies: RLS policy drift or divergence detected! Run `node scripts/generate-rls-policies.mjs --generate`.
+
+Regenerated policies; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

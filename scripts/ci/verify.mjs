@@ -113,6 +113,17 @@ const GATES = [
     cmd: ["node", ["scripts/check-plan-integrity.mjs"]],
   },
   {
+    name: "Exit criteria can fail",
+    why:
+      "check-plan-integrity refuses an EMPTY exit criterion; that is not the same as one that " +
+      "can fail. AGENTS.md § 1 is the rule — no claim without a mechanism that can fail — and a " +
+      "criterion reading 'the module works well' satisfies the emptiness check while proving " +
+      "nothing. This is a ratchet against a recorded baseline, so it fails on a NEW vacuous " +
+      "criterion rather than on the 350 pre-existing ones, which would only train everyone to " +
+      "ignore it.",
+    cmd: ["node", ["scripts/check-exit-criteria.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

@@ -30,6 +30,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { idPatternFor, isPhaseId, parseDeps as splitDeps } from "./lib/programme-ids.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -49,6 +50,18 @@ const TRACKS = {
   K: { file: "20-TRACK-K-OPERATIONS-GTM.md", name: "Operations and GTM" },
   L: { file: "21-TRACK-L-CODE-QUALITY.md", name: "Code quality" },
   M: { file: "22-TRACK-M-PROVIDER-ADMIN-OS.md", name: "Provider Admin OS" },
+  P2: { file: "30-PROGRAMME-2-DEVELOPER-PORTAL.md", name: "Developer Portal", programme: 2 },
+  P3: { file: "31-PROGRAMME-3-MARKETPLACE.md", name: "Marketplace", programme: 3 },
+  P4: { file: "32-PROGRAMME-4-TENANT-APPS.md", name: "Tenant apps (ERP)", programme: 4 },
+  P5: { file: "33-PROGRAMME-5-WEBSITE-BUILDER.md", name: "Website builder", programme: 5 },
+  P6: { file: "34-PROGRAMME-6-TENANT-ADMIN-CONSOLE.md", name: "Tenant admin console", programme: 6 },
+  P7: { file: "35-PROGRAMME-7-MARKETING-SITE.md", name: "Marketing site", programme: 7 },
+  P8: { file: "36-PROGRAMME-8-PLATFORM-ADMIN-OS.md", name: "Platform Admin OS", programme: 8 },
+  P9: { file: "37-PROGRAMME-9-WEB-CLIENT.md", name: "Web client", programme: 9 },
+  P10: { file: "38-PROGRAMME-10-MOBILE.md", name: "Mobile", programme: 10 },
+  P11: { file: "39-PROGRAMME-11-DESKTOP.md", name: "Desktop", programme: 11 },
+  P12: { file: "40-PROGRAMME-12-PLATFORM-CORE.md", name: "Platform core", programme: 12 },
+  P13: { file: "41-PROGRAMME-13-INTEGRATION-RELEASE.md", name: "Integration & release", programme: 13 },
 };
 
 const VALID_STATUS = ["OPEN", "READY", "WIP", "DONE", "BLOCKED", "WITHDRAWN"];
@@ -70,8 +83,8 @@ const splitRow = (line) => {
  * from a fixed schema. What is invariant: first cell is the ID, last is Status, and the
  * one before Status is the exit criterion.
  */
-function parseTrack(letter) {
-  const { file } = TRACKS[letter];
+function parseTrack(trackKey) {
+  const { file } = TRACKS[trackKey];
   const path = join(PROGRAMME, file);
   if (!existsSync(path)) die(`missing track file ${file}`);
   const lines = readFileSync(path, "utf8").split("\n");
@@ -91,7 +104,9 @@ function parseTrack(letter) {
       header = splitRow(line);
       continue;
     }
-    const m = line.match(new RegExp(String.raw`^\|\s*\*\*(${letter}\d{2}[a-z]?)\*\*\s*\|`));
+    const m = line.match(
+      new RegExp(String.raw`^\|\s*\*\*(${idPatternFor(trackKey)})\*\*\s*\|`),
+    );
     if (!m) continue;
     const cells = splitRow(line);
     const fields = {};
@@ -115,29 +130,15 @@ function parseTrack(letter) {
 
 function parseAll() {
   const all = new Map();
-  for (const letter of Object.keys(TRACKS)) {
-    for (const [id, p] of parseTrack(letter)) all.set(id, { ...p, track: letter });
+  for (const trackKey of Object.keys(TRACKS)) {
+    for (const [id, p] of parseTrack(trackKey)) all.set(id, { ...p, track: trackKey });
   }
   return all;
 }
 
-/** "A06, A07, A08" / "A01–A02" / "—" → ["A06","A07","A08"] */
+/** "A06, A07, A08" / "A01–A02" / "P2-014–P2-016" / "—" → sorted phase IDs. */
 function parseDeps(raw) {
-  if (!raw) return [];
-  const text = raw.replace(/\*\*/g, "");
-  const out = new Set();
-  const rangeRe = /([A-M])(\d{2})\s*[–-]\s*(?:[A-M])?(\d{2})/g;
-  let m;
-  let consumed = text;
-  while ((m = rangeRe.exec(text)) !== null) {
-    const [full, letter, from, to] = m;
-    for (let n = Number(from); n <= Number(to); n++) {
-      out.add(`${letter}${String(n).padStart(2, "0")}`);
-    }
-    consumed = consumed.replace(full, " ");
-  }
-  for (const id of consumed.match(/\b[A-M]\d{2}[a-z]?\b/g) ?? []) out.add(id);
-  return [...out].sort();
+  return splitDeps(raw).ids;
 }
 
 /** Section text between a heading matching `re` and the next heading of equal-or-higher level. */
@@ -165,7 +166,7 @@ const opt = (name) => {
   const i = argv.indexOf(`--${name}`);
   return i === -1 ? null : argv[i + 1];
 };
-const target = argv.find((a) => /^[A-M]\d{2}[a-z]?$/.test(a));
+const target = argv.find((a) => isPhaseId(a));
 
 const all = parseAll();
 
@@ -208,7 +209,7 @@ if (flag("status")) {
     const rest = VALID_STATUS.filter((s) => s !== "DONE" && counts[s])
       .map((s) => `${s} ${counts[s]}`)
       .join("  ");
-    console.log(`  ${letter}  ${name.padEnd(20)} ${bar.padStart(7)}   ${rest}`);
+    console.log(`  ${letter.padEnd(2)}  ${name.padEnd(20)} ${bar.padStart(7)}   ${rest}`);
   }
   console.log(`\n  TOTAL  ${done}/${all.size} DONE\n`);
   process.exit(0);

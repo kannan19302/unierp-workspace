@@ -18,6 +18,8 @@
  *   node scripts/start.mjs                    claim the next phase and print its brief
  *   node scripts/start.mjs --dry-run          decide and explain, claim nothing
  *   node scripts/start.mjs --phase L11        claim a specific phase (must be READY)
+ *   node scripts/start.mjs --programme 2      work Programme 2 instead of Programme 1;
+ *                                             its own waves, its own phases, no overlap
  *   node scripts/start.mjs --progress "…"     journal progress; do this before you stop
  *   node scripts/start.mjs --finish  --evidence-file ev.txt
  *                                             record the proof and set DONE
@@ -36,6 +38,13 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  PHASE_ID_SRC,
+  parseDeps,
+  isPhaseId,
+  trackOf,
+  programmeOf,
+} from "./lib/programme-ids.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -43,11 +52,35 @@ const PROGRAMME = join(ROOT, "docs", "programme");
 const WORKLOG = join(PROGRAMME, "WORKLOG.md");
 const SEQ = join(PROGRAMME, "01-PRIORITY-AND-SEQUENCING.md");
 
-/** Tracks whose phases may be worked while an earlier wave is still open.
- *  01-PRIORITY-AND-SEQUENCING § 3 designates these as the sanctioned parallel work:
- *  H has its own stack and blocks nothing, K01–K04 consume calendar time engineering
- *  cannot compress, and J attaches to whatever exists. */
-const PARALLEL_TRACKS = new Set(["H", "K", "J"]);
+/**
+ * Programme N → the document holding its own wave sequence, and the tracks it owns.
+ *
+ * Programmes are independent by construction: `start.mjs` never mixes them. Without
+ * `--programme`, this is Programme 1 and behaves exactly as before. `--programme 2`
+ * resolves waves from Programme 2's own document and can only ever hand out a P2 phase.
+ * That is what makes a platform separately executable without colliding with another —
+ * two agents on two programmes never contend for the same phase or the same wave.
+ */
+const P = (n, file) => [
+  n,
+  { seq: join(PROGRAMME, file), tracks: new RegExp(`^P${n}-`), parallel: new Set() },
+];
+
+const PROGRAMMES = Object.fromEntries([
+  [1, { seq: SEQ, tracks: /^[A-M]/, parallel: new Set(["H", "K", "J"]) }],
+  P(2, "30-PROGRAMME-2-DEVELOPER-PORTAL.md"),
+  P(3, "31-PROGRAMME-3-MARKETPLACE.md"),
+  P(4, "32-PROGRAMME-4-TENANT-APPS.md"),
+  P(5, "33-PROGRAMME-5-WEBSITE-BUILDER.md"),
+  P(6, "34-PROGRAMME-6-TENANT-ADMIN-CONSOLE.md"),
+  P(7, "35-PROGRAMME-7-MARKETING-SITE.md"),
+  P(8, "36-PROGRAMME-8-PLATFORM-ADMIN-OS.md"),
+  P(9, "37-PROGRAMME-9-WEB-CLIENT.md"),
+  P(10, "38-PROGRAMME-10-MOBILE.md"),
+  P(11, "39-PROGRAMME-11-DESKTOP.md"),
+  P(12, "40-PROGRAMME-12-PLATFORM-CORE.md"),
+  P(13, "41-PROGRAMME-13-INTEGRATION-RELEASE.md"),
+]);
 
 /** A claim older than this is presumed abandoned and may be reset by another agent. */
 const STALE_HOURS = 72;
@@ -59,6 +92,26 @@ const opt = (n) => {
   return i === -1 ? null : argv[i + 1];
 };
 
+/**
+ * Which programme this invocation is working in. Defaults to 1 — unchanged behaviour.
+ * `--phase P2-014` implies `--programme 2`: naming a phase is unambiguous about which
+ * programme it belongs to, and requiring both flags would only produce a confusing
+ * "no phase P2-014" from a programme that legitimately does not contain it.
+ */
+const PROGRAMME_N = Number(
+  opt("programme") ??
+    (isPhaseId(opt("phase") ?? "") && opt("phase").startsWith("P")
+      ? programmeOf(opt("phase"))
+      : 1),
+);
+if (!PROGRAMMES[PROGRAMME_N]) {
+  console.error(
+    `\nstart: no programme ${PROGRAMME_N}. Known: ${Object.keys(PROGRAMMES).join(", ")}\n`,
+  );
+  process.exit(1);
+}
+const CTX = PROGRAMMES[PROGRAMME_N];
+
 const say = (s = "") => console.log(s);
 const die = (msg, hint) => {
   console.error(`\nstart: ${msg}\n`);
@@ -66,9 +119,23 @@ const die = (msg, hint) => {
   process.exit(1);
 };
 
+/**
+ * `maxBuffer` is not decoration. spawnSync defaults to 1 MB, and `phase-brief.mjs --json`
+ * emits the whole plan — which passed 4 MB when Programmes 3–11 landed. Past the default
+ * the child's output is truncated, `JSON.parse` fails, and this script reports "could not
+ * read the plan" while printing four megabytes of half-a-JSON-document to the terminal.
+ * The plan is expected to keep growing, so the ceiling is set well above it, not just above.
+ */
+const MAX_BUFFER = 128 * 1024 * 1024;
+
 const git = (args, { allowFail = false, env } = {}) => {
   const spawnEnv = env ? { ...process.env, ...env } : undefined;
-  const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8", env: spawnEnv });
+  const r = spawnSync("git", args, {
+    cwd: ROOT,
+    encoding: "utf8",
+    env: spawnEnv,
+    maxBuffer: MAX_BUFFER,
+  });
   if (r.status !== 0 && !allowFail) {
     die(`git ${args.join(" ")} failed`, (r.stderr || r.stdout || "").trim());
   }
@@ -76,7 +143,12 @@ const git = (args, { allowFail = false, env } = {}) => {
 };
 
 const node = (args) =>
-  spawnSync(process.execPath, args, { cwd: ROOT, encoding: "utf8", stdio: "pipe" });
+  spawnSync(process.execPath, args, {
+    cwd: ROOT,
+    encoding: "utf8",
+    stdio: "pipe",
+    maxBuffer: MAX_BUFFER,
+  });
 
 /**
  * Identity must be unique per *working tree*, not per person. Two sessions on one machine
@@ -102,14 +174,35 @@ const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 // ── the plan, read through the existing tooling so there is one parser ────────
 function phases() {
   const r = node([join(HERE, "phase-brief.mjs"), "--json"]);
+  // ENOBUFS is reported through `error`, not through a non-zero exit code, and it leaves a
+  // truncated stdout behind. Naming it beats printing it: the old code echoed the whole
+  // truncated payload as the "hint".
+  if (r.error) {
+    die(
+      "could not read the plan",
+      r.error.code === "ENOBUFS"
+        ? `phase-brief.mjs --json exceeded the ${MAX_BUFFER.toLocaleString()}-byte read ` +
+          `buffer. The plan has outgrown it — raise MAX_BUFFER in this file.`
+        : String(r.error.message ?? r.error),
+    );
+  }
   if (r.status !== 0) {
     die(
       "could not read the plan",
-      (r.stderr || r.stdout || "").trim() ||
+      (r.stderr || "").trim().slice(0, 2000) ||
         "phase-brief.mjs --json failed; run it directly to see why.",
     );
   }
-  return JSON.parse(r.stdout);
+  try {
+    return JSON.parse(r.stdout);
+  } catch (err) {
+    die(
+      "the plan JSON did not parse",
+      `phase-brief.mjs --json produced ${r.stdout.length} bytes that are not valid JSON. ` +
+        `If that number is close to a power of two the output was truncated, not malformed.\n\n` +
+        String(err.message).slice(0, 500),
+    );
+  }
 }
 
 // ── worklog ──────────────────────────────────────────────────────────────────
@@ -170,7 +263,10 @@ function logBlocks() {
   }
   const out = [];
   for (const text of texts) {
-    const re = /^### ([A-M]\d{2}[a-z]?) · (\w+) · (\S+) · (.+)$/gm;
+    const re = new RegExp(
+      String.raw`^### (${PHASE_ID_SRC}) · (\w+) · (\S+) · (.+)$`,
+      "gm",
+    );
     let m;
     while ((m = re.exec(text)) !== null) {
       const bodyStart = text.indexOf("```", m.index);
@@ -205,25 +301,14 @@ function claimOf(id, blocks) {
 
 // ── wave resolution ──────────────────────────────────────────────────────────
 function waves() {
-  const text = readFileSync(SEQ, "utf8");
+  const text = readFileSync(CTX.seq, "utf8");
   const out = [];
   const re = /^### Wave (\d+) · "(.+?)"$/gm;
   let m;
   while ((m = re.exec(text)) !== null) {
     const seg = text.slice(m.index, text.indexOf("\n### ", m.index + 1) + 1 || undefined);
     const line = seg.split("\n").find((l) => l.startsWith("**Phases:**")) ?? "";
-    const ids = new Set();
-    const rangeRe = /([A-M])(\d{2})\s*[–-]\s*(?:[A-M])?(\d{2})/g;
-    let r;
-    let residue = line;
-    while ((r = rangeRe.exec(line)) !== null) {
-      for (let n = Number(r[2]); n <= Number(r[3]); n++) {
-        ids.add(`${r[1]}${String(n).padStart(2, "0")}`);
-      }
-      residue = residue.replace(r[0], " ");
-    }
-    for (const id of residue.match(/\b[A-M]\d{2}[a-z]?\b/g) ?? []) ids.add(id);
-    out.push({ n: Number(m[1]), claim: m[2], ids });
+    out.push({ n: Number(m[1]), claim: m[2], ids: new Set(parseDeps(line).ids) });
   }
   return out.sort((a, b) => a.n - b.n);
 }
@@ -239,6 +324,10 @@ function currentWave(plan, ws) {
 function ready(plan, blocks) {
   const out = [];
   for (const [id, p] of Object.entries(plan)) {
+    // Programme scoping comes first: an agent working Programme 2 is never handed an
+    // A/B/C phase, and an agent on Programme 1 never sees a P2 one. This is what keeps
+    // the platforms separately executable rather than merely separately documented.
+    if (!CTX.tracks.test(id)) continue;
     // BLOCKED is excluded, and that was a bug when it was not: releasing A01 as BLOCKED
     // with a reason, then running start, handed A01 straight back — which defeats the
     // entire purpose of --release and would have had an agent re-derive the same blocker
@@ -270,7 +359,7 @@ function select(plan, blocks, ws) {
     ws.filter((w) => w.n <= (wave?.n ?? 0)).flatMap((w) => [...w.ids]),
   );
   const parallel = all.filter(
-    (c) => PARALLEL_TRACKS.has(c.id[0]) && reachable.has(c.id),
+    (c) => CTX.parallel.has(trackOf(c.id)) && reachable.has(c.id),
   );
   if (parallel.length) {
     return {
@@ -279,7 +368,7 @@ function select(plan, blocks, ws) {
       all,
       reason:
         `Wave ${wave?.n} has nothing startable, so this is sanctioned parallel work ` +
-        `(track ${parallel[0].id[0]} — 01-PRIORITY-AND-SEQUENCING § 3)`,
+        `(track ${trackOf(parallel[0].id)} — 01-PRIORITY-AND-SEQUENCING § 3)`,
     };
   }
   return {
@@ -593,7 +682,7 @@ if (resumable.length) {
 }
 
 const ws = waves();
-if (!ws.length) die("no waves found in 01-PRIORITY-AND-SEQUENCING § 4");
+if (!ws.length) die(`no waves found in ${CTX.seq.replace(/.*[\\/]/, "")} § 4`);
 
 let chosen = null;
 const forced = opt("phase");

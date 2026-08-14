@@ -854,7 +854,8 @@ it was detected._
 **Found:** 2026-08-08 by Track C (PSC Bring-up). **Fixed by:** Track C.
 
 The Dockerfiles for the 5 container apps run 
-pm install after rewriting .npmrc to a new registry (e.g. egistry.npmjs.org), but package-lock.json contains locked tarball URLs pointing to localhost:4873 (Verdaccio). 
+pm install after rewriting .npmrc to a new registry (e.g. 
+egistry.npmjs.org), but package-lock.json contains locked tarball URLs pointing to localhost:4873 (Verdaccio). 
 This mismatch causes 
 pm install to fail with EINTEGRITY when the new registry returns valid tarballs with different integrity hashes than those cached for Verdaccio.
 
@@ -959,13 +960,15 @@ npm run build
 # Type error: Argument of type '(prev: any) => Set<unknown>' is not assignable to parameter of type 'SetStateAction<Set<string>>'.
 `
 **Fix:** Explicitly defined the generic type 
-ew Set<string>(prev) in egister/page.tsx.
+ew Set<string>(prev) in 
+egister/page.tsx.
 
 ### D041 � ?? High � Tenant user can access plane-1 /tenants and /extensions views in Platform Admin Console (unierp-console)
 
 **Found:** 2026-08-08 by Track C (PSC UI E2E Exercise). **Fixed by:** Open.
 
-During end-to-end browser testing of unierp-console (Plane 1), authenticating with a tenant user credential (dmin@kannan19302.dev) allowed the tenant user to access /tenants (viewing all provisioned cross-tenant data) and /extensions without a 403 authorization block. While sub-routes under /marketplace/analytics correctly enforced a 403 "Access Denied" page, the root /tenants and /extensions views failed to verify that the session payload carried ealm === 'provider'.
+During end-to-end browser testing of unierp-console (Plane 1), authenticating with a tenant user credential (dmin@kannan19302.dev) allowed the tenant user to access /tenants (viewing all provisioned cross-tenant data) and /extensions without a 403 authorization block. While sub-routes under /marketplace/analytics correctly enforced a 403 "Access Denied" page, the root /tenants and /extensions views failed to verify that the session payload carried 
+ealm === 'provider'.
 
 **Reproduction:**
 1. Open http://localhost:3002/login
@@ -992,7 +995,8 @@ pm run dev in unierp-console without API_URL set.
 **Found:** 2026-08-08 by Track C (Container Stack Bring-up). **Fixed by:** Open.
 
 During docker build of unierp-api, 
-pm install fetches @kannan19302/data from egistry.npmjs.org. Its postinstall hook runs prisma generate using the schema packaged in that published version (v1.0.15). The local workspace unierp-api/src/platform/v1/plans.service.ts and super-admin.service.ts reference updated fields (SaaSPlan.version, supersededBy, 	enantConsent, impersonationSession) that were added to schema.prisma locally but are absent in the published npm package. Thus 
+pm install fetches @kannan19302/data from 
+egistry.npmjs.org. Its postinstall hook runs prisma generate using the schema packaged in that published version (v1.0.15). The local workspace unierp-api/src/platform/v1/plans.service.ts and super-admin.service.ts reference updated fields (SaaSPlan.version, supersededBy, 	enantConsent, impersonationSession) that were added to schema.prisma locally but are absent in the published npm package. Thus 
 pm run build inside Docker fails with 20 TypeScript compiler errors.
 
 **Reproduction:**
@@ -5016,3 +5020,103 @@ this test: expected false to be true`. The database repo was renamed from `datab
 unierp-shared && pnpm test` → `1 failed | 60 passed` with the path assertion above. Owning phase: any
 phase touching `unierp-shared` — fix is a one-line path update to `../../unierp-data/prisma/...` (or
 whatever the correct sibling layout is) plus a committed CHANGELOG line.
+
+---
+
+### D149 · 🟠 HIGH · `start.mjs` read the plan through a 1 MB `spawnSync` buffer, so the plan outgrowing 1 MB broke every command in the protocol
+
+**Found during:** establishing Programmes 3–11 (2026-08-14).
+
+**Symptom.** `node scripts/start.mjs --programme 4 --dry-run` printed `start: could not read the
+plan` followed by **4.3 MB of truncated JSON** to the terminal. Every `start.mjs` subcommand was
+affected — `--who`, `--progress`, `--finish`, `--release` and the default claim path all call
+`phases()`.
+
+**Cause.** `phases()` shells out to `phase-brief.mjs --json` through a `spawnSync` helper that never
+set `maxBuffer`. Node's default is 1 MB. The plan's JSON was ~370 KB at 359 phases and passed 4 MB at
+3,631, so the child's stdout was truncated mid-document, `JSON.parse` threw, and the `die()` hint
+echoed the entire truncated payload as its "explanation".
+
+**Why it is worth logging rather than just fixing.** Three separate weaknesses lined up, and only the
+first is about a buffer size:
+
+1. `maxBuffer` was left at its default on a call whose payload grows with the plan — an unbounded
+   input read into a fixed buffer, with no assertion anywhere that the two were compatible.
+2. **ENOBUFS is reported through `r.error`, not through a non-zero exit status.** The code tested
+   only `r.status !== 0`. It caught this case by luck, because `status` is `null` on a spawn error
+   and `null !== 0` — not because anything checked for the actual failure mode.
+3. The failure hint printed `r.stdout` unbounded, so the diagnostic for "your output was too large"
+   was to print the too-large output.
+
+**Fix.** `MAX_BUFFER = 128 MiB` on both the `node()` and `git()` helpers; explicit `r.error` handling
+that names ENOBUFS and tells the reader to raise the constant; a `try`/`catch` around `JSON.parse`
+that reports the byte count, with a note that a length near a power of two means truncation rather
+than malformed output; and hint output capped at 2,000 characters.
+
+**Proven able to fail.** `MAX_BUFFER` temporarily set to 64 KB reproduces the failure and now prints
+six lines naming the cause instead of 4.3 MB:
+
+```
+start: could not read the plan
+
+phase-brief.mjs --json exceeded the 65,536-byte read buffer. The plan has outgrown it —
+raise MAX_BUFFER in this file.
+```
+
+**Standing risk this leaves.** The plan JSON is now read whole into memory on every invocation of
+every subcommand. 128 MiB buys roughly a 30× further growth in phase count, which is ample, but the
+shape is still O(whole plan) for an operation that needs one phase. If a future programme makes this
+slow rather than merely large, the fix is a `--phase <id>` mode on `phase-brief.mjs --json` so
+`start.mjs` can ask for what it needs. Filed here rather than fixed now because nothing currently
+demonstrates a problem, and `02-EXECUTION-GUIDELINES` prefers a measured trigger to a speculative
+rewrite.
+
+---
+
+### D150 · 🟠 HIGH · 25 Programme 1 phases were in no wave, so `start.mjs` could never hand them out — including B15, the design-token gate
+
+**Found during:** final verification before development start (2026-08-14), by checking whether
+every defined phase is reachable through a wave rather than assuming it.
+
+**Symptom.** `start.mjs` selects from the current wave and falls back only to sanctioned parallel
+tracks. A phase named in no wave is therefore reachable **only** by `--phase <ID>`. Twenty-five
+Programme 1 phases were in that state: `A29 A30 A31 B13–B24 C29 E43–E47 K19 M47 M48 M49`.
+
+**Why it matters more than the count suggests.** These are not obscure phases:
+
+- **B15** is the design-token gate. Other tracks' exit criteria — H01's *"the token gate (B15)
+  passes on this repo"* among them — depend on it existing. It was unreachable.
+- **B13–B24** is half of Track B, the design system every client programme consumes.
+- **E43–E47** are the phases README § 6 records as added for *"concurrency/idempotency and gapless
+  statutory numbering — correctness concerns the 42 E phases assumed"*. The correctness backstop
+  was itself unreachable.
+- **M47–M49** and **C29**, **K19** likewise.
+
+**Cause — and it is a pattern, not an incident.** The wave plan in
+`01-PRIORITY-AND-SEQUENCING § 4` was written when Programme 1 held 278 phases. It was never
+updated as the plan grew to 359. README § 6 records four separate growth events (Track L added,
+E43–E47/C29/K19 added, Track M added, Track M extended to M49) and **each one amended the phase
+tables and the manifest and left the wave ranges untouched.** Nothing checked, so nothing noticed
+across four opportunities.
+
+The same defect was introduced again in the same session that found it: Programme 13's 80 new
+journey phases (`P13-251`–`P13-330`) were added to a stage that belonged to no wave. That is the
+strongest possible evidence the mechanism was needed rather than the discipline.
+
+**Fix.** Wave ranges widened to cover every phase — `A13–A31`, `B01–B24`, `C01–C29`, `E01–E47`,
+`K09–K19`, `M21–M49` in Programme 1, and Stage G distributed across Programme 13's Waves 2–4. A new
+check in `check-plan-integrity.mjs` fails the build when any non-`WITHDRAWN` phase appears in no
+wave, in any of the twelve programmes.
+
+**Proven able to fail.** Reverting Wave 1's range to its former `A13–A28 · B01–B12`:
+
+```
+FAIL  15 phase(s) appear in no wave, so start.mjs can never hand them out:
+      A31, A30, A29, B13, B14, B15, B16, B17, B18, B19, +5 more.
+```
+
+**What this says about the plan's other invariants.** Every property this programme relies on that
+is asserted only in prose is a candidate for the same failure. The wave plan *looked* correct in
+every review because reviewers read the wave document and the track documents separately, and the
+defect lived only in the relationship between them. That is the class of defect a gate catches and
+a reading does not.

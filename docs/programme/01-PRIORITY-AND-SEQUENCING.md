@@ -144,7 +144,7 @@ and every gate the platform advertises has been observed failing on a deliberate
 
 ### Wave 1 · "The foundation is proven, and the design system is real"
 
-**Phases:** A13–A28 · B01–B12 · J05–J08 · K03–K04 · H01–H04 · L07–L10 · L14–L18
+**Phases:** A13–A31 · B01–B24 · J05–J08 · K03–K04 · H01–H04 · L07–L10 · L14–L18
 **Claim:** *Tenancy, isolation and the sandbox are proven by adversarial tests; the design system
 covers the components an enterprise application actually needs.*
 **Exit:** `check-rls-verify` green across all 1,029+ tenant tables; sandbox escape suite passing;
@@ -152,7 +152,7 @@ covers the components an enterprise application actually needs.*
 
 ### Wave 2 · "The platform is operable"
 
-**Phases:** C01–C28 · D01–D12 · **M01–M20** · J09–J12 · K05–K08 · L19–L20
+**Phases:** C01–C29 · D01–D12 · **M01–M20** · J09–J12 · K05–K08 · L19–L20
 **Claim:** *A provider can provision, meter, bill, support, impersonate and offboard a tenant end
 to end without a database client; a tenant administrator can run their own organisation.*
 **Exit:** the full tenant lifecycle is executable from the console UI, audited, and rehearsed as a
@@ -166,7 +166,7 @@ and fall to Wave 6.
 
 ### Wave 3 · "The applications are genuinely functional"
 
-**Phases:** D13–D22 · E01–E42 · J13–J18
+**Phases:** D13–D22 · E01–E47 · J13–J18
 **Claim:** *Every one of the 45 modules passes the module completeness rubric — no module is a
 list page with a create form.*
 **Exit:** 45/45 modules scored against the E-rubric with evidence; zero pages under 20 lines that
@@ -189,7 +189,7 @@ from a template, edit it without code, and see it on every client.*
 
 ### Wave 6 · "Commercially launchable"
 
-**Phases:** K09–K18 · **M21–M46** · residual from every track
+**Phases:** K09–K19 · **M21–M49** · residual from every track
 **Claim:** *A stranger can sign up, pay, use, get support, export their data and leave — and we
 can prove to an auditor that we did it correctly.*
 
@@ -272,5 +272,6 @@ phase is `OPEN`.
 
 | Date | Change | By |
 | :--- | :----- | :- |
+| 2026-08-14 | **Wave ranges widened to cover every phase — closing D150.** The wave plan was written at 278 phases and never updated as Programme 1 grew to 359, so `A29–A31`, `B13–B24`, `C29`, `E43–E47`, `K19` and `M47–M49` — 25 phases — appeared in no wave and were unreachable by `start.mjs` except by explicit `--phase`. Among them **B15, the design-token gate that other tracks' exit criteria cite by name**, and E43–E47, the concurrency and gapless-numbering phases README § 6 records as the correctness backstop the other 42 E phases assumed. README § 6 shows four separate growth events each amending the tables and leaving these ranges alone; nothing checked, so nothing noticed. Ranges are now `A13–A31`, `B01–B24`, `C01–C29`, `E01–E47`, `K09–K19`, `M21–M49`, and `check-plan-integrity.mjs` now fails when any non-WITHDRAWN phase is in no wave, in any programme. | Claude Code |
 | 2026-08-07 | Established. Ten brief objectives ranked into twelve tracks; dependency graph and seven waves defined. | Claude Code |
 | 2026-08-11 | **Track M placed: M01–M20 into Wave 2, M21–M46 into Wave 6.** Wave 2's claim was measurably false for the estate — see the amendment under § 4 Wave 2 and D044. No wave's claim text was altered; a wave whose claim needed weakening to stay true would be a § 0 rule 4 violation, and this is the opposite move: the phases were added so the existing sentence becomes true. | Claude Code |

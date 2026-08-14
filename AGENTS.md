@@ -18,19 +18,45 @@ node scripts/start.mjs
 That is the whole entry point. It resolves where the project is, picks the next phase, **claims it
 with a pushed commit so no other agent takes it**, and prints a complete work order.
 
-The development programme is **310 phases across 20 documents**. Reading it is not how you use it,
-and an agent that reads it *partially* is worse than one that has not read it at all — it produces
-work that contradicts a phase it never opened.
+The development programme is **3,631 phases across 23 tracks in 12 programmes**. Reading it is not
+how you use it, and an agent that reads it *partially* is worse than one that has not read it at all
+— it produces work that contradicts a phase it never opened. At this size that is not a stylistic
+preference: no session can hold the plan, so the brief is the only correct interface to it.
 
 ```bash
 node scripts/start.mjs                  # claim the next phase, print its brief
+node scripts/start.mjs --programme 4    # work Programme 4 instead of Programme 1
 node scripts/start.mjs --dry-run        # decide and explain, claim nothing
-node scripts/start.mjs --phase L11      # claim a specific phase (refused if not READY)
+node scripts/start.mjs --phase P4-017   # claim a specific phase (refused if not READY)
 node scripts/start.mjs --who            # what is in flight, by whom, how stale
 node scripts/start.mjs --progress "…"   # before you stop. Always.
 node scripts/start.mjs --finish --evidence-file ev.txt
 node scripts/start.mjs --release "why blocked"
 ```
+
+### Twelve programmes, and you work in exactly one
+
+Tracks **A–M** are Programme 1. Programmes **2–13** are one platform each, `P<n>-<nnn>`.
+`--programme <n>` scopes wave resolution *and* phase selection, so two agents in two programmes can
+never contend for a phase or a wave. Without the flag you are in Programme 1 — unchanged, forever.
+
+**Choosing a programme is not yours to improvise.** `04-V1-RELEASE-DEFINITION.md § 3` fixes the
+order programmes are worked in and why. Read that section, not this list, when deciding where to go
+next; if `start.mjs` says a programme has nothing startable, the answer is to finish a dependency in
+the programme it names, never to open a more interesting one.
+
+**A `Depends` cell never names another programme's phase.** That is enforced by the integrity gate.
+Where a real cross-programme relationship exists it is discharged by that programme's **runtime
+precondition gate** (`P2-004`, `P3-004`, `P4-004`, …), which asserts the external capability at
+startup and in CI and degrades the dependent surface explicitly. So: **if your phase needs something
+another programme owns, you do not wait for it and you do not build it — you assert it and degrade.**
+Building another programme's deliverable inside your phase is the single most expensive mistake
+available here, because it duplicates work that is already planned and owned elsewhere.
+
+Two programmes share `unierp-web`. `P9-002` holds the enforced ownership map: **Programme 4 owns
+what the screens mean, Programme 9 owns the platform they run on.** If the concern would exist
+identically in an application with no ERP in it, it is Programme 9's. A commit crossing that
+boundary fails CI.
 
 ### The three rules of the protocol
 
@@ -98,6 +124,51 @@ amendment log, with your reasoning. That is a legitimate move. Defanging it quie
    Narrative goes in `docs/ai/CHANGELOG.md`. Nothing else. A stray `NOTES.md` or `PROGRESS.md`
    fails the build and is deleted without review — that is how the previous documentation set
    reached 30,000 unread lines.
+
+---
+
+## 2a. Completing 3,388 phases without the plan rotting
+
+The programme is now large enough that the dominant risk has changed. At 300 phases the risk was
+getting a phase wrong. At 3,631 the risk is **drift** — thousands of individually-defensible local
+decisions that add up to a platform nobody planned. These six rules exist for that, and each has a
+mechanism behind it rather than a hope.
+
+1. **The brief is the whole specification. Do not supplement it.** Not from the track file, not
+   from a sibling programme, not from what you remember of this codebase. If the brief did not
+   quote it, it is not in scope for your phase. The plan is 4.3 MB of JSON; an agent that "just
+   checks the wider plan" is reading a fraction and acting as though it read all of it.
+
+2. **Search before building. Assume the thing exists.** 45 API modules, 903 web route pages,
+   1,836 data models, 811 Dart files, 139 console pages. On this programme it regularly turns out
+   the work is already done — and that is the cheapest possible outcome. Running the exit criterion
+   *first* and watching it pass is a completed phase, not a wasted one.
+
+3. **Stay inside your phase and inside your programme.** Two failure modes, same cause:
+   *scope creep* (fixing the adjacent thing you noticed) and *programme creep* (building what
+   another programme owns because it is blocking you). Both feel like diligence. Both duplicate
+   planned work and produce merge conflicts nobody can adjudicate. Adjacent findings go to
+   `90-DEFECT-LOG.md` — **filed, not fixed** — unless the finding genuinely blocks your phase, in
+   which case say so in your `--finish` evidence.
+
+4. **Never edit the plan's tables or `WORKLOG.md` by hand.** Both are written mechanically.
+   Hand edits reflow markdown columns, drop cells, and `check-plan-integrity.mjs` rejects the
+   commit. Status changes go through `phase-brief.mjs --set-status`, which `start.mjs` calls for
+   you.
+
+5. **A phase that turns out to be wrong is `WITHDRAWN`, never deleted and never renumbered.**
+   A phase ID means one thing forever. If a phase is wrong, mark it `WITHDRAWN` with a reason in
+   the track's amendment log and leave the row. The integrity gate fails the build if an ID
+   disappears, and it is right to.
+
+6. **Changing an exit criterion is a recorded amendment or it is misconduct.** Softening the
+   criterion to let your phase pass is indistinguishable from progress and outlives everyone's
+   memory of why it was done. If you believe a criterion is wrong, amend it deliberately in the
+   track file's amendment log with your reasoning, and say so in your evidence.
+
+**The one question to ask before `--finish`:** *would this phase's exit criterion still fail if I
+reverted only my change?* If you cannot answer that from something you actually ran, you are not
+finished — you have a belief, and this project has been burned by beliefs three times.
 
 ---
 

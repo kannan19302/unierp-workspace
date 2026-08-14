@@ -102,6 +102,29 @@ with the reasoning. That is a legitimate move. Silently defanging it is not.
 
 A phase is `DONE` when **all** of the following hold. Not most.
 
+> ### The exit criterion is a floor, never a ceiling
+>
+> A phase row's exit criterion states the **one thing specific to that phase** that must be proven.
+> It is deliberately narrow, because a criterion that restated every universal rule would be
+> unreadable and would rot. **This checklist is the rest of the criterion, and it applies to every
+> phase in every programme without exception.**
+>
+> So: *"my phase's exit criterion says nothing about accessibility / tenant isolation / coverage /
+> code standards"* is never a reason those do not apply. If your change touches a table, the RLS
+> box applies. If it renders anything, the accessibility and token boxes apply. If it adds a file,
+> the code-standards boxes apply. **The narrow criterion tells you what to prove; this list tells
+> you what you may not break while proving it.**
+>
+> Three consequences worth stating plainly, because each has already cost this project a defect:
+>
+> 1. **"The exit criterion passes" is necessary and not sufficient.** `--finish` refuses over a red
+>    `verify.mjs` for exactly this reason.
+> 2. **A criterion you cannot make fail on purpose is not a criterion.** If you cannot construct
+>    the deliberate break, say so in the evidence rather than omitting item three of the transcript.
+> 3. **If the criterion is genuinely too weak to prove the phase is done, strengthen it** in the
+>    track file's amendment log, with your reasoning, and say so in the evidence. Strengthening a
+>    criterion is always welcome. Softening one is the single most damaging edit available here.
+
 ### Correctness
 - [ ] The exit criterion command passes, and has been observed failing on a deliberate break.
 - [ ] Every new table has `tenantId`, both indexes, and an RLS policy in a migration.
@@ -131,6 +154,33 @@ A phase is `DONE` when **all** of the following hold. Not most.
 - [ ] E2E test for each user-facing flow the phase introduces.
 - [ ] No new `TODO`, `Coming soon`, or `not implemented` string ships. If the work is genuinely
       deferred, it is a phase, not a comment.
+
+### Code standards — `docs/ai/CODE_STANDARDS.md`, enforced by gate
+
+Each of these is a real script in `scripts/`, not a request. **Run them; do not assume the
+umbrella `verify` covers your change** — `D013` is what assuming looks like: a gate wired into 21
+repositories whose script existed in none, so it had never run once.
+
+- [ ] `check-naming-convention.mjs` — § 3. Names say what the thing is, in the business's words.
+- [ ] `check-1000-line-ceiling.mjs` — § 4. No non-generated file over 1,000 lines without an entry
+      in `L10-EXEMPTION-LIST.md` justifying that specific file.
+- [ ] `check-controller-decomposition.mjs` and `check-service-decomposition.mjs` — § 5.1.
+      Controllers route; services hold logic; neither becomes a god object.
+- [ ] `check-layer.mjs` and `check-module-boundaries.mjs` — § 5.2 and § 5.3. No upward import, no
+      direct cross-module service import.
+- [ ] `check-error-handling.mjs` — § 6.1. Typed domain errors with registry codes. A swallowed
+      exception, a bare `catch {}`, or a raw constraint violation reaching a user is a failure.
+- [ ] `check-duplication.mjs` — § 5.1. The third copy is a refactor, not a paste.
+- [ ] `check-todo-discipline.mjs` — § 7. Deferred work is a phase, never a comment.
+- [ ] `check-hardcoded-strings.mjs` — user-facing text is content or a message key, never a literal.
+- [ ] `check-test-quality.mjs` and `check-bugfix-test-discipline.mjs` — § 8. A test asserts
+      behaviour; a coverage-padding test is a defect (`D016`). Every bug fix ships its regression
+      test in the same commit.
+- [ ] `check-migration-discipline.mjs` and `check-schema-lints.mjs` — migrations forward-only and
+      immutable once shipped; schema lints clean.
+- [ ] `check-orphaned-exports.mjs` — nothing exported that nothing imports.
+- [ ] § 2.4 **scope discipline**: this phase and nothing else. An adjacent defect you noticed is
+      filed in `90-DEFECT-LOG.md`, not fixed here.
 
 ### Discipline
 - [ ] `pnpm verify` green locally; CI green server-side.

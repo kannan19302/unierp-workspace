@@ -16,6 +16,7 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 ```
 ### 2026-08-14
 
+- [data] test(quality): J03 — reusable two-tenant isolation harness (src/tenant-isolation-harness.ts, DB-derived catalogue of all 1814 protected tables, replica-role generic seeder, NOBYPASSRLS unerp_api assertion) + catalogue test src/tenant-isolation-harness.test.ts (1819 tests: every protected table one line, drop-policy-→fails-→restore proof, role guard); exit proven by dropping tenant_isolation_customers → harness fails, restored → passes; taxonomy manifest regenerated (harness test = isolation, 4 pre-existing extension specs = unit); full suite 1896 green, coverage 90.84% vs 85 floor, typecheck+build clean. · deepseek
 - [workspace] feat(quality): J02 — coverage ratchet gate (scripts/ci/check-coverage-ratchet.mjs) wired into verify.mjs + reusable-ci.yml; per-repo floor manifest docs/coverage-ratchet.json; deleting any test file fails CI in every repo, floors ratchet up only, D002 covered; `all:true`+thresholds added to unierp-idp/auth/console/data/design-system/shared/sandbox/framework/blockchain/kernel/service-kit, provider installed in those + web; corrected mobile floor 68→24 (generated plugin tests); filed D146 (J01 regex misses .tsx + fwd-slash IGNORE), D147 (design-system jest-axe + modal closed-state failures), D148 (shared stale seed-platform path). · deepseek
 
 ### 2026-08-09

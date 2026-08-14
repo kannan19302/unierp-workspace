@@ -13,3 +13,9 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### E26 · PROGRESS · 2026-08-14T00:49:13Z · kannan19302@MSI/unierp-loop-c
+
+```
+resuming E26: port archived verticals into unierp-extensions against the public extension API. Archived repos cloned to temp (healthcare/education/fieldservice/realestate). Planning port manifest + domain logic + customRoutes + schema declarations.
+```
+

@@ -24272,3 +24272,38 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-035 · FINISH · 2026-08-14T15:04:26Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-online-schema-change.mjs --verify
+Output:
+OK    Online schema change verified: 2 10M-row benchmark scenarios measured within non-blocking write thresholds (≤ 100ms).
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Testing write blocking duration exceeding 100ms SLA on large table
+$ node -e "..."
+Output:
+EXPECTED FAILURE on write blocking violation:
+Write blocking duration 500ms exceeds max SLA threshold 100ms on table "audit_logs".
+
+Unit tests in unierp-contracts:
+$ npx vitest run src/online-schema-change.spec.ts
+ ✓ src/online-schema-change.spec.ts (3 tests) 3ms
+ Test Files  1 passed (1)
+ Tests       3 passed (3)
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

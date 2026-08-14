@@ -24316,3 +24316,41 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-036 · FINISH · 2026-08-14T15:06:15Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-seed-determinism.mjs --verify
+Output:
+OK    Seed determinism verified: 3 seed definitions inspected; shared test fixtures validated with 100% deterministic reproducibility.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Adding non-deterministic Math.random() to seed script
+$ node scripts/check-seed-determinism.mjs --verify
+Output:
+EXPECTED FAILURE on non-deterministic Math.random in seed:
+
+FAIL  check-seed-determinism: 1 seed determinism violation(s):
+
+  - D:\UniERP\unierp-data\prisma\seed.ts:3083 uses non-deterministic Math.random(). Use deterministic PRNG or static fixtures.
+
+Unit tests in unierp-contracts:
+$ npx vitest run src/fixtures.spec.ts
+ ✓ src/fixtures.spec.ts (3 tests) 3ms
+ Test Files  1 passed (1)
+ Tests       3 passed (3)
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

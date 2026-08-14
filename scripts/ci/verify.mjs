@@ -98,6 +98,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-test-taxonomy.mjs"]],
   },
   {
+    name: "Coverage ratchet",
+    why: "J02 — deleting any test file fails CI in every repo; coverage floor recorded per repo and never lowered without a logged amendment (D002).",
+    cmd: ["node", ["scripts/ci/check-coverage-ratchet.mjs"]],
+  },
+  {
     name: "Programme integrity",
     why: "Phase IDs are permanent; plan documents are amended, never regenerated. docs/programme/README.md § 0.",
     // Listed here as well as in ci.yml deliberately. ROADMAP.md's "close the

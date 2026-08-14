@@ -4961,3 +4961,58 @@ The M38 agent appears to have committed it. Not fixed here: it lives in another 
 passes through that tree (`git rm evidence-M38.txt`, commit, push). Reproduction: from any tree, `node
 scripts/ci/verify.mjs` → `BLOCKED at: Repo hygiene`. Owning phase: whichever agent next touches
 `unierp-loop-b`; until then G11 finishes with `--despite-red-gate` and this documented reason.
+
+### D146 · 🟠 HIGH · J01's taxonomy regex misses `.test.tsx` files and both J01/J02 walkers used forward-slash IGNORE patterns that never matched Windows paths
+
+Two bugs in the test-file recognition shared by the J01 taxonomy gate and the J02 coverage ratchet
+(`scripts/ci/check-test-taxonomy.mjs` and the newly-built `scripts/ci/check-coverage-ratchet.mjs`).
+
+(a) `TEST_RE = /\.(spec|test|e2e)\.ts$|_test\.dart$/` does not match `.tsx`. `unierp-design-system` ships
+10 real component tests as `.test.tsx` (`modal.test.tsx`, `overlays.test.tsx`, `stage-b1.test.tsx`, …)
+and `unierp-console` ships one `.test.tsx`, yet the J01 taxonomy manifest records 0 test files for
+design-system — those tests were invisible to the classification and to the J01 gate. The J02 ratchet
+widened its own regex to `/\.(spec|test|e2e)\.tsx?$|_test\.dart$/` so "deleting any test file fails CI"
+actually covers them (design-system went 0→10, console 3→4 on the ratchet baseline). The J01 taxonomy
+gate and `docs/test-taxonomy.json` still use the `.ts`-only regex: the manifest under-counts by at least
+11 files and the J01 gate cannot see a deleted `.test.tsx`.
+
+(b) `IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\//` uses forward-slash
+path anchors (`\.git\/`, `dist\/`, `build\/`, `\/load-tests\/`) that never match on Windows backslash
+paths. Before the J02 walker was made separator-agnostic and excluded generated Flutter ephemeral trees
+(`\.plugin_symlinks`, `.dart_tool`, `ephemeral/`), it counted 44 generated plugin tests under
+`windows\flutter\ephemeral\.plugin_symlinks\…` as if they were `unierp-mobile`'s tests — 68 vs the real
+24. The J01 taxonomy gate carries the same forward-slash IGNORE, so on Windows it over-counts in the
+same way. Reproduction: `node scripts/ci/check-test-taxonomy.mjs` reports design-system with 0 files
+despite `src/components/__tests__/modal.test.tsx` existing; counting `D:\UniERP\unierp-mobile` with the
+J01 IGNORE regex yields 68 instead of 24. Owning phase: a J01 follow-up — the taxonomy manifest needs a
+re-run with the corrected regex, and the `check-test-taxonomy.mjs` walk should adopt the same
+separator-agnostic IGNORE the J02 gate now uses.
+
+### D147 · 🟠 HIGH · `unierp-design-system`'s suite has two pre-existing failures that make its coverage gate unmeasurable
+
+`pnpm test` in `unierp-design-system` is red on the committed tree, independent of J02's changes.
+(a) `src/components/__tests__/overlays.test.tsx` fails to run at all: `Failed to resolve import
+"jest-axe"` — the suite (authored in `0da42fe`, B02) imports `jest-axe` but it is not in
+`package.json`. (b) `src/components/__tests__/modal.test.tsx` (authored in `50ace35`, J07) fails
+`does not have open attribute when closed`: when `open={false}` the Modal renders no `<dialog>`, so
+`container.querySelector("dialog")` returns null and `.not.toHaveAttribute("open")` throws. Neither is
+caused by the J02 `@vitest/coverage-v8` install (verified: both fail with the provider removed, on the
+committed state). Because the suite exits non-zero before coverage is emitted, J02 could not calibrate
+design-system's threshold from a measured `--coverage` run; the declared floor (lines 30 / functions
+30 / branches 20 / statements 30) is a placeholder until the two tests are fixed. Reproduction: `cd
+unierp-design-system && pnpm test` → `1 failed suite (overlays, jest-axe) | 1 failed test (modal
+closed-state)`. Owning phase: whoever next touches Track B (overlays) and Track J (modal) — the axe
+dependency should be added and the modal test should assert the dialog is absent rather than
+`not.toHaveAttribute`, or the Modal should render the dialog element in a closed state.
+
+### D148 · 🟡 MEDIUM · `unierp-shared`'s `control-plane-roles.test.ts` asserts a path that moved — the suite is red on the committed tree
+
+`src/utils/control-plane-roles.test.ts` reads `../../../database/prisma/seed-platform.ts` and fails:
+`control-plane provisioner not found at D:\UniERP\database\prisma\seed-platform.ts — if it moved, update
+this test: expected false to be true`. The database repo was renamed from `database` to `unierp-data`
+(after extraction), so the relative path is stale and the repo's `pnpm test` has been red since then
+(1 failed | 60 passed). Not fixed inline because it is not on J02's path — but it blocks
+`unierp-shared`'s suite from ever going green, which caps its coverage measurement. Reproduction: `cd
+unierp-shared && pnpm test` → `1 failed | 60 passed` with the path assertion above. Owning phase: any
+phase touching `unierp-shared` — fix is a one-line path update to `../../unierp-data/prisma/...` (or
+whatever the correct sibling layout is) plus a committed CHANGELOG line.

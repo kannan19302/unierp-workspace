@@ -33,3 +33,8 @@ jobs:
           pnpm run test
       - name: Check dependency licences
         run: node unierp-workspace/scripts/ci/check-licenses.mjs
+      - name: Coverage ratchet
+        run: node unierp-workspace/scripts/ci/check-coverage-ratchet.mjs
+        env:
+          RATCHET_ROOT: ${{ github.workspace }}
+          RATCHET_REPO: ${{ github.event.repository.name }}

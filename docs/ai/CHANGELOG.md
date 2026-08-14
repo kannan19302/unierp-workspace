@@ -14,6 +14,10 @@ duplicated — which is the single most expensive failure mode in multi-agent de
 **Format** — newest first, under the current date heading:
 
 ```
+### 2026-08-14
+
+- [workspace] feat(quality): J02 — coverage ratchet gate (scripts/ci/check-coverage-ratchet.mjs) wired into verify.mjs + reusable-ci.yml; per-repo floor manifest docs/coverage-ratchet.json; deleting any test file fails CI in every repo, floors ratchet up only, D002 covered; `all:true`+thresholds added to unierp-idp/auth/console/data/design-system/shared/sandbox/framework/blockchain/kernel/service-kit, provider installed in those + web; corrected mobile floor 68→24 (generated plugin tests); filed D146 (J01 regex misses .tsx + fwd-slash IGNORE), D147 (design-system jest-axe + modal closed-state failures), D148 (shared stale seed-platform path). · deepseek
+
 ### 2026-08-09
 
 - [console] feat(control-plane): comprehensive platform admin console UI/UX overhaul across all sub-modules, WebSocket real-time updates via ConsoleGateway in unierp-api, design system integration, and test coverage · Antigravity

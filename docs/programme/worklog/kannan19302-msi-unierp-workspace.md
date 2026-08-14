@@ -24888,3 +24888,38 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-049 · FINISH · 2026-08-14T16:28:02Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-049
+EXIT_CRITERION: An event without a registered schema cannot be published. A schema change is versioned, not mutated
+
+1. COMMAND THAT PASSES:
+node scripts/check-event-schema-registry.mjs --verify
+
+PASSING OUTPUT:
+✓ Event schema registry gate passed: All events validated and schema mutation strictly prohibited.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-event-schema-registry.mjs').then(async (m) => {
+  const { EventSchemaRegistry } = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/events/schema-registry.ts');
+  try {
+    EventSchemaRegistry.validateEventForPublish({ eventType: 'unregistered.event', version: 1, payload: {} });
+    console.log('UNEXPECTED: did not throw');
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT:', err.name, '-', err.message);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: UnregisteredEventSchemaError - Publish rejected: No schema registered for event "unregistered.event" at version 1. All events must be registered in the Event Schema Registry before publication.
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 56 gates passed (including Event schema registry gate).
+```
+

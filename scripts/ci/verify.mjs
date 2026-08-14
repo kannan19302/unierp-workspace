@@ -515,6 +515,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-extension-api-contract.mjs", "--verify"]],
   },
   {
+    name: "Contract governance gate",
+    why: "P12-080: Breaking contract changes require api-steward+lead-architect review; compatible extensions require api-peer-review.",
+    cmd: ["node", ["scripts/check-contract-governance.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

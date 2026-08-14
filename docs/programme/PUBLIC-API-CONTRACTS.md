@@ -55,6 +55,13 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface ChangeClassificationResult`
 - `class BreakingContractChangeDetectedError extends Error`
 
+### `contract-governance.ts`
+
+- `type BlastRadiusTier = "TIER_1_TRIVIAL" | "TIER_2_COMPATIBLE_EXT" | "TIER_3_BREAKING_MAJOR";`
+- `interface GovernanceReviewRequirement`
+- `const BLAST_RADIUS_GOVERNANCE_POLICY: Record<BlastRadiusTier, GovernanceReviewRequirement> =`
+- `class ContractGovernanceReviewMissingError extends Error`
+
 ### `db-performance.ts`
 
 - `interface QueryPerformanceBudget`

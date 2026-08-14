@@ -23021,3 +23021,38 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-008 · FINISH · 2026-08-14T14:08:24Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-standalone-builds.mjs
+Output:
+OK    All 29 claimed repositories verified clean: zero workspace:* leaks, valid package manifests, standalone installation preserved.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing a workspace:* leak into unierp-storybook/package.json
+$ node -e "const fs = require('fs'); const txt = fs.readFileSync('../unierp-storybook/package.json', 'utf8'); const pkg = JSON.parse(txt); pkg.dependencies['@kannan19302/ui'] = 'workspace:*'; fs.writeFileSync('../unierp-storybook/package.json', JSON.stringify(pkg, null, 2)); try { require('child_process').execSync('node scripts/check-standalone-builds.mjs', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on workspace protocol leak:\n' + e.stderr.toString() + e.stdout.toString()); } fs.writeFileSync('../unierp-storybook/package.json', txt);"
+Output:
+EXPECTED FAILURE on workspace protocol leak:
+
+check-standalone-builds: 2 violation(s) found across 29 repositories:
+
+FAIL  [unierp-storybook] WORKSPACE_PROTOCOL_LEAK: Found forbidden 'workspace:*' protocol reference: "@kannan19302/ui": "workspace:*" (violates standalone installation and closes D008)
+FAIL  [unierp-storybook] WORKSPACE_PROTOCOL_LEAK: Dependency '@kannan19302/ui' in dependencies uses 'workspace:*' which breaks standalone package installation outside monorepo
+
+Restored clean package.json; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

@@ -233,6 +233,11 @@ const GATES = [
     cmd: ["node", ["scripts/ci/check-schema-ownership.mjs", "--verify"]],
   },
   {
+    name: "Schema measurement gate",
+    why: "P12-026: Whole-estate schema measurement reproducibility and drift verification.",
+    cmd: ["node", ["scripts/measure-schema.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

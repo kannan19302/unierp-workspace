@@ -1,0 +1,394 @@
+{
+  "generatedAt": "2026-08-14T14:43:58.289Z",
+  "phase": "P12-026",
+  "summary": {
+    "totalFiles": 42,
+    "totalLines": 40674,
+    "totalBytes": 1578675,
+    "totalModels": 1915,
+    "totalFields": 25417,
+    "totalRelations": 1207,
+    "totalIndexes": 3624,
+    "totalEnums": 65
+  },
+  "files": {
+    "ai-governance.prisma": {
+      "lines": 210,
+      "bytes": 8361,
+      "models": 10,
+      "fields": 84,
+      "relations": 2,
+      "indexes": 10,
+      "enums": 0
+    },
+    "catalogue.prisma": {
+      "lines": 60,
+      "bytes": 2350,
+      "models": 4,
+      "fields": 21,
+      "relations": 2,
+      "indexes": 1,
+      "enums": 0
+    },
+    "compliance.prisma": {
+      "lines": 70,
+      "bytes": 3142,
+      "models": 3,
+      "fields": 21,
+      "relations": 0,
+      "indexes": 4,
+      "enums": 0
+    },
+    "config.prisma": {
+      "lines": 11,
+      "bytes": 185,
+      "models": 0,
+      "fields": 0,
+      "relations": 0,
+      "indexes": 0,
+      "enums": 0
+    },
+    "core-part-1.prisma": {
+      "lines": 2187,
+      "bytes": 83603,
+      "models": 97,
+      "fields": 1422,
+      "relations": 102,
+      "indexes": 192,
+      "enums": 0
+    },
+    "core-part-10.prisma": {
+      "lines": 2310,
+      "bytes": 85852,
+      "models": 106,
+      "fields": 1420,
+      "relations": 81,
+      "indexes": 250,
+      "enums": 0
+    },
+    "core-part-11.prisma": {
+      "lines": 2184,
+      "bytes": 81163,
+      "models": 111,
+      "fields": 1371,
+      "relations": 72,
+      "indexes": 205,
+      "enums": 0
+    },
+    "core-part-12.prisma": {
+      "lines": 2188,
+      "bytes": 83807,
+      "models": 114,
+      "fields": 1557,
+      "relations": 44,
+      "indexes": 146,
+      "enums": 0
+    },
+    "core-part-13.prisma": {
+      "lines": 2206,
+      "bytes": 82846,
+      "models": 133,
+      "fields": 1475,
+      "relations": 37,
+      "indexes": 110,
+      "enums": 0
+    },
+    "core-part-14.prisma": {
+      "lines": 2188,
+      "bytes": 85280,
+      "models": 112,
+      "fields": 1341,
+      "relations": 42,
+      "indexes": 242,
+      "enums": 0
+    },
+    "core-part-15.prisma": {
+      "lines": 462,
+      "bytes": 17036,
+      "models": 27,
+      "fields": 284,
+      "relations": 12,
+      "indexes": 33,
+      "enums": 0
+    },
+    "core-part-2.prisma": {
+      "lines": 2193,
+      "bytes": 85072,
+      "models": 104,
+      "fields": 1376,
+      "relations": 98,
+      "indexes": 218,
+      "enums": 0
+    },
+    "core-part-3.prisma": {
+      "lines": 2199,
+      "bytes": 81052,
+      "models": 118,
+      "fields": 1370,
+      "relations": 73,
+      "indexes": 160,
+      "enums": 0
+    },
+    "core-part-4.prisma": {
+      "lines": 2197,
+      "bytes": 88547,
+      "models": 107,
+      "fields": 1413,
+      "relations": 78,
+      "indexes": 181,
+      "enums": 0
+    },
+    "core-part-5.prisma": {
+      "lines": 2273,
+      "bytes": 85545,
+      "models": 113,
+      "fields": 1384,
+      "relations": 90,
+      "indexes": 207,
+      "enums": 0
+    },
+    "core-part-6.prisma": {
+      "lines": 2189,
+      "bytes": 90825,
+      "models": 104,
+      "fields": 1410,
+      "relations": 61,
+      "indexes": 204,
+      "enums": 0
+    },
+    "core-part-7.prisma": {
+      "lines": 2194,
+      "bytes": 81224,
+      "models": 79,
+      "fields": 1167,
+      "relations": 38,
+      "indexes": 224,
+      "enums": 46
+    },
+    "core-part-8.prisma": {
+      "lines": 2187,
+      "bytes": 84331,
+      "models": 89,
+      "fields": 1311,
+      "relations": 62,
+      "indexes": 225,
+      "enums": 16
+    },
+    "core-part-9.prisma": {
+      "lines": 2175,
+      "bytes": 86247,
+      "models": 82,
+      "fields": 1495,
+      "relations": 52,
+      "indexes": 207,
+      "enums": 0
+    },
+    "crm.prisma": {
+      "lines": 1328,
+      "bytes": 51760,
+      "models": 66,
+      "fields": 840,
+      "relations": 33,
+      "indexes": 121,
+      "enums": 0
+    },
+    "custom-objects.prisma": {
+      "lines": 75,
+      "bytes": 3437,
+      "models": 2,
+      "fields": 21,
+      "relations": 1,
+      "indexes": 4,
+      "enums": 0
+    },
+    "education.prisma": {
+      "lines": 464,
+      "bytes": 16533,
+      "models": 22,
+      "fields": 275,
+      "relations": 22,
+      "indexes": 60,
+      "enums": 0
+    },
+    "extensions.prisma": {
+      "lines": 65,
+      "bytes": 2772,
+      "models": 2,
+      "fields": 24,
+      "relations": 0,
+      "indexes": 3,
+      "enums": 0
+    },
+    "field-service.prisma": {
+      "lines": 705,
+      "bytes": 30553,
+      "models": 26,
+      "fields": 479,
+      "relations": 18,
+      "indexes": 81,
+      "enums": 0
+    },
+    "finance.prisma": {
+      "lines": 612,
+      "bytes": 25944,
+      "models": 29,
+      "fields": 401,
+      "relations": 38,
+      "indexes": 47,
+      "enums": 0
+    },
+    "healthcare.prisma": {
+      "lines": 581,
+      "bytes": 23101,
+      "models": 24,
+      "fields": 363,
+      "relations": 21,
+      "indexes": 70,
+      "enums": 1
+    },
+    "hr.prisma": {
+      "lines": 670,
+      "bytes": 24698,
+      "models": 36,
+      "fields": 418,
+      "relations": 11,
+      "indexes": 52,
+      "enums": 0
+    },
+    "inventory.prisma": {
+      "lines": 797,
+      "bytes": 34219,
+      "models": 31,
+      "fields": 521,
+      "relations": 29,
+      "indexes": 89,
+      "enums": 2
+    },
+    "manufacturing.prisma": {
+      "lines": 158,
+      "bytes": 6104,
+      "models": 8,
+      "fields": 113,
+      "relations": 5,
+      "indexes": 10,
+      "enums": 0
+    },
+    "marketplace-payouts.prisma": {
+      "lines": 89,
+      "bytes": 3945,
+      "models": 2,
+      "fields": 30,
+      "relations": 1,
+      "indexes": 3,
+      "enums": 0
+    },
+    "operation-pipeline.prisma": {
+      "lines": 148,
+      "bytes": 6594,
+      "models": 7,
+      "fields": 47,
+      "relations": 0,
+      "indexes": 6,
+      "enums": 0
+    },
+    "org-structure.prisma": {
+      "lines": 52,
+      "bytes": 2293,
+      "models": 3,
+      "fields": 20,
+      "relations": 0,
+      "indexes": 3,
+      "enums": 0
+    },
+    "policy-engine.prisma": {
+      "lines": 47,
+      "bytes": 2016,
+      "models": 2,
+      "fields": 16,
+      "relations": 1,
+      "indexes": 2,
+      "enums": 0
+    },
+    "pos.prisma": {
+      "lines": 328,
+      "bytes": 11898,
+      "models": 16,
+      "fields": 209,
+      "relations": 5,
+      "indexes": 32,
+      "enums": 0
+    },
+    "projects.prisma": {
+      "lines": 1136,
+      "bytes": 44371,
+      "models": 46,
+      "fields": 786,
+      "relations": 36,
+      "indexes": 94,
+      "enums": 0
+    },
+    "provider-registry.prisma": {
+      "lines": 379,
+      "bytes": 15938,
+      "models": 20,
+      "fields": 147,
+      "relations": 8,
+      "indexes": 17,
+      "enums": 0
+    },
+    "real-estate.prisma": {
+      "lines": 651,
+      "bytes": 28051,
+      "models": 23,
+      "fields": 449,
+      "relations": 17,
+      "indexes": 73,
+      "enums": 0
+    },
+    "reconciler.prisma": {
+      "lines": 20,
+      "bytes": 938,
+      "models": 1,
+      "fields": 5,
+      "relations": 0,
+      "indexes": 1,
+      "enums": 0
+    },
+    "resource-model.prisma": {
+      "lines": 266,
+      "bytes": 10687,
+      "models": 15,
+      "fields": 98,
+      "relations": 8,
+      "indexes": 8,
+      "enums": 0
+    },
+    "runbooks.prisma": {
+      "lines": 36,
+      "bytes": 1545,
+      "models": 2,
+      "fields": 13,
+      "relations": 0,
+      "indexes": 0,
+      "enums": 0
+    },
+    "web.prisma": {
+      "lines": 307,
+      "bytes": 11346,
+      "models": 17,
+      "fields": 189,
+      "relations": 5,
+      "indexes": 25,
+      "enums": 0
+    },
+    "workflow-runtime.prisma": {
+      "lines": 77,
+      "bytes": 3464,
+      "models": 2,
+      "fields": 31,
+      "relations": 2,
+      "indexes": 4,
+      "enums": 0
+    }
+  }
+}

@@ -24981,3 +24981,38 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-051 · FINISH · 2026-08-14T16:32:52Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-051
+EXIT_CRITERION: Targets met at 100 million rows on the reference profile, measured
+
+1. COMMAND THAT PASSES:
+node scripts/check-db-performance-volume.mjs --verify
+
+PASSING OUTPUT:
+✓ Database performance at volume gate passed: All 100M-row reference profiles within SLA budget.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-db-performance-volume.mjs').then(async (m) => {
+  const { validateDatabasePerformanceSla } = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/db-performance.ts');
+  try {
+    validateDatabasePerformanceSla({ profileName: 'OVER_BUDGET', operationType: 'POINT_LOOKUP', rowCount: 100000000, measuredLatencyP95Ms: 15.0, measuredLatencyP99Ms: 30.0, measuredMemoryKb: 128, indexUsed: 'none', executionPlan: 'Seq Scan' });
+    console.log('UNEXPECTED: did not throw');
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT:', err.name, '-', err.message);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: QueryBudgetBreachError - Database performance budget breached for "OVER_BUDGET": p95 Latency measured 15 exceeds SLA budget 5 at 100M-row production profile.
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 58 gates passed (including Database performance at volume gate).
+```
+

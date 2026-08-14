@@ -25067,3 +25067,36 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-053 · FINISH · 2026-08-14T16:36:52Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-053
+EXIT_CRITERION: A change breaking a consumer is reported before it lands, naming the consumer
+
+1. COMMAND THAT PASSES:
+node scripts/check-schema-impact-analysis.mjs --verify
+
+PASSING OUTPUT:
+✓ Schema change impact analysis gate passed: Consumer impact analysis operational; breaking changes reported and consumers named before landing.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-schema-impact-analysis.mjs').then(async (m) => {
+  const { analyzeSchemaChangeImpact } = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/scripts/check-schema-impact-analysis.mjs');
+  const impact = analyzeSchemaChangeImpact('Invoice', 'totalAmount', 'DROP_COLUMN');
+  if (impact.isBreaking && impact.affectedConsumers.length > 0) {
+    console.log('DELIBERATE BREAK CAUGHT: Breaking schema change detected; affected consumers:', impact.affectedConsumers.map(c => c.consumer).join(', '));
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: Breaking schema change detected; affected consumers: unierp-api, unierp-web, unierp-console
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 60 gates passed (including Schema change impact analysis gate).
+```
+

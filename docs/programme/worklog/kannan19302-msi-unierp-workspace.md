@@ -22602,3 +22602,88 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-001 · FINISH · 2026-08-14T13:47:00Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs is red on D151 — reusable-ci.yml:49 guards its integration-test step with if: hashFiles(...), introduced by 4afacb9 (J06) in a workflow file P12-001 does not touch. It is a Track J concern; choosing its fix here would be programme creep (AGENTS.md 2a rule 3), and the # justified escape would be defanging a gate (AGENTS.md 1). Filed as D151 with the note that it currently taxes every phase in every programme and should be fixed early.
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+P12-001 — Programme charter and repository claim
+EXIT CRITERION (two conditions):
+  (a) A P12 commit touching a repository outside the claim fails CI
+  (b) A claimed repository with no declared role fails CI
+
+=== 1. BEFORE THE WORK — the criterion fails because no mechanism exists ===
+$ node scripts/check-programme-claim.mjs --repo unierp-api --phase P12-001
+Error: Cannot find module 'D:\UniERP\unierp-workspace\scripts\check-programme-claim.mjs'
+$ ls programme-claims.json
+ls: cannot access 'programme-claims.json': No such file or directory
+
+=== 2. AFTER THE WORK — the criterion passes ===
+$ node scripts/check-programme-claim.mjs
+OK    29 repositories on disk, all owned; 29 claims active, 2 planned; every claim carries a role.
+
+$ node scripts/check-programme-claim.mjs --repo unierp-idp --phase P12-001
+OK    P12-001 may write to unierp-idp (owner).
+
+$ node scripts/check-programme-claim.mjs --repo unierp-api --phase P3-001
+OK    P3-001 may write to unierp-api (contributor, scoped to src/modules/marketplace/**, src/modules/subscriptions/**).
+
+=== 3. DELIBERATELY BROKEN — each condition observed failing ===
+
+(a) P12 writing to a repository it neither owns nor contributes to:
+$ node scripts/check-programme-claim.mjs --repo unierp-web --phase P12-001
+FAIL  P12-001 (programme 12) may not write to unierp-web.
+      unierp-web is owned by programme 9.
+      Declared contributors: programme 3 -> app/(storefront)/**; programme 4 -> app/(dashboard)/**;
+      programme 5 -> app/_sites/**; programme 6 -> app/(dashboard)/admin/**, app/(dashboard)/settings/**
+      Building another programme's deliverable duplicates planned work.
+[exit 1]
+
+(b) a claimed repository with its role emptied (unierp-contracts.role = ""):
+$ node scripts/check-programme-claim.mjs
+check-programme-claim: 1 violation(s)
+FAIL  unierp-contracts is claimed but has no declared role. An owner without a stated
+      responsibility is not an owner.
+[exit 1]
+
+(c) additionally — a repository on disk claimed by nobody (unierp-kernel claim deleted):
+$ node scripts/check-programme-claim.mjs
+check-programme-claim: 1 violation(s)
+FAIL  unierp-kernel exists on disk and is claimed by no programme. This is the exact
+      condition Programme 12 was created to fix — an unowned repository accumulates
+      defects nobody owns.
+[exit 1]
+
+Manifest restored after each break; gate green again (see section 2).
+
+=== 4. DESIGN NOTES ===
+- Consumers are NOT stored in the manifest. `--consumers` derives them live from the real
+  package.json graph, because a hand-maintained consumer list is a second source of truth that
+  drifts on the first dependency change — and this programme's invariant is that a consumer
+  cannot be broken silently.
+- The exclusive-owner model was wrong in my first draft and was corrected before commit:
+  Programme 3 legitimately builds the marketplace inside unierp-api and Programme 6 the admin
+  console inside unierp-web. The manifest therefore records one accountable OWNER plus scoped
+  CONTRIBUTORS. My first draft also invented a repository (unierp-contracts-archive) that does
+  not exist; removed.
+- Gate wired into scripts/ci/verify.mjs so it runs with every other gate, not only on demand.
+
+=== 5. RED GATE — verify.mjs is red on a PRE-EXISTING, unrelated failure ===
+$ node scripts/ci/verify.mjs
+FAIL  reusable-ci.yml:49: `if: hashFiles(...)` on a step. If the file is missing the step is
+      SKIPPED and the job reports success — this is D013.
+  BLOCKED at: Workflow files
+
+Introduced by commit 4afacb9 "J06: Add integration test step to reusable CI workflow", in
+.github/workflows/reusable-ci.yml — a file this phase does not touch. It is a Track J (quality)
+concern and deciding its correct fix — remove the guard, or make the step unconditional — belongs
+to J06's owner, not to P12-001. Fixing it here would be exactly the programme creep AGENTS.md
+section 2a rule 3 forbids, and adding the `# justified:` comment the gate offers would be
+defanging a gate, which AGENTS.md section 1 forbids outright.
+Filed as D151. Proceeding with --despite-red-gate on that basis.
+```
+

@@ -318,6 +318,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-schema-size.mjs"]],
   },
   {
+    name: "Schema lint rules gate",
+    why: "P12-043: Missing FK indexes, nullable foreign keys, unbounded strings, missing cascade-delete — each rule fires on a seeded violation and is silent on a clean schema.",
+    cmd: ["node", ["scripts/check-schema-lints-p043.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

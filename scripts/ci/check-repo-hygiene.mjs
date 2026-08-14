@@ -37,6 +37,8 @@ const ALLOWED_EXACT = new Set([
   "ROADMAP.md", "ARCHITECTURE.md", "CITATION.cff",
   // Agent entrypoints
   "AGENTS.md", "CLAUDE.md", "GEMINI.md",
+  // Protocol artifacts
+  "evidence.txt",
   // Node / JS
   "package.json", "package-lock.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
   "tsconfig.json", "tsconfig.base.json", "tsconfig.build.json", "next-env.d.ts",

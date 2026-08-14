@@ -470,6 +470,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-compatibility.mjs", "--verify"]],
   },
   {
+    name: "Deprecation mechanism gate",
+    why: "P12-071: Uniform deprecation signalling and window enforcement on contract elements.",
+    cmd: ["node", ["scripts/check-deprecation-mechanism.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

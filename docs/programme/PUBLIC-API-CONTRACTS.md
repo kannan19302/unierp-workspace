@@ -57,6 +57,13 @@ Single source of truth for all external and platform contracts across UniERP.
 - `const PRODUCTION_100M_BUDGETS: Record<QueryPerformanceBudget["operationType"], QueryPerformanceBudget> =`
 - `class QueryBudgetBreachError extends Error`
 
+### `deprecation.ts`
+
+- `interface DeprecationMetadata`
+- `interface DeprecatedContractElement`
+- `class PrematureElementRemovalError extends Error`
+- `interface DeprecationSignalResult`
+
 ### `encryption.ts`
 
 - `interface EncryptedPayload`

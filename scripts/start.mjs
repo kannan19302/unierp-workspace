@@ -80,6 +80,7 @@ const PROGRAMMES = Object.fromEntries([
   P(11, "39-PROGRAMME-11-DESKTOP.md"),
   P(12, "40-PROGRAMME-12-PLATFORM-CORE.md"),
   P(13, "41-PROGRAMME-13-INTEGRATION-RELEASE.md"),
+  P(14, "42-PROGRAMME-14-DEVELOPMENT-HARNESS.md"),
 ]);
 
 /** A claim older than this is presumed abandoned and may be reset by another agent. */

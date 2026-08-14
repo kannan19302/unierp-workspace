@@ -137,6 +137,7 @@ decomposition of those five into work a session can actually pick up. The mappin
 | 17k | [`39-PROGRAMME-11-DESKTOP.md`](39-PROGRAMME-11-DESKTOP.md) | **P11-001–P11-312** · Windows, macOS and Linux. Greenfield — no desktop code exists today. |
 | 17l | [`40-PROGRAMME-12-PLATFORM-CORE.md`](40-PROGRAMME-12-PLATFORM-CORE.md) | **P12-001–P12-330** · The server-side platform: identity provider, contracts, data layer, kernel, sandbox. Owns the 21 repositories no programme claimed. |
 | 17m | [`41-PROGRAMME-13-INTEGRATION-RELEASE.md`](41-PROGRAMME-13-INTEGRATION-RELEASE.md) | **P13-001–P13-330** · Cross-programme integration, the journey register (every persona × domain), and the v1.0 release. Runs throughout, not at the end. |
+| 17n | [`42-PROGRAMME-14-DEVELOPMENT-HARNESS.md`](42-PROGRAMME-14-DEVELOPMENT-HARNESS.md) | **P14-001–P14-280** · The Development Harness: start.mjs, phase-brief.mjs, verification gates, worktree and autonomous protocol evolution. |
 | 18 | [`90-DEFECT-LOG.md`](90-DEFECT-LOG.md) | Living register of architecture-level defects and improvements found *during* execution. Append-only. |
 | 19 | [`WORKLOG.md`](WORKLOG.md) | **Written by `scripts/start.mjs`, never by hand.** What is claimed, by whom, how far it got, and the evidence a phase was finished on. |
 | 20 | `plan-manifest.json` | Machine-readable index of every phase ID. The integrity gate reads this. |

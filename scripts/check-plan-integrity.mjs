@@ -71,6 +71,7 @@ const DECLARED = [
   "39-PROGRAMME-11-DESKTOP.md",
   "40-PROGRAMME-12-PLATFORM-CORE.md",
   "41-PROGRAMME-13-INTEGRATION-RELEASE.md",
+  "42-PROGRAMME-14-DEVELOPMENT-HARNESS.md",
   "90-DEFECT-LOG.md",
   "WORKLOG.md",
   "worklog", // directory: one journal file per agent, written by start.mjs
@@ -116,6 +117,7 @@ const TRACK_FILES = {
   P11: "39-PROGRAMME-11-DESKTOP.md",
   P12: "40-PROGRAMME-12-PLATFORM-CORE.md",
   P13: "41-PROGRAMME-13-INTEGRATION-RELEASE.md",
+  P14: "42-PROGRAMME-14-DEVELOPMENT-HARNESS.md",
 };
 
 const failures = [];

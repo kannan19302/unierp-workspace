@@ -62,6 +62,7 @@ const TRACKS = {
   P11: { file: "39-PROGRAMME-11-DESKTOP.md", name: "Desktop", programme: 11 },
   P12: { file: "40-PROGRAMME-12-PLATFORM-CORE.md", name: "Platform core", programme: 12 },
   P13: { file: "41-PROGRAMME-13-INTEGRATION-RELEASE.md", name: "Integration & release", programme: 13 },
+  P14: { file: "42-PROGRAMME-14-DEVELOPMENT-HARNESS.md", name: "Development harness", programme: 14 },
 };
 
 const VALID_STATUS = ["OPEN", "READY", "WIP", "DONE", "BLOCKED", "WITHDRAWN"];

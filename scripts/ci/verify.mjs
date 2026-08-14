@@ -133,6 +133,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-programme-claim.mjs"]],
   },
   {
+    name: "Unowned-code census",
+    why: "P12-002: Every claimed repository measured: what it does, what is reachable, what is tested, what is dead, what other repositories import from it.",
+    cmd: ["node", ["scripts/check-unowned-code-census.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

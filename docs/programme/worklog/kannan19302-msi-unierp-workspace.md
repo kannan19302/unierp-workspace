@@ -23336,3 +23336,42 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-014 · FINISH · 2026-08-14T14:20:59Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-logging-standard.mjs --verify
+Output:
+OK    Structured logging standard verified: @kannan19302/kernel logger contract active and 0 un-structured log violations in service layers.
+
+Command: pnpm test (in unierp-kernel)
+Output:
+ ✓ src/governor.spec.ts (6 tests) 12ms
+ ✓ src/logger.spec.ts (3 tests) 12ms
+ Test Files  2 passed (2)
+      Tests  9 passed (9)
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing raw console.log unstructured logging into unierp-api/src/health.controller.ts
+$ node scripts/check-logging-standard.mjs
+Output:
+FAIL  check-logging-standard: 1 un-structured log violation(s) found in service layer:
+
+  - unierp-api\src\health.controller.ts:95 -> console.log(" unstructured logging violation);
+
+Restored unierp-api clean state; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

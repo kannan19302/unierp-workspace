@@ -214,7 +214,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-064** | Client generation determinism | P12-061 | Identical contracts producing byte-identical clients | Two generations of one contract set are byte-identical, verified by hash | DONE |
 | **P12-065** | Pagination, filtering and sorting conventions | P12-059 | One convention across every list endpoint | An endpoint deviating from the convention fails a gate | DONE |
 | **P12-066** | Error response convention | P12-015 | One error shape across every endpoint, carrying the registry code | An off-convention error response fails a gate, proven on a seeded endpoint | DONE |
-| **P12-067** | Idempotency convention | P12-059 | Idempotency keys as a contract-level concern on every mutating endpoint | A mutating endpoint without idempotency support fails a gate | OPEN |
+| **P12-067** | Idempotency convention | P12-059 | Idempotency keys as a contract-level concern on every mutating endpoint | A mutating endpoint without idempotency support fails a gate | WIP |
 | **P12-068** | Rate limit and quota headers | P12-066 | Uniform rate-limit signalling so every client can back off correctly | Every rate-limited response carries the standard headers, verified across endpoints | OPEN |
 | **P12-069** | API versioning strategy | P12-010 | The declared versioning model — how a version is expressed, supported and retired | A version retired inside its support window is refused, enforced mechanically | OPEN |
 | **P12-070** | Contract compatibility checking | P12-069 | Automated classification of every contract change as compatible or breaking | A breaking change is detected and classified automatically, proven on a seeded change | OPEN |

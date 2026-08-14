@@ -283,6 +283,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-online-schema-change.mjs", "--verify"]],
   },
   {
+    name: "Seed determinism and shared fixtures gate",
+    why: "P12-036: Deterministic seed scripts, immutable test fixtures, and static snapshot reproducibility across estate.",
+    cmd: ["node", ["scripts/check-seed-determinism.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

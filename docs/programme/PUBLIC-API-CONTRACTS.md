@@ -47,6 +47,13 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface NotificationCreatePayload extends NotificationSendPayload {}`
 - `interface NotificationCreatedEvent`
 
+### `fixtures.ts`
+
+- `interface TestTenantFixture`
+- `interface TestUserFixture`
+- `interface TestOrganizationFixture`
+- `const SHARED_FIXTURES =`
+
 ### `health.ts`
 
 - `type HealthStatus = "ok" | "degraded" | "down";`

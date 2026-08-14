@@ -203,6 +203,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-config-standard.mjs", "--verify"]],
   },
   {
+    name: "Observability standard gate",
+    why: "P12-017: Metric, trace and log conventions implemented identically across all service layers.",
+    cmd: ["node", ["scripts/check-observability-standard.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

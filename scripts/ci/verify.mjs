@@ -425,6 +425,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-client-generation.mjs", "--verify"]],
   },
   {
+    name: "TypeScript client and types gate",
+    why: "P12-062: TypeScript SDK client and consuming packages build compatibility assertion.",
+    cmd: ["node", ["scripts/check-typescript-client-compatibility.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

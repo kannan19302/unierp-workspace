@@ -224,7 +224,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-074** | SDK architecture | P12-062 | `unierp-sdk` as the supported public interface, layered over the generated client | An SDK capability absent from the contracts fails the parity test | DONE |
 | **P12-075** | SDK ergonomics and surface | P12-074 | Authentication, retry, pagination, error handling and typing handled by the SDK | Common operations require no boilerplate, verified against a task list | DONE |
 | **P12-076** | SDK versioning and compatibility | P12-069 | SDK versions mapped to API versions with a stated support matrix | An SDK used against an unsupported API version fails clearly, not obscurely | DONE |
-| **P12-077** | SDK documentation and examples | P12-073 | Generated reference plus runnable, tested examples | Every example executes in CI; a broken example fails the build | OPEN |
+| **P12-077** | SDK documentation and examples | P12-073 | Generated reference plus runnable, tested examples | Every example executes in CI; a broken example fails the build | WIP |
 | **P12-078** | Webhook and event contracts | P12-049 | Outbound event payloads contracted and versioned like endpoints | An event payload change is classified and versioned like an API change | OPEN |
 | **P12-079** | Extension API contract | P12-056 | `unierp-extension-api` as the versioned contract extensions implement | An extension built against an older contract version continues to work within its window | OPEN |
 | **P12-080** | Contract governance | P12-070 | Review requirements for contract changes proportionate to their blast radius | A breaking contract change cannot land without the declared review, proven by test | OPEN |

@@ -6,6 +6,12 @@
 ## Overview
 Single source of truth for all external and platform contracts across UniERP.
 
+### `connection-pool.ts`
+
+- `interface PoolConfig`
+- `interface TenantPoolStats`
+- `class TenantConnectionFairnessGovernor`
+
 ### `entities/index.ts`
 
 - `interface TenantEntity`

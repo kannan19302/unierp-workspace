@@ -490,6 +490,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-sdk-architecture.mjs", "--verify"]],
   },
   {
+    name: "SDK ergonomics and surface gate",
+    why: "P12-075: Authentication, retry, pagination, error handling and typing handled by the SDK without boilerplate.",
+    cmd: ["node", ["scripts/check-sdk-ergonomics.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -23148,3 +23148,40 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-010 · FINISH · 2026-08-14T14:12:50Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-versioning-policy.mjs --verify
+Output:
+OK    Versioning policy verified: 22 package versions validated against SemVer and breaking-changes registry.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Attempting to bump package with registered breaking change as a minor bump
+$ node -e "import('./scripts/check-versioning-policy.mjs').then(m => { const testChanges = [{ package: '@kannan19302/contracts', symbol: 'InvoiceCreatedEvent', classification: 'BREAKING', status: 'ACTIVE' }]; const result = m.validatePackageVersionBump('@kannan19302/contracts', '1.0.0', '1.1.0', testChanges); console.log(JSON.stringify(result, null, 2)); if (result.valid) { console.log('UNEXPECTED PASS'); process.exit(1); } else { console.log('EXPECTED FAILURE - Breaking change published as minor refused with breaking symbol named:', result.breakingSymbols); } });"
+Output:
+{
+  "valid": false,
+  "error": "Package '@kannan19302/contracts' contains BREAKING change(s) for symbol(s): 'InvoiceCreatedEvent', but version bump '1.0.0' -> '1.1.0' is only a MINOR bump. Major bump required (e.g. 2.0.0).",
+  "breakingSymbols": [
+    "InvoiceCreatedEvent"
+  ]
+}
+EXPECTED FAILURE - Breaking change published as minor refused with breaking symbol named: [ 'InvoiceCreatedEvent' ]
+
+Gate re-verified green on clean baseline (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4541 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

@@ -68,6 +68,15 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface NotificationCreatePayload extends NotificationSendPayload {}`
 - `interface NotificationCreatedEvent`
 
+### `events/schema-registry.ts`
+
+- `type SchemaCompatibilityMode = "BACKWARD" | "FORWARD" | "FULL" | "NONE";`
+- `interface EventSchemaDefinition`
+- `class UnregisteredEventSchemaError extends Error`
+- `class IncompatibleEventSchemaMutationError extends Error`
+- `class EventPayloadValidationError extends Error`
+- `class EventSchemaRegistry`
+
 ### `fixtures.ts`
 
 - `interface TestTenantFixture`

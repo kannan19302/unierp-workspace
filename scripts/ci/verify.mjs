@@ -360,6 +360,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-transactional-outbox.mjs", "--verify"]],
   },
   {
+    name: "Event schema registry gate",
+    why: "P12-049: Versioned schemas for every domain event with compatibility enforcement and schema immutability.",
+    cmd: ["node", ["scripts/check-event-schema-registry.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -37,8 +37,6 @@ const ALLOWED_EXACT = new Set([
   "ROADMAP.md", "ARCHITECTURE.md", "CITATION.cff",
   // Agent entrypoints
   "AGENTS.md", "CLAUDE.md", "GEMINI.md",
-  // Protocol artifacts
-  "evidence.txt",
   // Node / JS
   "package.json", "package-lock.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
   "tsconfig.json", "tsconfig.base.json", "tsconfig.build.json", "next-env.d.ts",
@@ -53,6 +51,11 @@ const ALLOWED_EXACT = new Set([
   // Repo config
   ".gitignore", ".gitattributes", ".npmrc", ".nvmrc", ".editorconfig",
   ".lycheeignore", "renovate.json",
+]);
+
+/** Forbidden root filenames or prefixes (D145: no stray notes, progress, or committed evidence). */
+const FORBIDDEN_NAMES = new Set([
+  "evidence.txt", "notes.md", "progress.md", "todo.md", "scratch.md"
 ]);
 
 /** Extensions that are never acceptable at a repository root. */
@@ -158,6 +161,11 @@ for (const repoPath of repos) {
     continue;
   }
   for (const f of files) {
+    const lower = f.toLowerCase();
+    if (FORBIDDEN_NAMES.has(lower) || lower.startsWith("evidence-") || lower.startsWith("scratch-")) {
+      findings.push({ repo, file: f, why: `Stray evidence/scratch file or document at repository root (D145)` });
+      continue;
+    }
     if (ALLOWED_EXACT.has(f)) continue;
     if (EXEMPT[repo]?.[f]) continue;
     const ext = f.includes(".") ? f.slice(f.lastIndexOf(".")).toLowerCase() : "";

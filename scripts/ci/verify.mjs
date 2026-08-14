@@ -480,6 +480,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-consumer-contract-tests.mjs", "--verify"]],
   },
   {
+    name: "Contract documentation generation gate",
+    why: "P12-073: API reference generated from contracts for every consuming audience without drift.",
+    cmd: ["node", ["scripts/check-contract-documentation-generation.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -177,6 +177,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface PaginatedListResponse<T>`
 - `class OffConventionPaginationError extends Error`
 
+### `rate-limiting.ts`
+
+- `interface RateLimitHeaders`
+- `class MissingRateLimitHeadersError extends Error`
+
 ### `residency.ts`
 
 - `class ResidencyViolationError extends Error`

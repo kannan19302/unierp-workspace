@@ -455,6 +455,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-idempotency-convention.mjs", "--verify"]],
   },
   {
+    name: "Rate limit and quota headers gate",
+    why: "P12-068: Uniform RFC rate-limit signalling headers across rate-limited endpoints.",
+    cmd: ["node", ["scripts/check-rate-limit-headers.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

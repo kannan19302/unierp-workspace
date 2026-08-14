@@ -23286,3 +23286,44 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-013 · FINISH · 2026-08-14T14:18:31Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-supply-chain.mjs --verify
+Output:
+OK    Supply-chain integrity verified: SBOM and provenance attestations enforced across all 11 publishable libraries.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Testing unprovenanced / unsigned package verification
+$ node -e "const { verifySupplyChainIntegrity } = require('./scripts/check-supply-chain.mjs'); const testSbom = { packages: { '@kannan19302/contracts': { integrityAttestation: { oidcTrustedPublishing: false } } } }; const res = verifySupplyChainIntegrity(testSbom); console.log(JSON.stringify(res, null, 2)); if (res.valid) { console.log('UNEXPECTED PASS'); process.exit(1); } else { console.log('EXPECTED FAILURE on unattested / unsigned package:\n' + res.violations.join('\n')); }"
+Output:
+EXPECTED FAILURE on unattested / unsigned package:
+[unierp-contracts] Unattested package: missing OIDC provenance attestation.
+[unierp-auth] Missing from SBOM manifest inventory.
+[unierp-shared] Missing from SBOM manifest inventory.
+[unierp-kernel] Missing from SBOM manifest inventory.
+[unierp-data] Missing from SBOM manifest inventory.
+[unierp-framework] Missing from SBOM manifest inventory.
+[unierp-extension-api] Missing from SBOM manifest inventory.
+[unierp-design-system] Missing from SBOM manifest inventory.
+[unierp-sdk] Missing from SBOM manifest inventory.
+[unierp-service-kit] Missing from SBOM manifest inventory.
+[unierp-config] Missing from SBOM manifest inventory.
+
+Gate re-verified green on clean baseline (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

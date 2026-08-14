@@ -23475,3 +23475,37 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-017 · FINISH · 2026-08-14T14:28:50Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-observability-standard.mjs --verify
+Output:
+OK    Observability standard verified: Prometheus metrics conventions and OpenTelemetry distributed tracing active.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Altering metrics controller in unierp-api
+$ node scripts/check-observability-standard.mjs
+Output:
+EXPECTED FAILURE on off-standard observability:
+
+FAIL  check-observability-standard: 1 observability violation(s) found:
+
+  - metrics.controller.ts does not correctly expose Prometheus metrics scrape endpoint.
+
+Restored unierp-api metrics controller; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

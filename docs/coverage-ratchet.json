@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-14T00:36:32.690Z",
+  "generatedAt": "2026-08-14T01:33:18.644Z",
   "repos": {
     "unierp-api": {
       "testFiles": 493,
@@ -58,7 +58,7 @@
       "coverage": {}
     },
     "unierp-data": {
-      "testFiles": 6,
+      "testFiles": 7,
       "coverage": {
         "allTrue": true,
         "lines": 85,
@@ -86,7 +86,7 @@
       "coverage": {}
     },
     "unierp-extensions": {
-      "testFiles": 0,
+      "testFiles": 4,
       "coverage": {}
     },
     "unierp-framework": {

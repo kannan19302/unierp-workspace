@@ -525,6 +525,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-single-source-proof.mjs", "--verify"]],
   },
   {
+    name: "Contract performance implications gate",
+    why: "P12-082: Contract shapes must not force N+1 access or over-fetching on consumers; an endpoint forcing a waterfall on a documented consumer journey is reported.",
+    cmd: ["node", ["scripts/check-contract-performance.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

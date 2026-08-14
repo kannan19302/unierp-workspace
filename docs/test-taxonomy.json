@@ -548,6 +548,7 @@
     "unierp-contracts/src/settings.spec.ts": "contract",
     "unierp-contracts/src/soft-delete.spec.ts": "contract",
     "unierp-contracts/src/transactions.spec.ts": "contract",
+    "unierp-contracts/src/webhook-contracts.spec.ts": "contract",
     "unierp-corporate-website/lib/rbac.test.ts": "guard",
     "unierp-data/src/encryption.test.ts": "unit",
     "unierp-data/src/optimistic-locking.test.ts": "unit",

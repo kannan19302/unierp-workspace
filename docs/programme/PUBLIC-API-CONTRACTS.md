@@ -280,3 +280,8 @@ Single source of truth for all external and platform contracts across UniERP.
 - `const DEFAULT_OCC_RETRY_POLICY: RetryPolicy =`
 - `class OptimisticConcurrencyConflictError extends Error`
 
+### `webhook-contracts.ts`
+
+- `interface WebhookEventContract`
+- `const CANONICAL_WEBHOOK_EVENT_CONTRACTS: WebhookEventContract[] = [`
+

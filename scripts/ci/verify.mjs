@@ -505,6 +505,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-sdk-documentation-and-examples.mjs", "--verify"]],
   },
   {
+    name: "Webhook and event contracts gate",
+    why: "P12-078: Outbound event payloads contracted and versioned like endpoints with change classification.",
+    cmd: ["node", ["scripts/check-webhook-event-contracts.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

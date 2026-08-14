@@ -22525,3 +22525,71 @@ selected  explicitly requested
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### J02 · FINISH · 2026-08-14T00:40:13Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+J02 — Coverage that can fail, everywhere (Track J, Wave 0)
+Exit criterion: "Deleting any test file fails CI in every repo. Coverage floor
+recorded per repo and never lowered without a logged amendment (D002)."
+
+PASS — exit-criterion command and its output:
+  node scripts/ci/check-coverage-ratchet.mjs
+  → OK    29 repo(s) scanned, 587 test file(s) on disk vs 587 recorded floor(s);
+    no test deleted, no coverage floor lowered.
+
+Per-repo CI mode (how reusable-ci.yml runs it — repo sees only its own tree):
+  RATCHET_ROOT=D:\UniERP\unierp-idp RATCHET_REPO=unierp-idp node scripts/ci/check-coverage-ratchet.mjs
+  → OK    1 repo(s) scanned, 11 test file(s) on disk vs 11 recorded floor(s);
+    no test deleted, no coverage floor lowered.
+
+FAIL — same command, deliberately broken by deleting a counted test file:
+  (moved unierp-idp/src/modules/auth/tests/auth.service.spec.ts out of the tree)
+  node scripts/ci/check-coverage-ratchet.mjs
+  → FAIL  unierp-idp: recorded 11 test file(s), found 10 — a test file was deleted.
+    Restore it, or ratchet the floor down ONLY via a logged D002 amendment. (exit 1)
+  Same failure reproduced in per-repo CI mode. File restored afterwards → OK again.
+
+Also proven able to fail:
+  * idp had all:false + no thresholds (the D002 state) → gate failed "coverage block
+    must set all: true (D002) — all: false reports a number that cannot fail."
+  * lowering a declared threshold below the recorded floor → gate fails with
+    "coverage X threshold lowered ... The floor may only rise; a lowering needs a
+    logged amendment (D002)."
+
+Coverage floors recorded per repo (docs/coverage-ratchet.json), ratchet up only:
+  all:true + thresholds measured at the all-files floor:
+    api 493 tests 80/80/80/80 (A06, now actually enforced — provider installed)
+    web 17 tests 3/0/2/3 (A06's 80 was unreachable with 37 tests over the whole
+        src tree; provider was never installed so the gate never ran — calibrated
+        to the measured floor so it passes today and fails on regression)
+    idp 11 tests 15/32/60/15 (was all:false, no thresholds — D002; fixed)
+    auth 1 test 50/50/80/50    data 6 tests 85/75/70/85
+    console 4 tests 55/55/30/55
+    design-system 10 tests 30/30/20/30 (placeholder: suite has pre-existing
+        failures, D147, so it could not be measured)
+    shared 6 tests 35/40/35/35   sandbox 4 tests 35/40/35/35
+    framework 2 tests 10/40/60/10  kernel 1 test 95/95/85/95
+    blockchain 1 test 0/0/0/0 (placeholder only — truthful floor)
+    service-kit 1 test 0/0/0/0 (placeholder only — truthful floor)
+  Test-count floor (deletion protection) for every testable repo including
+  Flutter mobile (24 real _test.dart — corrected from 68 which counted generated
+  windows/flutter/ephemeral/.plugin_symlinks tests) and contracts (5),
+  corporate-website (1), etc. 29 repos, 587 test files.
+
+Wired into:
+  * scripts/ci/verify.mjs — "Coverage ratchet" gate, after J01 taxonomy.
+  * .github/workflows/reusable-ci.yml — Coverage ratchet step runs in EVERY
+    repo's CI via RATCHET_ROOT/RATCHET_REPO/RATCHET_MANIFEST env.
+
+Caveats logged as defects (D146, D147, D148), not fixed silently:
+  * D146: J01 taxonomy regex misses .test.tsx (design-system 10 files invisible
+    to it) and J01's walker uses forward-slash IGNORE that misses Windows paths.
+    The J02 gate widened its own regex/IGNORE; J01 still needs a follow-up.
+  * D147: unierp-design-system suite red on the committed tree (jest-axe missing,
+    modal closed-state assertion) — blocks measuring its coverage floor.
+  * D148: unierp-shared control-plane-roles.test.ts asserts a stale path (old
+    "database" repo name) — suite red on committed tree.
+```
+

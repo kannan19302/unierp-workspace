@@ -156,7 +156,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-020** | Stricter quality gates for shipped libraries | P12-008 | The EP-7 mechanism: higher coverage, stricter lint and public-API documentation requirements than application code | A library below the library threshold fails, even where an application would pass | DONE |
 | **P12-021** | Dead code and unused export removal | P12-002 | Removing what the census finds unreachable across the claimed repositories | Unreachable code is removed or justified. `check-orphaned-exports.mjs` is clean | DONE |
 | **P12-022** | Test harness for platform libraries | P12-020 | The shared substrate: contract fixtures, two-tenant helpers, clock control, fault injection | A platform-core test is writable without new infrastructure. The harness has tests that fail when broken | DONE |
-| **P12-023** | Documentation generated from source | P12-007 | Public API documentation generated from contracts and types, never written twice | Documentation regenerates from source; drift fails CI | WIP |
+| **P12-023** | Documentation generated from source | P12-007 | Public API documentation generated from contracts and types, never written twice | Documentation regenerates from source; drift fails CI | DONE |
 | **P12-024** | Remediation backlog | P12-002 | The census and the sweep turned into a prioritised, tracked backlog routed to this programme's phases | Every measured defect class is routed to a phase; an unrouted class fails the gate | OPEN |
 
 ---

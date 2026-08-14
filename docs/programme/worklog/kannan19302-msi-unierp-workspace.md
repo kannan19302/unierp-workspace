@@ -24093,3 +24093,38 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-031 · FINISH · 2026-08-14T14:56:33Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-schema-naming-conventions.mjs --verify
+Output:
+OK    Schema naming conventions verified: 1922 models, 130 enums strictly conform to PascalCase/camelCase/snake_case standards.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break: Introducing non-conforming model "bad_model_name" and field "Bad_Field" in test schema
+$ node scripts/check-schema-naming-conventions.mjs --verify
+Output:
+EXPECTED FAILURE on convention violations:
+
+FAIL  check-schema-naming-conventions: 2 naming convention violation(s):
+
+  - test-bad-naming.prisma:1 Model "bad_model_name" is not PascalCase
+  - test-bad-naming.prisma:3 Field "bad_model_name.Bad_Field" is not camelCase
+
+Removed invalid test model; gate re-verified green (exit 0).
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4571 phases intact across 26 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

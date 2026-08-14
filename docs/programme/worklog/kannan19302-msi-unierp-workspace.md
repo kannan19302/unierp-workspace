@@ -22696,3 +22696,55 @@ selected  lowest READY phase in Wave 0
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-002 · FINISH · 2026-08-14T13:53:24Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  verify.mjs blocked by pre-existing D151 in reusable-ci.yml (Track J concern)
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+=== 1. EXIT CRITERION COMMAND AND PASSING OUTPUT ===
+Command: node scripts/check-unowned-code-census.mjs --verify
+Output:
+OK    Census verify passed across 31 claimed repositories.
+
+Census generator execution:
+$ node scripts/check-unowned-code-census.mjs
+UniERP · P12-002 Unowned-Code Census
+
+Measured 31 repositories (29 on disk, 2 planned).
+Artifacts updated:
+  - docs\programme\P12-002-CENSUS.json
+  - docs\programme\P12-002-CENSUS.md
+
+OK    Census completed successfully.
+
+=== 2. DELIBERATE BREAK (PROVEN ABLE TO FAIL) ===
+Break 1: Remove declared role from census data
+$ node -e "const fs = require('fs'); const census = JSON.parse(fs.readFileSync('docs/programme/P12-002-CENSUS.json')); delete census.profiles['unierp-idp'].role; fs.writeFileSync('docs/programme/P12-002-CENSUS.json', JSON.stringify(census)); try { require('child_process').execSync('node scripts/check-unowned-code-census.mjs --verify', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on missing role:\n' + e.stderr.toString() + e.stdout.toString()); }"
+Output:
+EXPECTED FAILURE on missing role:
+FAIL  Repository unierp-idp has no declared role in census.
+
+check-unowned-code-census: 1 error(s) found.
+
+Break 2: Missing repository profile from census
+$ node -e "const fs = require('fs'); const census = JSON.parse(fs.readFileSync('docs/programme/P12-002-CENSUS.json')); delete census.profiles['unierp-contracts']; fs.writeFileSync('docs/programme/P12-002-CENSUS.json', JSON.stringify(census)); try { require('child_process').execSync('node scripts/check-unowned-code-census.mjs --verify', {stdio: 'pipe'}); console.log('UNEXPECTED PASS'); } catch (e) { console.log('EXPECTED FAILURE on missing repo:\n' + e.stderr.toString() + e.stdout.toString()); }"
+Output:
+EXPECTED FAILURE on missing repo:
+FAIL  Repository unierp-contracts is claimed in manifest but missing from census.
+
+check-unowned-code-census: 1 error(s) found.
+
+Restored census and re-verified green.
+
+=== 3. PLAN INTEGRITY ===
+$ node scripts/check-plan-integrity.mjs
+OK    4291 phases intact across 25 tracks; every phase retains an exit criterion; no undeclared files.
+
+=== 4. RED GATE JUSTIFICATION ===
+verify.mjs is red due to pre-existing defect D151 in .github/workflows/reusable-ci.yml:49 (guarding integration tests with `if: hashFiles(...)`), which is owned by Track J. Proceeding with --despite-red-gate.
+```
+

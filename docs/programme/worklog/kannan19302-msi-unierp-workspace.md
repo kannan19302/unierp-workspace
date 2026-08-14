@@ -24625,3 +24625,37 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-043 · FINISH · 2026-08-14T15:49:48Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-043
+STATUS  DONE
+PROVEN  node scripts/check-schema-lints-p043.mjs
+
+PASS (normal run):
+  ? Schema lint P12-043 passed:
+     missingFkIndex: 532 (532 baselined, 0 new)
+     nullableFk:     199 (198 baselined, 0 new)
+     unboundedString:9392 (9392 baselined, 0 new)
+     missingCascade: 391 (391 baselined, 0 new)
+  Exit code: 0
+
+FAIL (deliberate break -- seeded __test_lint__.prisma with 4 violations):
+  Rule: MISSING_FK_INDEX (1 new): __TestMissingFkIndex__.userId
+  Rule: NULLABLE_FK (1 new): __TestNullableFk__.orgId
+  Rule: UNBOUNDED_STRING (8 new): __TestUnboundedString__.name + others
+  Rule: MISSING_CASCADE (3 new): __TestMissingCascade__.parent + others
+  Exit code: 1
+  Test file removed. All 4 rules confirmed to fire on violations.
+
+BUILT   unierp-workspace:
+  - scripts/check-schema-lints-p043.mjs -- new 4-rule schema lint enforcement script
+  - scripts/schema-lints-p043-baseline.json -- baseline for pre-existing violations
+  - scripts/ci/verify.mjs -- added Schema lint rules gate (now 50 gates)
+  - docs/ai/CHANGELOG.md -- one line appended
+
+All 50 verify.mjs gates green; plan integrity OK (4571 phases).
+```
+

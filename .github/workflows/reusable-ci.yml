@@ -46,7 +46,6 @@ jobs:
           pnpm run lint
           pnpm run test
       - name: Run integration tests
-        if: hashFiles('**/test/*.itest.ts') != ''
         env:
           DATABASE_URL: postgresql://unerp:unerp_password@localhost:5432/unerp_test?schema=public
         run: |

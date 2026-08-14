@@ -313,6 +313,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-soft-delete-primitives.mjs", "--verify"]],
   },
   {
+    name: "Schema decomposition and 3000-line ceiling gate",
+    why: "P12-042: Closing D001 — no .prisma schema file exceeds 3,000 lines.",
+    cmd: ["node", ["scripts/check-schema-size.mjs"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

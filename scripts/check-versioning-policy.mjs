@@ -126,6 +126,8 @@ export function verifyAllPackageVersions() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  const args = process.argv.slice(2);
+  const checkBumpIdx = args.indexOf('--check-bump');
   if (checkBumpIdx !== -1 && args[checkBumpIdx + 3]) {
     const pkg = args[checkBumpIdx + 1];
     const oldVer = args[checkBumpIdx + 2];

@@ -336,14 +336,8 @@ const GATES = [
   },
   {
     name: "PII registry",
-    why: "Every model carrying personal data must declare an erasure treatment. Track H.1.",
-    // check-pii-registry.mjs existed but was wired into nothing — the same
-    // failure as check-rls-verify.mjs in ARCHITECTURE_REVIEW F5, where a control
-    // written to catch a real problem never ran. It found 21 undeclared models
-    // the first time it was executed, including HealthcarePatient and
-    // EducationStudent.
+    why: "P12-044 / Track H.1: Every model carrying personal data must declare an erasure treatment (check-pii-registry.mjs).",
     cmd: ["node", ["scripts/check-pii-registry.mjs"]],
-    needsAppSource: true,
   },
   {
     name: "Architecture boundaries",

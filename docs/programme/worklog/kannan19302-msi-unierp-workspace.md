@@ -24746,3 +24746,42 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-046 · FINISH · 2026-08-14T16:09:36Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-046
+STATUS  DONE
+PROVEN  node scripts/check-retention-architecture.mjs --verify
+
+PASS (clean baseline):
+  ? Retention architecture gate passed (1619 files scanned, zero rogue retention implementations).
+  Exit code: 0
+
+FAIL (deliberate break -- injected customRetentionPurge method in unierp-api):
+  ? Retention architecture gate failed (1 rogue retention implementation(s) found):
+    - unierp-api\src\modules\saas\test-rogue.service.ts: customRetentionPurge
+      Why: Ad-hoc custom retention purge method. Must use canonical retention service with legal hold checks.
+  Exit code: 1
+  Break reverted; control confirmed active.
+
+BUILT   unierp-contracts:
+  - src/retention.ts -- RetentionPolicy, LegalHoldRecord, PurgePlanItem, evaluateRetentionEligibility
+  - src/retention.spec.ts -- Unit tests for retention & legal hold evaluation
+  - src/index.ts -- Exported retention primitives
+
+BUILT   unierp-api:
+  - src/modules/saas/audit-log.service.ts -- Refactored cleanupOldLogs to canonical ID-based deletion
+  - src/modules/saas/data-export.service.ts -- Refactored cleanupOldExports to canonical ID-based deletion
+
+BUILT   unierp-workspace:
+  - scripts/check-retention-architecture.mjs -- Architecture gate preventing un-held/rogue purges
+  - scripts/ci/verify.mjs -- Registered Retention architecture gate (53 gates green)
+  - docs/programme/PUBLIC-API-CONTRACTS.md -- Regenerated public API docs
+  - docs/test-taxonomy.json -- Classified retention.spec.ts as contract test
+  - docs/ai/CHANGELOG.md -- Appended P12-046 changelog entry
+
+All 53 verify.mjs gates green; plan integrity OK (4571 phases).
+```
+

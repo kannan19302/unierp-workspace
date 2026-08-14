@@ -218,6 +218,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-library-quality-gates.mjs", "--verify"]],
   },
   {
+    name: "Generated public API documentation gate",
+    why: "P12-023: Public API contracts documentation generated from source with zero drift.",
+    cmd: ["node", ["scripts/generate-contracts-docs.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

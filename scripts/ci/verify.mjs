@@ -405,6 +405,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-meta-schema.mjs", "--verify"]],
   },
   {
+    name: "Contract coverage of the API surface gate",
+    why: "P12-058: 100% of endpoints across all services represented and covered in the contracts.",
+    cmd: ["node", ["scripts/check-contract-api-coverage.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

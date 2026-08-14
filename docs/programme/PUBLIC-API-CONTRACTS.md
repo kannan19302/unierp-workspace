@@ -62,6 +62,14 @@ Single source of truth for all external and platform contracts across UniERP.
 - `const BLAST_RADIUS_GOVERNANCE_POLICY: Record<BlastRadiusTier, GovernanceReviewRequirement> =`
 - `class ContractGovernanceReviewMissingError extends Error`
 
+### `contract-performance.ts`
+
+- `interface ConsumerJourney`
+- `const CANONICAL_CONSUMER_JOURNEYS: ConsumerJourney[] = [`
+- `class WaterfallDetectedError extends Error`
+- `class OverFetchingDetectedError extends Error`
+- `const OVER_FETCH_RATIO_THRESHOLD = 3.0;`
+
 ### `db-performance.ts`
 
 - `interface QueryPerformanceBudget`

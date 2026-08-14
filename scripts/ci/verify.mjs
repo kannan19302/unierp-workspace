@@ -390,6 +390,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-backup-restore-primitives.mjs", "--verify"]],
   },
   {
+    name: "Stage B data proof gate",
+    why: "P12-055: Property-based assertions over generated schema states verifying isolation, integrity and migration reversibility.",
+    cmd: ["node", ["scripts/check-stage-b-data-proof.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

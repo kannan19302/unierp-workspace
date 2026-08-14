@@ -25249,3 +25249,42 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-057 · FINISH · 2026-08-14T16:44:45Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE: P12-057
+EXIT_CRITERION: A malformed contract fails the build. Every contract validates against the meta-schema
+
+1. COMMAND THAT PASSES:
+node scripts/check-contract-meta-schema.mjs --verify
+
+PASSING OUTPUT:
+✓ Contract format and structure gate passed: All contracts validated against canonical meta-schema; malformed contracts caught.
+
+2. COMMAND PROVING IT CAN FAIL ON DELIBERATE BREAK:
+node -e "
+import('./scripts/check-contract-meta-schema.mjs').then(async (m) => {
+  const contracts = await import('file:///' + process.cwd().replace(/\\\\/g, '/') + '/../unierp-contracts/src/meta-schema.ts');
+  const malformedContract = {
+    contractId: 'contracts.broken',
+    version: 'bad-version',
+    kind: 'INVALID'
+  };
+  try {
+    contracts.validateContractMetaSchema(malformedContract);
+  } catch (err) {
+    console.log('DELIBERATE BREAK CAUGHT: ' + err.message.split('\n')[0]);
+  }
+});
+"
+
+BREAKING OUTPUT:
+DELIBERATE BREAK CAUGHT: Contract "contracts.broken" is malformed and failed meta-schema validation:
+
+3. VERIFY.MJS INTEGRATION:
+node scripts/ci/verify.mjs
+All 64 gates passed (including Contract format and structure gate).
+```
+

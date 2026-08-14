@@ -195,7 +195,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-052** | Multi-tenant data isolation proof | P12-028 | An isolation test for every table in the schema, generated rather than written by hand | Every table has an isolation test proving **zero** cross-tenant rows. A new table without one fails CI | DONE |
 | **P12-053** | Schema change impact analysis | P12-007 | Before a schema change, the complete list of affected services, queries and generated clients | A change breaking a consumer is reported before it lands, naming the consumer | DONE |
 | **P12-054** | Database backup and restore primitives | P12-033 | Shared backup, restore and point-in-time recovery interfaces | A restore rehearsal reproduces a chosen point exactly, verified by comparison | DONE |
-| **P12-055** | Stage B data proof | P12-052 | A property-based suite over generated schema states asserting isolation, integrity and migration reversibility | No invariant violation across generated states, and immediate detection when one is weakened | OPEN |
+| **P12-055** | Stage B data proof | P12-052 | A property-based suite over generated schema states asserting isolation, integrity and migration reversibility | No invariant violation across generated states, and immediate detection when one is weakened | WIP |
 
 ---
 

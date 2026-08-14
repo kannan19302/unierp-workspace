@@ -1,0 +1,224 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "serialNumber": "urn:uuid:unierp-sbom-p12-013",
+  "metadata": {
+    "timestamp": "2026-08-14T14:17:37.706Z",
+    "tools": [
+      {
+        "vendor": "UniERP",
+        "name": "check-supply-chain",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "name": "@kannan19302/platform-core",
+      "version": "1.0.0",
+      "type": "platform"
+    }
+  },
+  "packages": {
+    "@kannan19302/contracts": {
+      "name": "@kannan19302/contracts",
+      "version": "1.0.4",
+      "repository": "unierp-contracts",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 0,
+      "dependencies": {},
+      "devDependenciesCount": 1,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/auth": {
+      "name": "@kannan19302/auth",
+      "version": "1.0.4",
+      "repository": "unierp-auth",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 4,
+      "dependencies": {
+        "@kannan19302/database": "^1.0.11",
+        "@kannan19302/shared": "^1.0.5",
+        "bcryptjs": "^2.4.3",
+        "jsonwebtoken": "^9.0.2"
+      },
+      "devDependenciesCount": 8,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/shared": {
+      "name": "@kannan19302/shared",
+      "version": "1.0.5",
+      "repository": "unierp-shared",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 1,
+      "dependencies": {
+        "zod": "^3.24.0"
+      },
+      "devDependenciesCount": 5,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/kernel": {
+      "name": "@kannan19302/kernel",
+      "version": "1.0.3",
+      "repository": "unierp-kernel",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 1,
+      "dependencies": {
+        "@kannan19302/contracts": "^1.0.4"
+      },
+      "devDependenciesCount": 3,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/database": {
+      "name": "@kannan19302/database",
+      "version": "1.0.14",
+      "repository": "unierp-data",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 3,
+      "dependencies": {
+        "@prisma/client": "^6.2.0",
+        "@prisma/config": "^6.19.3",
+        "prisma": "^6.2.0"
+      },
+      "devDependenciesCount": 9,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/framework": {
+      "name": "@kannan19302/framework",
+      "version": "0.1.4",
+      "repository": "unierp-framework",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 3,
+      "dependencies": {
+        "@kannan19302/ui": "^1.0.15",
+        "@tanstack/react-query": "^5.101.1",
+        "zod": "^3.24.0"
+      },
+      "devDependenciesCount": 8,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/extension-api": {
+      "name": "@kannan19302/extension-api",
+      "version": "1.1.0",
+      "repository": "unierp-extension-api",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 1,
+      "dependencies": {
+        "zod": "^3.22.4"
+      },
+      "devDependenciesCount": 1,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/ui": {
+      "name": "@kannan19302/ui",
+      "version": "1.0.15",
+      "repository": "unierp-design-system",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 3,
+      "dependencies": {
+        "@radix-ui/react-slot": "^1.1.0",
+        "lucide-react": "^0.460.0",
+        "recharts": "^3.9.0"
+      },
+      "devDependenciesCount": 17,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/sdk": {
+      "name": "@kannan19302/sdk",
+      "version": "1.0.3",
+      "repository": "unierp-sdk",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 1,
+      "dependencies": {
+        "@kannan19302/contracts": "^1.0.4"
+      },
+      "devDependenciesCount": 1,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/service-kit": {
+      "name": "@kannan19302/service-kit",
+      "version": "0.2.3",
+      "repository": "unierp-service-kit",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 0,
+      "dependencies": {},
+      "devDependenciesCount": 5,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    },
+    "@kannan19302/config": {
+      "name": "@kannan19302/config",
+      "version": "1.0.2",
+      "repository": "unierp-config",
+      "provenanceRequired": true,
+      "publishAccess": "public",
+      "dependenciesCount": 0,
+      "dependencies": {},
+      "devDependenciesCount": 0,
+      "license": "AGPL-3.0",
+      "integrityAttestation": {
+        "oidcTrustedPublishing": true,
+        "npmProvenance": true,
+        "sbomAttestation": "CycloneDX-1.5"
+      }
+    }
+  }
+}

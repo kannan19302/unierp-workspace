@@ -188,6 +188,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-dependency-governance.mjs"]],
   },
   {
+    name: "Supply-chain integrity gate",
+    why: "P12-013: CycloneDX SBOM generation and OIDC provenance attestation enforced across all published libraries.",
+    cmd: ["node", ["scripts/check-supply-chain.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

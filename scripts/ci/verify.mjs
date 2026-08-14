@@ -475,6 +475,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-deprecation-mechanism.mjs", "--verify"]],
   },
   {
+    name: "Consumer-driven contract tests gate",
+    why: "P12-072: Provider CI execution of consumer contract expectations.",
+    cmd: ["node", ["scripts/check-consumer-contract-tests.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

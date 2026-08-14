@@ -41,6 +41,11 @@ Single source of truth for all external and platform contracts across UniERP.
 - `interface TenantPoolStats`
 - `class TenantConnectionFairnessGovernor`
 
+### `consumer-contract-test.ts`
+
+- `interface ConsumerExpectation`
+- `class ConsumerExpectationViolationError extends Error`
+
 ### `contract-compatibility.ts`
 
 - `interface ContractParameter`

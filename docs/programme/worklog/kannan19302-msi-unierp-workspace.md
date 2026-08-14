@@ -24668,3 +24668,29 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-044 · FINISH · 2026-08-14T16:01:46Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+PHASE   P12-044
+STATUS  DONE
+PROVEN  node scripts/check-pii-registry.mjs
+
+PASS (clean baseline):
+  PII registry check passed � 33 PII-carrying model(s), all declared.
+  Exit code: 0
+
+FAIL (deliberate break -- seeded SeededPiiTestModel with email and firstName fields):
+  PII registry check failed (Track H.1):
+    - UNDECLARED PII model "SeededPiiTestModel" (fields: email, firstName) � add it to scripts/pii-registry.json with a treatment
+  Exit code: 1
+  Test injection removed. Control confirmed active across multi-file Prisma schema + IdP schema.
+
+BUILT   unierp-workspace:
+  - scripts/ci/verify.mjs -- enabled PII registry gate directly (now 51 gates green)
+  - docs/ai/CHANGELOG.md -- one line appended
+
+All 51 verify.mjs gates green; plan integrity OK (4571 phases).
+```
+

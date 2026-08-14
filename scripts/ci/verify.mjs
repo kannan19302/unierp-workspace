@@ -308,6 +308,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-transaction-isolation.mjs", "--verify"]],
   },
   {
+    name: "Soft delete and archival primitives gate",
+    why: "P12-041: Canonical soft-delete, archive, and restoration primitives across all platform data models.",
+    cmd: ["node", ["scripts/check-soft-delete-primitives.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

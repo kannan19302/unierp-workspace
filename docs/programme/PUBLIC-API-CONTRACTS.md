@@ -124,6 +124,14 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class UnregisteredSettingError extends Error`
 - `class InvalidSettingScopeError extends Error`
 
+### `soft-delete.ts`
+
+- `interface SoftDeletable`
+- `interface Archivable extends SoftDeletable`
+- `interface SoftDeleteOptions`
+- `interface RestoreOptions`
+- `const ACTIVE_RECORD_FILTER =`
+
 ### `transactions.ts`
 
 - `type IsolationLevel =`

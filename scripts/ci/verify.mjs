@@ -495,6 +495,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-sdk-ergonomics.mjs", "--verify"]],
   },
   {
+    name: "SDK versioning and compatibility gate",
+    why: "P12-076: SDK versions mapped to API versions with stated support matrix.",
+    cmd: ["node", ["scripts/check-sdk-compatibility.mjs", "--verify"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

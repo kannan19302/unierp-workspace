@@ -233,6 +233,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class IncompleteContractSchemaError extends Error`
 - `class OffConventionErrorResponseError extends Error`
 
+### `sdk-compatibility.ts`
+
+- `interface SdkApiSupportMatrixEntry`
+- `const CANONICAL_SDK_SUPPORT_MATRIX: Record<string, SdkApiSupportMatrixEntry> =`
+- `class UnsupportedApiVersionError extends Error`
+
 ### `settings-migration.ts`
 
 - `interface SettingRename`

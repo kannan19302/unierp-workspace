@@ -248,6 +248,11 @@ const GATES = [
     cmd: ["node", ["scripts/generate-rls-policies.mjs", "--verify"]],
   },
   {
+    name: "Runtime DDL RLS verification gate (D143)",
+    why: "P12-029: RLS verification and tenant isolation for runtime DDL tables (co_* and ext_*).",
+    cmd: ["node", ["scripts/check-runtime-ddl-rls.mjs", "--verify"]],
+  },
+  {
     name: "Decimal arithmetic",
     why: "Money is Decimal(19,4) so it does not drift — summing it via Number() puts it back into float.",
     // The schema lint already forbids Float money columns, but exact storage is

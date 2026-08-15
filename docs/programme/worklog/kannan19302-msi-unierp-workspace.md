@@ -26705,3 +26705,19 @@ Work has NOT started. This block exists so no other agent takes this phase.
 Wrote boundary script and hooked into verify.mjs
 ```
 
+### P2-001 · FINISH · 2026-08-15T16:23:58Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+Output of `node scripts/ci/verify.mjs` showing the Programme 2 boundaries gate passed:
+  ✓ Programme 2 boundaries (0.1s)
+  ✓ All gates green — 97 passed, 1 skipped, 10 DELEGATED (not run here), 39.4s
+
+Output of `node scripts/check-programme-2-boundary.mjs`:
+OK    P2 boundary check passed.
+
+When I purposefully tested the script to fail by changing `unierp-api` directly (which is not in the declared set):
+FAIL  P2 commit modifies a repository (unierp-api) outside the declared set in programme-2.manifest.json.
+```
+

@@ -5162,3 +5162,9 @@ dynamic as the reason A30/D025 existed: *"a gate everyone routinely overrides ha
 gate."* This should be fixed early — it is currently taxing every phase in every programme.
 
 **Owner:** J06, or the next Track J phase to touch CI.
+
+## [D144] Missing module resolution bump in @kannan19302/config
+- **Date**: 2026-08-15
+- **Context**: P12-092 implemented Node16 module resolution in \unierp-config/typescript/nestjs.json\ to block deep imports.
+- **Problem**: Repositories like \unierp-api\ consume \@kannan19302/config\ via npm registry. The config change must be published, and dependent services must bump their version to inherit the protection.
+- **Recommendation**: Trigger a release of \@kannan19302/config\ and bump the dependency in all L2-L5 repositories.

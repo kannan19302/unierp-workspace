@@ -5168,3 +5168,37 @@ gate."* This should be fixed early — it is currently taxing every phase in eve
 - **Context**: P12-092 implemented Node16 module resolution in \unierp-config/typescript/nestjs.json\ to block deep imports.
 - **Problem**: Repositories like \unierp-api\ consume \@kannan19302/config\ via npm registry. The config change must be published, and dependent services must bump their version to inherit the protection.
 - **Recommendation**: Trigger a release of \@kannan19302/config\ and bump the dependency in all L2-L5 repositories.
+
+### D152 - LOW - fix-imports-new.js stray repair script at unierp-api root (D006 recurrence)
+
+- **Date**: 2026-08-15
+- **Phase found**: J09
+- **Severity**: Low (hygiene; clean git status DoD violation)
+- **Reproduction**:
+  ```
+  # In unierp-api:
+  git ls-files fix-imports-new.js
+  # Output: fix-imports-new.js
+  # A one-off CommonJS repair script, not referenced by any npm script
+  ```
+- **Problem**: AGENTS.md requires no scratch scripts at repo root (D006 class). The file uses CommonJS require() and glob - purely a stray repair artifact.
+- **Fix**: Delete unierp-api/fix-imports-new.js and commit.
+- **Owner**: Next agent touching unierp-api.
+
+### D153 - HIGH - finance.service.ts mutation score 6.68% despite 80% line coverage — tests do not verify financial arithmetic
+
+- **Date**: 2026-08-15
+- **Phase found**: J09
+- **Severity**: High (financial correctness risk — tests pass while arithmetic logic is undetected)
+- **Reproduction**:
+  ```
+  cd D:\UniERP\unierp-api
+  npx stryker run stryker.proof.conf.json
+  # Output: mutation score 6.68% | killed: 45 | survived: 426 | no coverage: 217
+  # Exit code: 1 (break threshold 60 triggered)
+  ```
+- **Root cause**: finance.service.ts getDashboardData() has extensive arithmetic (cash flow, monthly aggregation, invoice ratios) but tests mock the DB response and assert only top-level structure — not arithmetic correctness. Mutants flipping +/-, inverting conditions, zeroing loop bodies all survive because no test checks the computed values.
+- **Evidence of the problem**: Mutant at line 836 (inflows += to inflows -=) survives. Mutant at line 862 (totalInvoices > 0 to >= 0, ratio calculation *100 to /100) survives. The tests assert shape, not values.
+- **Impact**: A bug inverting cash flow aggregation would pass all tests.
+- **Fix owner**: Next Track J phase that addresses financial arithmetic test quality.
+- **Recommended fix**: Add value-asserting tests for getDashboardData arithmetic: specific amounts in → specific computed values out. Do not mock intermediate computation, only DB calls.

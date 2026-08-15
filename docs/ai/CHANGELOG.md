@@ -128,3 +128,4 @@
  2026-08-15 P12-088 DONE: Implemented the deprecation-window proof gate to ensure removing an element inside its window fails CI.
 -   P 1 2 - 0 8 9 :   I m p l e m e n t e d   C o n t r a c t R e g i s t r y   t o   m a n a g e   a p i   c o n t r a c t s   a n d   t h e i r   c o n s u m e r s ,   u p d a t e d   C I   t o   p o i n t   t e s t s   t o   c o m p i l e d   a r t i f a c t s .  
  
+- 2026-08-15 [P12-090] Created check-stage-c-contract-proof.mjs to assert contract proof gates

@@ -1,0 +1,1 @@
+node scripts/check-multi-version-operation.mjs --verify passed. The gate proves that MultiVersionRouter exists and is tested for multi-version capability.

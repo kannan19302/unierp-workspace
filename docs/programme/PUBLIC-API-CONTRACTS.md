@@ -200,6 +200,12 @@ Single source of truth for all external and platform contracts across UniERP.
 - `type CurrencyCode =`
 - `interface Money`
 
+### `multi-version.ts`
+
+- `interface SharedImplementation<TSharedInput, TSharedOutput>`
+- `interface VersionHandler<TExternalInput, TExternalOutput, TSharedInput, TSharedOutput>`
+- `class MultiVersionRouter<TSharedInput, TSharedOutput>`
+
 ### `online-schema-change.ts`
 
 - `type OnlineSchemaChangeStrategy =`

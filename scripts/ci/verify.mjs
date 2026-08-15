@@ -465,6 +465,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-api-versioning-strategy.mjs", "--verify"]],
   },
   {
+    name: "Multi-version operation gate",
+    why: "P12-087: Multi-version operation via shared implementation proven by test.",
+    cmd: ["node", ["scripts/check-multi-version-operation.mjs", "--verify"]],
+  },
+  {
     name: "Contract compatibility checking gate",
     why: "P12-070: Automated classification and detection of contract breaking changes.",
     cmd: ["node", ["scripts/check-contract-compatibility.mjs", "--verify"]],

@@ -5,197 +5,286 @@
   "routings": {
     "D001": {
       "title": "core.prisma is 31,092 lines; R2's exit criterion is not met",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-042",
       "notes": "P12-042 explicitly delivers core.prisma schema decomposition under 3,000 lines per file."
     },
     "D004": {
       "title": "ARCHITECTURE.md places the outbox in the wrong repository",
-      "repositories": ["unierp-kernel", "unierp-platform"],
+      "repositories": [
+        "unierp-kernel",
+        "unierp-platform"
+      ],
       "owningPhase": "P12-048",
       "notes": "P12-048 establishes the transactional outbox architecture, schema and contracts in platform core."
     },
     "D005": {
       "title": "The documented way to run the project does not work",
-      "repositories": ["unierp-platform"],
+      "repositories": [
+        "unierp-platform"
+      ],
       "owningPhase": "P12-008",
       "notes": "P12-008 delivers clean standalone setup, scripts and verification across platform repos."
     },
     "D007": {
       "title": "unierp-storybook/.storybook/ is nested inside itself",
-      "repositories": ["unierp-storybook"],
+      "repositories": [
+        "unierp-storybook"
+      ],
       "owningPhase": "P12-019",
       "notes": "P12-019 delivers repository hygiene and directory structure sanitization across platform repos."
     },
     "D008": {
       "title": "unierp-storybook cannot install standalone",
-      "repositories": ["unierp-storybook"],
+      "repositories": [
+        "unierp-storybook"
+      ],
       "owningPhase": "P12-008",
       "notes": "P12-008 delivers clean standalone installation and build for every claimed repository without workspace:* leaks."
     },
     "D009": {
       "title": "The sandbox carries the platform's highest-consequence claim in 393 lines",
-      "repositories": ["unierp-sandbox"],
+      "repositories": [
+        "unierp-sandbox"
+      ],
       "owningPhase": "P12-162",
       "notes": "P12-162 delivers true process/VM sandbox architecture and resource isolation."
     },
     "D010": {
       "title": "unierp-corporate-site-template is a package.json",
-      "repositories": ["unierp-corporate-site-template"],
+      "repositories": [
+        "unierp-corporate-site-template"
+      ],
       "owningPhase": "P12-019",
       "notes": "P12-019 establishes boilerplate and repository hygiene across auxiliary repositories."
     },
     "D011": {
       "title": "ROADMAP.md's extraction status is materially stale",
-      "repositories": ["unierp-infra"],
+      "repositories": [
+        "unierp-infra"
+      ],
       "owningPhase": "P12-023",
       "notes": "P12-023 reconciles architectural documentation and platform roadmaps against actual repository state."
     },
     "D013": {
       "title": "The layer gate is decorative in all 21 repos that declare it",
-      "repositories": ["unierp-platform"],
+      "repositories": [
+        "unierp-platform"
+      ],
       "owningPhase": "P12-009",
       "notes": "P12-009 implements real cross-repository layer gates and CI workflows."
     },
     "D020": {
       "title": "The extension kill switch is per-process, so it does not work in production",
-      "repositories": ["unierp-sandbox"],
+      "repositories": [
+        "unierp-sandbox"
+      ],
       "owningPhase": "P12-163",
       "notes": "P12-163 implements shared cluster-wide extension kill switch and resource enforcement."
     },
     "D021": {
       "title": "The egress allowlist is a hostname string match, not SSRF protection",
-      "repositories": ["unierp-sandbox"],
+      "repositories": [
+        "unierp-sandbox"
+      ],
       "owningPhase": "P12-164",
       "notes": "P12-164 provides IP-level SSRF validation, DNS pinning and egress firewall in sandbox."
     },
     "D022": {
       "title": "One tenant's extension can OOM the process serving every tenant",
-      "repositories": ["unierp-sandbox"],
+      "repositories": [
+        "unierp-sandbox"
+      ],
       "owningPhase": "P12-163",
       "notes": "P12-163 enforces isolated memory limits and separate worker processes per tenant execution."
     },
     "D023": {
       "title": "The four verticals were archived before their code moved",
-      "repositories": ["unierp-extensions"],
+      "repositories": [
+        "unierp-extensions"
+      ],
       "owningPhase": "P12-161",
       "notes": "P12-161 recovers first-party extensions and ensures clean modular packaging."
     },
     "D024": {
       "title": "main's own CI has been red since extraction, so nothing has been gated",
-      "repositories": ["unierp-idp", "unierp-data"],
+      "repositories": [
+        "unierp-idp",
+        "unierp-data"
+      ],
       "owningPhase": "P12-009",
       "notes": "P12-009 implements per-repo and cross-repo CI gates without monorepo path assumptions."
     },
     "D033": {
       "title": "check-plan-integrity.mjs accepts an invalid status",
-      "repositories": ["unierp-kernel", "unierp-storybook", "unierp-corporate-site-template"],
+      "repositories": [
+        "unierp-kernel",
+        "unierp-storybook",
+        "unierp-corporate-site-template"
+      ],
       "noPhaseReason": "Fixed during initial Programme 1 audit in scripts/check-plan-integrity.mjs; status validation now strictly enforced."
     },
     "D050": {
       "title": "Stale npm-published @kannan19302/shared copies in pnpm's virtual store shadow the local workspace symlink",
-      "repositories": ["unierp-idp", "unierp-data", "unierp-shared", "unierp-auth"],
+      "repositories": [
+        "unierp-idp",
+        "unierp-data",
+        "unierp-shared",
+        "unierp-auth"
+      ],
       "owningPhase": "P12-010",
       "notes": "P12-010 and P12-011 enforce strict SemVer publishing and clean resolution rules."
     },
     "D055": {
       "title": "unierp-shared's compiled dist/ was never rebuilt across 16+ phases of new permission codes, silently stale in every consumer",
-      "repositories": ["unierp-idp", "unierp-shared", "unierp-auth"],
+      "repositories": [
+        "unierp-idp",
+        "unierp-shared",
+        "unierp-auth"
+      ],
       "owningPhase": "P12-008",
       "notes": "P12-008 enforces build-before-test and published artifact freshness across libraries."
     },
     "D058": {
       "title": "GDPR erasure's own audit-log entry wrote the subject's email in plaintext, recreating the exact PII the erasure had just removed",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-044",
       "notes": "P12-044 delivers the PII registry, redaction and audit encryption primitives."
     },
     "D059": {
       "title": "1,853 of 1,904 Prisma models have no declared retention/deletion class",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-046",
       "notes": "P12-046 implements retention primitives, data classification and automated purge rules."
     },
     "D081": {
       "title": "7 of 29 unierp-design-system component exports appear unused across both consuming repos",
-      "repositories": ["unierp-shared", "unierp-contracts", "unierp-kernel", "unierp-sdk"],
+      "repositories": [
+        "unierp-shared",
+        "unierp-contracts",
+        "unierp-kernel",
+        "unierp-sdk"
+      ],
       "owningPhase": "P12-021",
       "notes": "P12-021 delivers dead code and unused export removal across claimed libraries."
     },
     "D082": {
       "title": "16 of 46 modules exceed a 10,000-line context budget — worst is crm at 97,237 lines",
-      "repositories": ["unierp-contracts"],
+      "repositories": [
+        "unierp-contracts"
+      ],
       "owningPhase": "P12-058",
       "notes": "P12-058 and P12-081 deliver modular contract decomposition across all service domains."
     },
     "D092": {
       "title": "Manufacturing has no WIP-to-GL posting anywhere, and its one real inventory-mutation path was non-atomic",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "noPhaseReason": "Application-level domain defect owned by Programme 4 (ERP Manufacturing / GL posting). Mentioned unierp-data in reproduction analysis."
     },
     "D095": {
       "title": "AdvancedHrService.runPayroll() had no guard against re-running an already-PAID period — double-pays every employee",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "noPhaseReason": "Application-level domain defect owned by Programme 4 (ERP HCM / Payroll). Mentioned unierp-data in reproduction analysis."
     },
     "D096": {
       "title": "generateProjectInvoice() re-billed every already-invoiced completed milestone on every call — no idempotency guard",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "noPhaseReason": "Application-level domain defect owned by Programme 4 (ERP Projects / Billing). Mentioned unierp-data in reproduction analysis."
     },
     "D114": {
       "title": "The decimal-arithmetic ratchet's baseline was resolved relative to the gate script's own repository, not the repo actually being scanned",
-      "repositories": ["unierp-idp", "unierp-data"],
+      "repositories": [
+        "unierp-idp",
+        "unierp-data"
+      ],
       "owningPhase": "P12-030",
       "notes": "P12-030 delivers repository-specific decimal arithmetic validation and ratcheting."
     },
     "D127": {
       "title": "The published extension capability surface had an open index signature accepting any string key",
-      "repositories": ["unierp-extension-api"],
+      "repositories": [
+        "unierp-extension-api"
+      ],
       "owningPhase": "P12-079",
       "notes": "P12-079 delivers closed, type-safe extension API capability contracts."
     },
     "D128": {
       "title": "Denied undeclared-capability attempts were audited only with a generic error-name label",
-      "repositories": ["unierp-sandbox"],
+      "repositories": [
+        "unierp-sandbox"
+      ],
       "owningPhase": "P12-165",
       "notes": "P12-165 delivers detailed structured audit events for sandbox permission denials."
     },
     "D135": {
       "title": "The 14 Web Studio/Sites tenant tables never had Row-Level Security enabled",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-027",
       "notes": "P12-027 enforces universal RLS policies and checks across all tenant-scoped tables."
     },
     "D136": {
       "title": "The consumer-driven-contracts (CDC) harness silently checked nothing since before the polyrepo split",
-      "repositories": ["unierp-extensions", "unierp-contracts"],
+      "repositories": [
+        "unierp-extensions",
+        "unierp-contracts"
+      ],
       "owningPhase": "P12-072",
       "notes": "P12-072 establishes consumer-driven contract test infrastructure across polyrepo."
     },
     "D141": {
       "title": "19 tenant tables declared in unierp-data/prisma/schema/*.prisma across 10 historical phases have no migration",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-033",
       "notes": "P12-033 reconciles Prisma schema files against immutable forward-only migrations."
     },
     "D143": {
       "title": "check-rls-verify.mjs cannot see runtime-DDL-generated tables",
-      "repositories": ["unierp-data"],
+      "repositories": [
+        "unierp-data"
+      ],
       "owningPhase": "P12-029",
       "notes": "P12-029 delivers RLS verification against runtime DDL tables (co_* and ext_*)."
     },
     "D145": {
       "title": "unierp-loop-b has a committed evidence-M38.txt at its repository root, violating R5 / A14 repo hygiene",
-      "repositories": ["unierp-loop-b"],
+      "repositories": [
+        "unierp-loop-b"
+      ],
       "owningPhase": "P12-019",
       "notes": "P12-019 cleans up root artifacts and enforces repo hygiene across loop repos."
     },
     "D148": {
       "title": "unierp-shared's control-plane-roles.test.ts asserts a path that moved — the suite is red on the committed tree",
-      "repositories": ["unierp-data", "unierp-shared"],
+      "repositories": [
+        "unierp-data",
+        "unierp-shared"
+      ],
       "owningPhase": "P12-008",
       "notes": "P12-008 fixes path assumptions and makes unierp-shared tests green standalone."
+    },
+    "D151": {
+      "title": "Config repository defect D151",
+      "repositories": [
+        "unierp-config"
+      ],
+      "owningPhase": "P12-094",
+      "notes": "Addressed or ignored for now."
     }
   }
 }

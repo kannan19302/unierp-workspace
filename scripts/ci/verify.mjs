@@ -560,6 +560,12 @@ const GATES = [
     cmd: ["node", ["scripts/check-shared-library-boundaries.mjs"]],
   },
   {
+    name: "Shared type definitions gate",
+    why: "P12-094: Domain types shared rather than redeclared per service.",
+    cmd: ["node", ["scripts/check-type-duplication.mjs"]],
+    needsAppSource: true,
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

@@ -126,3 +126,5 @@
 - P12-086: Implement schema impact analysis gate (check-contract-change-impact-reporting.mjs)
 -   * * 2 0 2 6 - 0 8 - 1 5   ( P 1 2 - 0 8 7 ) : * *   M u l t i - v e r s i o n   o p e r a t i o n   ( P 1 2 - 0 8 7 ) .   I m p l e m e n t e d   M u l t i V e r s i o n R o u t e r   i n   @ k a n n a n 1 9 3 0 2 / c o n t r a c t s   t o   m a p   v e r s i o n - s p e c i f i c   D T O s   t o   s h a r e d   i m p l e m e n t a t i o n s .   A d d e d   c h e c k - m u l t i - v e r s i o n - o p e r a t i o n . m j s   g a t e   t o   p r o v e   m u l t i - v e r s i o n   o p e r a t i o n ,   r e g i s t e r e d   i n   v e r i f y . m j s .   T e s t s   v e r i f i e d .  
  2026-08-15 P12-088 DONE: Implemented the deprecation-window proof gate to ensure removing an element inside its window fails CI.
+-   P 1 2 - 0 8 9 :   I m p l e m e n t e d   C o n t r a c t R e g i s t r y   t o   m a n a g e   a p i   c o n t r a c t s   a n d   t h e i r   c o n s u m e r s ,   u p d a t e d   C I   t o   p o i n t   t e s t s   t o   c o m p i l e d   a r t i f a c t s .  
+ 

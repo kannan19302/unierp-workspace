@@ -61,7 +61,7 @@ pass(`Spec suite: ${passMatches.length} tests pass, 0 fail`);
 
 // ── 3. Mechanically verify: violating contract is blocked ──
 const checkBlockedScript = `
-import { assertContractSecurity } from "./src/contract-security.ts";
+import { assertContractSecurity } from "./dist/contract-security.js";
 const contract = {
   contractId: "test.fail",
   description: "Test",

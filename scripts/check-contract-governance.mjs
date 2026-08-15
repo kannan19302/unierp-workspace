@@ -73,7 +73,7 @@ pass(`Spec suite: ${passMatches.length} tests pass, 0 fail`);
 // ── 3. Mechanically verify: breaking change is blocked when review absent ──
 //   We do this by importing the function inline via a child process.
 const breakingBlockedScript = `
-import { evaluateContractChangeGovernance, ContractGovernanceReviewMissingError } from "./src/contract-governance.ts";
+import { evaluateContractChangeGovernance, ContractGovernanceReviewMissingError } from "./dist/contract-governance.js";
 const baseline = [{
   operationId: "getUsers",
   method: "GET",
@@ -119,7 +119,7 @@ pass("Breaking change blocked when required reviews absent (TIER_3_BREAKING_MAJO
 
 // ── 4. Verify: breaking change passes with all required reviews ────────────
 const breakingAllowedScript = `
-import { evaluateContractChangeGovernance } from "./src/contract-governance.ts";
+import { evaluateContractChangeGovernance } from "./dist/contract-governance.js";
 const baseline = [{
   operationId: "getUsers",
   method: "GET",

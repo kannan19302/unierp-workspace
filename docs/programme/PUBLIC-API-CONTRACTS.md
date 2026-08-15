@@ -75,6 +75,14 @@ Single source of truth for all external and platform contracts across UniERP.
 - `class OverFetchingDetectedError extends Error`
 - `const OVER_FETCH_RATIO_THRESHOLD = 3.0;`
 
+### `contract-registry.ts`
+
+- `type ContractState = "ACTIVE" | "DEPRECATED" | "SUNSET";`
+- `interface ContractConsumer`
+- `interface ContractDefinition`
+- `class ContractNotFoundError extends Error`
+- `class ContractRegistry`
+
 ### `contract-security.ts`
 
 - `type SecurityRiskType = "MASS_ASSIGNMENT" | "OVER_EXPOSURE" | "ENUMERATION";`

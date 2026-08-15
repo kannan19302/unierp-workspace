@@ -525,6 +525,7 @@
     "unierp-contracts/src/consumer-contract-test.spec.ts": "contract",
     "unierp-contracts/src/contract-compatibility.spec.ts": "contract",
     "unierp-contracts/src/contract-governance.spec.ts": "contract",
+    "unierp-contracts/src/contract-registry.spec.ts": "contract",
     "unierp-contracts/src/contract-harness.spec.ts": "contract",
     "unierp-contracts/src/contract-performance.spec.ts": "contract",
     "unierp-contracts/src/contract-security.spec.ts": "contract",

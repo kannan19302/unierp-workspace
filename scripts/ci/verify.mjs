@@ -485,6 +485,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-deprecation-window-proof.mjs", "--verify"]],
   },
   {
+    name: "Contract registry gate",
+    why: "P12-089: Any contract's state and consumers are answerable by command.",
+    cmd: ["node", ["scripts/check-contract-registry.mjs", "--verify"]],
+  },
+  {
     name: "Consumer-driven contract tests gate",
     why: "P12-072: Provider CI execution of consumer contract expectations.",
     cmd: ["node", ["scripts/check-consumer-contract-tests.mjs", "--verify"]],

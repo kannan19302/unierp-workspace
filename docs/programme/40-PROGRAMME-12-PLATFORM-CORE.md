@@ -248,7 +248,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-091** | Shared library boundaries | P12-006 | What belongs in `unierp-shared` versus a service, with the rule enforced | A service-specific utility in the shared library fails a gate, and vice versa | DONE |
 | **P12-092** | Shared library public API | P12-081 | An explicit, documented, versioned public surface rather than incidental exports | An import of a non-public symbol fails a gate, proven on a seeded import | DONE |
 | **P12-093** | Utility and helper consolidation | P12-002 | Duplicated helpers across repositories consolidated into one implementation | `check-duplication.mjs` reports no duplicate helper above threshold across claimed repositories | DONE |
-| **P12-094** | Shared type definitions | P12-062 | Domain types shared rather than redeclared per service | A redeclared shared type fails a gate, proven on a seeded duplicate | OPEN |
+| **P12-094** | Shared type definitions | P12-062 | Domain types shared rather than redeclared per service | A redeclared shared type fails a gate, proven on a seeded duplicate | WIP |
 | **P12-095** | Validation primitives | P12-059 | One validation approach used by every service, aligned with the contracts | A service using a second validation approach fails an architecture gate | OPEN |
 | **P12-096** | Date, time and timezone primitives | P12-094 | Shared, correct temporal handling used everywhere | Temporal arithmetic matches expected values across a DST and timezone fixture set | OPEN |
 | **P12-097** | Decimal and money primitives | P12-030 | Shared money type and arithmetic that never leaves Decimal | Money arithmetic matches hand computation across a rounding edge-case suite | OPEN |

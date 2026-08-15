@@ -23,7 +23,7 @@ const FAMILY = join(WORKSPACE, "..");
 const MANIFEST_FILE = join(WORKSPACE, "docs", "test-taxonomy.json");
 
 const TEST_RE = /\.(spec|test|e2e)\.ts$|_test\.dart$/;
-const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\//;
+const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\/|\.plugin_symlinks/;
 
 const TAXONOMY = new Set([
   "unit", "integration", "controller", "guard", "isolation",

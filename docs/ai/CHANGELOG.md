@@ -131,3 +131,4 @@
 - 2026-08-15 [P12-090] Created check-stage-c-contract-proof.mjs to assert contract proof gates
 -   R e s t o r e d   u n i e r p - a p i   b u i l d   a f t e r   s h a r e d   l i b r a r y   b o u n d a r i e s   r e f a c t o r   ( P 1 2 - 0 9 1 )  
  - P12-092: Enforce Node16 module resolution across workspace to prevent shared library deep imports.
+- Refactored SaaS and Admin subscription/billing code to use shared helpers (P12-093).

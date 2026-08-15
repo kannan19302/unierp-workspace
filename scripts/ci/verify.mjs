@@ -133,6 +133,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-programme-claim.mjs"]],
   },
   {
+    name: "Programme 2 boundaries",
+    why: "P2-001: Programme charter and boundary declaration for the developer portal. A CI step fails when a P2 commit modifies a repository outside the declared set.",
+    cmd: ["node", ["scripts/check-programme-2-boundary.mjs"]],
+  },
+  {
     name: "Unowned-code census",
     why: "P12-002: Every claimed repository measured: what it does, what is reachable, what is tested, what is dead, what other repositories import from it.",
     cmd: ["node", ["scripts/check-unowned-code-census.mjs", "--verify"]],

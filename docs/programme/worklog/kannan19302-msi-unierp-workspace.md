@@ -26671,3 +26671,22 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-095 · FINISH · 2026-08-15T16:09:48Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+COMMAND
+node scripts/check-validation-discipline.mjs
+
+OUTPUT (PASSING)
+✅ check-validation-discipline: Validation discipline verified.
+
+OUTPUT (BROKEN)
+❌ check-validation-discipline: 1 violation(s):
+
+  - File D:\UniERP\unierp-api\src\modules\crm\crm-coaching.controller.ts imports banned validation library: class-validator
+
+Platform Core P12-095: Zod is the single source of truth for validation. Secondary validation libraries are banned.
+```
+

@@ -246,7 +246,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | ID | Phase | Depends | Deliverable | Exit | Status |
 | :- | :---- | :------ | :---------- | :--- | :----- |
 | **P12-091** | Shared library boundaries | P12-006 | What belongs in `unierp-shared` versus a service, with the rule enforced | A service-specific utility in the shared library fails a gate, and vice versa | DONE |
-| **P12-092** | Shared library public API | P12-081 | An explicit, documented, versioned public surface rather than incidental exports | An import of a non-public symbol fails a gate, proven on a seeded import | WIP |
+| **P12-092** | Shared library public API | P12-081 | An explicit, documented, versioned public surface rather than incidental exports | An import of a non-public symbol fails a gate, proven on a seeded import | DONE |
 | **P12-093** | Utility and helper consolidation | P12-002 | Duplicated helpers across repositories consolidated into one implementation | `check-duplication.mjs` reports no duplicate helper above threshold across claimed repositories | OPEN |
 | **P12-094** | Shared type definitions | P12-062 | Domain types shared rather than redeclared per service | A redeclared shared type fails a gate, proven on a seeded duplicate | OPEN |
 | **P12-095** | Validation primitives | P12-059 | One validation approach used by every service, aligned with the contracts | A service using a second validation approach fails an architecture gate | OPEN |

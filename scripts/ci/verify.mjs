@@ -480,6 +480,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-deprecation-mechanism.mjs", "--verify"]],
   },
   {
+    name: "Deprecation window proof gate",
+    why: "P12-088: Removing an element inside its window fails CI, proven on a seeded removal.",
+    cmd: ["node", ["scripts/check-deprecation-window-proof.mjs", "--verify"]],
+  },
+  {
     name: "Consumer-driven contract tests gate",
     why: "P12-072: Provider CI execution of consumer contract expectations.",
     cmd: ["node", ["scripts/check-consumer-contract-tests.mjs", "--verify"]],

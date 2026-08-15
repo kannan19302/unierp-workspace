@@ -566,6 +566,11 @@ const GATES = [
     needsAppSource: true,
   },
   {
+    name: "Validation discipline gate",
+    why: "P12-095: Zod is the single source of truth for validation. Secondary validation libraries are banned.",
+    cmd: ["node", ["scripts/check-validation-discipline.mjs"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

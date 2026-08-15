@@ -26641,3 +26641,24 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-094 · FINISH · 2026-08-15T16:03:14Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: PASS
+
+Exit Criteria: No redeclared types, no boundaries violations, successful build.
+
+Command 1: node scripts/check-type-duplication.mjs
+Output: OK: No redeclared shared types found across modules.
+
+Command 2: node scripts/check-shared-library-boundaries.mjs
+Output: ✅ check-shared-library-boundaries: Shared library boundaries verified.
+
+Command 3: pnpm run build
+Output: Command exited with code 0 (success)
+
+When broke on purpose (moved billing-shared.ts to common/utils):
+❌ check-shared-library-boundaries: 1 boundary violation(s):
+  - Generic utility 'billing-shared.ts' found in unierp-api/src/common/utils. Shared utilities must belong in unierp-shared.
+```
+

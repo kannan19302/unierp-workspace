@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-08-14T14:43:58.289Z",
+  "generatedAt": "2026-08-15T14:58:41.921Z",
   "phase": "P12-026",
   "summary": {
-    "totalFiles": 42,
-    "totalLines": 40674,
-    "totalBytes": 1578675,
-    "totalModels": 1915,
-    "totalFields": 25417,
-    "totalRelations": 1207,
-    "totalIndexes": 3624,
+    "totalFiles": 43,
+    "totalLines": 40731,
+    "totalBytes": 1581693,
+    "totalModels": 1917,
+    "totalFields": 25452,
+    "totalRelations": 1208,
+    "totalIndexes": 3630,
     "totalEnums": 65
   },
   "files": {
@@ -370,6 +370,15 @@
       "fields": 13,
       "relations": 0,
       "indexes": 0,
+      "enums": 0
+    },
+    "saas-portal.prisma": {
+      "lines": 57,
+      "bytes": 3018,
+      "models": 2,
+      "fields": 35,
+      "relations": 1,
+      "indexes": 6,
       "enums": 0
     },
     "web.prisma": {

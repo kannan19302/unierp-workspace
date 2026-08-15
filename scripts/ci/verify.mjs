@@ -555,6 +555,11 @@ const GATES = [
     cmd: ["node", ["scripts/check-contract-testing-infrastructure.mjs", "--verify"]],
   },
   {
+    name: "Shared library boundaries gate",
+    why: "P12-091: What belongs in unierp-shared versus a service, with the rule enforced.",
+    cmd: ["node", ["scripts/check-shared-library-boundaries.mjs"]],
+  },
+  {
     name: "Architecture boundaries",
     why: "No cross-module imports, no dependency cycles.",
     cmd: ["pnpm", ["architecture:check"]],

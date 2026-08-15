@@ -4,12 +4,12 @@
 
 ## Summary Metrics
 
-- **Total Schema Files**: 42
-- **Total Schema Lines**: 40,674
-- **Total Models**: 1,915
-- **Total Fields**: 25,417
-- **Total Relations**: 1,207
-- **Total Indexes/Uniques**: 3,624
+- **Total Schema Files**: 43
+- **Total Schema Lines**: 40,731
+- **Total Models**: 1,917
+- **Total Fields**: 25,452
+- **Total Relations**: 1,208
+- **Total Indexes/Uniques**: 3,630
 - **Total Enums**: 65
 
 ## File Breakdown
@@ -56,5 +56,6 @@
 | `reconciler.prisma` | 20 | 1 | 5 | 0 | 1 | 0 | 0.9 |
 | `resource-model.prisma` | 266 | 15 | 98 | 8 | 8 | 0 | 10.4 |
 | `runbooks.prisma` | 36 | 2 | 13 | 0 | 0 | 0 | 1.5 |
+| `saas-portal.prisma` | 57 | 2 | 35 | 1 | 6 | 0 | 2.9 |
 | `web.prisma` | 307 | 17 | 189 | 5 | 25 | 0 | 11.1 |
 | `workflow-runtime.prisma` | 77 | 2 | 31 | 2 | 4 | 0 | 3.4 |

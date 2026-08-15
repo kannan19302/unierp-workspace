@@ -1,6 +1,6 @@
 -- P12-028: Mechanically Generated Row Level Security (RLS) Policies
 -- Generated from unierp-data Prisma schema definitions
--- Total Tenant Tables: 1819
+-- Total Tenant Tables: 1820
 -- IDEMPOTENT EXECUTION
 
 CREATE OR REPLACE FUNCTION current_tenant_id() RETURNS text AS $$
@@ -4439,6 +4439,15 @@ ALTER TABLE "dashboards" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "dashboards" FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "tenant_isolation_dashboards" ON "dashboards";
 CREATE POLICY "tenant_isolation_dashboards" ON "dashboards"
+  FOR ALL
+  USING ("tenant_id" = current_tenant_id())
+  WITH CHECK ("tenant_id" = current_tenant_id());
+
+-- RLS Policy for DataBreach (data_breaches)
+ALTER TABLE "data_breaches" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "data_breaches" FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "tenant_isolation_data_breaches" ON "data_breaches";
+CREATE POLICY "tenant_isolation_data_breaches" ON "data_breaches"
   FOR ALL
   USING ("tenant_id" = current_tenant_id())
   WITH CHECK ("tenant_id" = current_tenant_id());

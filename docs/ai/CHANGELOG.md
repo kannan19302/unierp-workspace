@@ -129,3 +129,5 @@
 -   P 1 2 - 0 8 9 :   I m p l e m e n t e d   C o n t r a c t R e g i s t r y   t o   m a n a g e   a p i   c o n t r a c t s   a n d   t h e i r   c o n s u m e r s ,   u p d a t e d   C I   t o   p o i n t   t e s t s   t o   c o m p i l e d   a r t i f a c t s .  
  
 - 2026-08-15 [P12-090] Created check-stage-c-contract-proof.mjs to assert contract proof gates
+-   R e s t o r e d   u n i e r p - a p i   b u i l d   a f t e r   s h a r e d   l i b r a r y   b o u n d a r i e s   r e f a c t o r   ( P 1 2 - 0 9 1 )  
+ 

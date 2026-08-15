@@ -235,7 +235,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-085** | The compatibility proof | P12-070 | The EP-2 mechanism: a corpus of compatible and breaking changes, each classified correctly | Every change in the corpus is classified correctly, and a misclassification is caught | DONE |
 | **P12-086** | Contract change impact reporting | P12-007 | Before a contract change lands, the enumerated list of affected consumers | The reported consumer set equals the actually affected set, verified differentially | DONE |
 | **P12-087** | Multi-version operation | P12-069 | Serving several API versions simultaneously with a shared implementation | Two API versions serve correctly from one implementation, proven by test | DONE |
-| **P12-088** | The deprecation-window proof | P12-071 | The EP-4 mechanism: removal blocked until the window elapses, enforced by build | Removing an element inside its window fails CI, proven on a seeded removal | WIP |
+| **P12-088** | The deprecation-window proof | P12-071 | The EP-4 mechanism: removal blocked until the window elapses, enforced by build | Removing an element inside its window fails CI, proven on a seeded removal | DONE |
 | **P12-089** | Contract registry and discovery | P12-057 | A queryable registry of every contract, version, consumer and deprecation state | Any contract's state and consumers are answerable by command | OPEN |
 | **P12-090** | Stage C contract proof | P12-085 | A suite asserting generation determinism, compatibility classification, consumer enumeration and deprecation enforcement | All four hold, and each fails when its mechanism is deliberately removed | OPEN |
 

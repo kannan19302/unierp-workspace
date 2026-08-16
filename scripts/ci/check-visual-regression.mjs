@@ -1,38 +1,19 @@
-import fs from "fs";
-import path from "path";
+import { execSync } from 'child_process';
+import path from 'path';
 
-/**
- * CI gate: Visual regression gate (B14)
- * Verifies screenshot baselines per component × 7 themes × 2 densities × light/dark.
- */
 const WORKSPACE_ROOT = process.cwd();
-const THEMES = ["default", "compact", "dark", "corporate", "emerald", "high-contrast", "sunset"];
-const DENSITIES = ["comfortable", "compact"];
-const MODES = ["light", "dark"];
+const STORYBOOK_DIR = path.join(WORKSPACE_ROOT, 'storybook');
 
-const BASELINE_DIR = path.join(WORKSPACE_ROOT, "scripts", "ci", "visual-baselines");
-
-if (!fs.existsSync(BASELINE_DIR)) {
-  fs.mkdirSync(BASELINE_DIR, { recursive: true });
+try {
+  console.log(`[J08] Running visual regression tests...`);
+  // Note: For CI, we would typically run the tests against a build, but this runs the playwright config which spins up the dev server.
+  execSync('pnpm exec playwright test --config playwright.visual.config.ts', {
+    cwd: STORYBOOK_DIR,
+    stdio: 'inherit',
+  });
+  console.log(`[J08] Visual regression gate ACTIVE: tests passed successfully.`);
+  process.exit(0);
+} catch (error) {
+  console.error(`[J08] Visual regression tests failed.`);
+  process.exit(1);
 }
-
-// Generate baseline manifest if missing
-const manifestPath = path.join(BASELINE_DIR, "manifest.json");
-const components = ["button", "card", "modal", "table", "navigation", "form", "identity", "feedback"];
-const expectedCombinations = components.length * THEMES.length * DENSITIES.length * MODES.length; // 8 * 7 * 2 * 2 = 224
-
-const manifest = {
-  version: "1.0.0",
-  updatedAt: new Date().toISOString(),
-  components,
-  themes: THEMES,
-  densities: DENSITIES,
-  modes: MODES,
-  totalBaselines: expectedCombinations,
-  status: "ACTIVE",
-};
-
-fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
-
-console.log(`[B14] Visual regression gate ACTIVE: ${expectedCombinations} baseline combinations verified across 8 components × 7 themes × 2 densities × 2 modes.`);
-process.exit(0);

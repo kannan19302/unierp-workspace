@@ -26829,3 +26829,27 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### P12-096 · FINISH · 2026-08-16T07:06:10Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  branch-policy check fails on local dev environment
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+COMMAND: `vitest run src/temporal/index.test.ts`
+
+PASSING OUTPUT:
+ ✓ src/temporal/index.test.ts (4 tests) 11ms
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+
+FAILING OUTPUT WHEN BROKEN (removed timezone addition):
+ ❯ src/temporal/index.test.ts (4 tests | 2 failed) 25ms
+   × Temporal Primitives > DST and Timezone additions > should handle DST forward transition in America/New_York 18ms
+     → expected 9 to be 10 // Object.is equality
+   × Temporal Primitives > DST and Timezone additions > should handle DST backward transition in Europe/London 2ms
+     → expected 26 to be 27 // Object.is equality
+```
+

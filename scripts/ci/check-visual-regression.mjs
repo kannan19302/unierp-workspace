@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import path from 'path';
 
 const WORKSPACE_ROOT = process.cwd();
-const STORYBOOK_DIR = path.join(WORKSPACE_ROOT, 'storybook');
+const STORYBOOK_DIR = path.join(WORKSPACE_ROOT, '../storybook');
 
 try {
   console.log(`[J08] Running visual regression tests...`);

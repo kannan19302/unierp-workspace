@@ -628,6 +628,12 @@ const GATES = [
     needsAppSource: true,
   },
   {
+    name: "Visual regression",
+    why: "J08 — every UI component must have a visual baseline that remains unchanged unless explicitly updated.",
+    cmd: ["node", ["scripts/ci/check-visual-regression.mjs"]],
+    skipInFast: true,
+  },
+  {
     name: "Build",
     why: "A change that does not build cannot deploy.",
     cmd: ["pnpm", ["build"]],

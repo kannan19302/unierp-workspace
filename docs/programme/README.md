@@ -138,6 +138,13 @@ decomposition of those five into work a session can actually pick up. The mappin
 | 17l | [`40-PROGRAMME-12-PLATFORM-CORE.md`](40-PROGRAMME-12-PLATFORM-CORE.md) | **P12-001–P12-330** · The server-side platform: identity provider, contracts, data layer, kernel, sandbox. Owns the 21 repositories no programme claimed. |
 | 17m | [`41-PROGRAMME-13-INTEGRATION-RELEASE.md`](41-PROGRAMME-13-INTEGRATION-RELEASE.md) | **P13-001–P13-330** · Cross-programme integration, the journey register (every persona × domain), and the v1.0 release. Runs throughout, not at the end. |
 | 17n | [`42-PROGRAMME-14-DEVELOPMENT-HARNESS.md`](42-PROGRAMME-14-DEVELOPMENT-HARNESS.md) | **P14-001–P14-280** · The Development Harness: start.mjs, phase-brief.mjs, verification gates, worktree and autonomous protocol evolution. |
+| 17o | [`43-PROGRAMME-15-TENANT-SITES.md`](43-PROGRAMME-15-TENANT-SITES.md) | **P15-001–P15-200** · Tenant Sites (Platform 4). |
+| 17p | [`44-PROGRAMME-16-WEB-STUDIO.md`](44-PROGRAMME-16-WEB-STUDIO.md) | **P16-001–P16-200** · Web Studio (Platform 5). |
+| 17q | [`45-PROGRAMME-17-TENANT-ADMIN.md`](45-PROGRAMME-17-TENANT-ADMIN.md) | **P17-001–P17-200** · Tenant Admin (Platform 6). |
+| 17r | [`46-PROGRAMME-18-MARKETPLACE.md`](46-PROGRAMME-18-MARKETPLACE.md) | **P18-001–P18-200** · Marketplace (Platform 7). |
+| 17s | [`47-PROGRAMME-19-PROVIDER-OS.md`](47-PROGRAMME-19-PROVIDER-OS.md) | **P19-001–P19-200** · Provider Admin OS (Platform 2). |
+| 17t | [`48-PROGRAMME-20-MOBILE-PLATFORM.md`](48-PROGRAMME-20-MOBILE-PLATFORM.md) | **P20-001–P20-200** · Mobile Platform (Platform 9). |
+| 17u | [`49-PROGRAMME-21-REVENUE-BILLING.md`](49-PROGRAMME-21-REVENUE-BILLING.md) | **P21-001–P21-200** · Revenue & Billing (Global). |
 | 18 | [`90-DEFECT-LOG.md`](90-DEFECT-LOG.md) | Living register of architecture-level defects and improvements found *during* execution. Append-only. |
 | 19 | [`WORKLOG.md`](WORKLOG.md) | **Written by `scripts/start.mjs`, never by hand.** What is claimed, by whom, how far it got, and the evidence a phase was finished on. |
 | 20 | `plan-manifest.json` | Machine-readable index of every phase ID. The integrity gate reads this. |
@@ -181,6 +188,9 @@ decomposition of those five into work a session can actually pick up. The mappin
  P9 web client · P10 mobile · P11 desktop
  P12 the server-side platform every programme above consumes
  P13 the seams between them, and the release
+ P14 development harness
+ P15 tenant sites · P16 web studio · P17 tenant admin · P18 marketplace
+ P19 provider OS · P20 mobile platform · P21 revenue & billing
 ```
 
 **Programmes.** Tracks A–M are **Programme 1**. From `30-` onwards each document is a whole

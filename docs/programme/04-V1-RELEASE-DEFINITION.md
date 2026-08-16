@@ -55,25 +55,73 @@ either reading.
 programme an agent opens when the user has not named one. **It is the authority for that decision**;
 `AGENTS.md § 0` and the `run-phase` skill both defer to it.
 
-The ordering rule is dependency depth, not importance: **a programme is worked when the things it
-asserts through its precondition gate mostly exist**, so its phases are provable rather than
-perpetually degraded.
+The ordering rule is **layer depth** — L0→L2 complete first, then L3, then L4 by audience priority,
+then L5 clients: **a layer does not start until the one beneath it passes its tests.** A page
+written before its migration exists is a mock, not a feature.
 
-| Order | Programme | Why here |
-| :---- | :-------- | :------- |
-| **1** | **Programme 1** (A–M) | 116 phases from complete, and it is the foundation every programme's precondition gate asserts against. Finishing it converts degraded surfaces across all twelve into provable ones. Tracks F and I are 0/26 and 0/18 — the largest holes. |
-| **2** | **Programme 12 — Platform Core** | Owns the identity provider, the contracts, the data layer, the kernel and the sandbox. Every other programme generates clients from `unierp-contracts` and authenticates against `unierp-idp`. Nothing downstream is stable while these are unowned. |
-| **3** | **Programme 9 — Web Client Platform** | The runtime under 903 pages. Programme 4's screens cannot be made good on a platform that is not. Front-loaded deliberately: platform-level fixes here are the only economical way to reach 903 pages. |
-| **4** | **Programme 4 — Tenant Apps (ERP)** | The product itself, and the largest single programme at 370. Depends on 1, 12 and 9 being real. |
-| **5** | **Programme 6 — Tenant Admin Console** | Identity, permissions and governance for the ERP that now exists. |
-| **6** | **Programme 8 — Platform Admin OS** | Operating an estate that now has something in it to operate. |
-| **7** | **Programme 2 — Developer Portal** | Needs a stable metadata and contract layer beneath it; publishes the contract Programme 3 consumes. |
-| **8** | **Programme 3 — Marketplace** | Consumes `P2-334`. Buildable against the contract earlier via `P3-004`'s reference publisher, but not finishable before it. |
-| **9** | **Programme 10 — Mobile** | Offline-first against an ERP whose semantics have settled. Ordering it before Programme 4 would mean building sync for a data model still moving. |
-| **10** | **Programme 5 — Website Builder** | Independent of most of the above by construction (`P5-005`'s projection boundary), so it is safely late rather than urgently early. |
-| **11** | **Programme 7 — Marketing Site** | Its claim gate (`P7-030`) can only be satisfied by capabilities that exist. Marketing a platform before it is real is precisely what `H03` was built to prevent. |
-| **12** | **Programme 11 — Desktop** | Greenfield, and `P11-310` requires measuring every desktop-only capability against a web client that must therefore already be good. |
-| **13** | **Programme 13 — Integration & Release** | Runs throughout for its integration phases; its release phases are last by definition. |
+### 3.1 Execution tiers
+
+The tiers are not a sequence — they are a dependency. Tier 2 may begin while Tier 1 has remaining
+work, but only in areas whose Tier 1 dependencies are already DONE.
+
+**Tier 1 — Foundation (L0→L2):** Complete the platform's provability and the code beneath every
+surface.
+
+| Order | Programme | Layer | Why here |
+| :---- | :-------- | :---- | :------- |
+| **1** | **Programme 1** (A–M) | L0–L2 + cross-cutting | The foundation every programme's precondition gate asserts against. Tracks A, B, C, D, L are >90% DONE. Finishing converts degraded surfaces across all programmes into provable ones. |
+| **2** | **Programme 12 — Platform Core** | L0–L2 (deep) | Owns the identity provider, the contracts, the data layer, the kernel and the sandbox — the 21 repos no other programme was assigned to evolve. 95/330 DONE. |
+
+**Tier 2 — Backend Services (L3):** The API and IdP serve all 10 platforms. They must be solid
+before any platform UI makes real claims.
+
+| Order | Programme | Layer | Why here |
+| :---- | :-------- | :---- | :------- |
+| **3** | **Programme 4 — Tenant Apps (ERP)** | L3+L4 | The product itself, the largest single programme at 370. The 45-module modular monolith — every business transaction must be complete, balanced, attributable and reversible. |
+| **4** | **Programme 21 — Revenue & Billing** | L3 (cross-cutting) | Provider pricing, tenant subscriptions, usage metering, invoicing. Cross-cuts api + provider-admin-os + tenant-admin. |
+
+**Tier 3 — Presentation (L4):** Each platform serves a distinct audience. Priority is by how many
+users it unblocks and what depends on it.
+
+| Order | Programme | Layer | Why here |
+| :---- | :-------- | :---- | :------- |
+| **5** | **Programme 9 — Web Client Platform** | L4 (runtime) | The runtime under 903 pages. Platform-level fixes here are the only economical way to reach 903 pages. |
+| **6** | **Programme 6 — Tenant Admin Console** | L4 | The first thing a paying tenant administrator touches — billing, users, settings. |
+| **7** | **Programme 8 — Platform Admin OS** | L4 | Cannot operate the estate without it. |
+| **8** | **Programme 2 — Developer Portal** | L4 | The ecosystem moat. Sandbox is proven (A16–A19 DONE). Publishes the contract Programme 3 consumes. |
+| **9** | **Programme 3 — Marketplace** | L4 | Consumes `P2-334`. Buildable against the contract earlier via `P3-004`'s reference publisher, but not finishable before it. |
+| **10** | **Programme 5 — Website Builder** | L4 | Independent by construction (`P5-005`'s projection boundary), safely late. Owns `web-studio`, `tenant-sites`, `tenant-site-template`. |
+| **11** | **Programme 7 — Marketing Site** | L4 | Marketing a platform before it is real is precisely what `H03` was built to prevent. |
+
+**Tier 4 — Clients (L5):** Native apps that wrap and adapt settled platform experiences.
+
+| Order | Programme | Layer | Why here |
+| :---- | :-------- | :---- | :------- |
+| **12** | **Programme 10 — Mobile** | L5 | Offline-first against an ERP whose semantics have settled. Building sync for a moving data model is wasted work. |
+| **13** | **Programme 11 — Desktop** | L5 | Greenfield, and `P11-310` requires measuring every desktop-only capability against a web client that must already be good. |
+
+**Tier 5 — Operations & Release (L6+L7):** Cross-cutting, runs continuously.
+
+| Order | Programme | Layer | Why here |
+| :---- | :-------- | :---- | :------- |
+| **14** | **Programme 14 — Development Harness** | L7 | Build tooling, CI/CD, developer experience. Runs alongside from Tier 1 onward. |
+| **15** | **Programme 13 — Integration & Release** | L7 | Integration phases attach to whatever exists and run continuously. Release phases are last by definition. |
+
+### 3.2 Withdrawn programmes
+
+**Programmes 15–20 (12 phases total) were WITHDRAWN on 2026-08-16.** Each was a 2-phase scaffold
+stub created during the 10-platform restructuring that duplicated an existing programme:
+
+| Withdrawn | Absorbed into | Reason |
+| :-------- | :------------ | :----- |
+| P15 (Tenant Sites) | Programme 5 | P5 already owns `tenant-sites` |
+| P16 (Web Studio) | Programme 5 | P5 already owns `web-studio` |
+| P17 (Tenant Admin) | Programme 6 | Duplicate |
+| P18 (Marketplace) | Programme 3 | Duplicate |
+| P19 (Provider OS) | Programme 8 | Duplicate |
+| P20 (Mobile Platform) | Programme 10 | Duplicate |
+
+Phase IDs are retained per `README § 0` rule 3. No ID is deleted or renumbered.
 
 **Programme 13 is the exception to the ordering.** Its integration phases attach to whatever exists
 and should be worked continuously, in the way Track J does for Programme 1 — not saved for the end,

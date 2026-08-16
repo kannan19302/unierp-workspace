@@ -392,6 +392,12 @@ already migrated, these are odd values with no token, font sizes, border widths 
 TSX, and substituting them needs visual-regression coverage that does not yet exist. This ADR
 makes the number trustworthy; it does not make it acceptable.
 
+**ADR-008 — 10-Platform Architecture over a Unified Backend.** `ACCEPTED 2026-08-16.`
+UniERP has been restructured from a monolithic presentation tier into 10 discrete frontend applications (Marketing, Provider OS, Tenant ERP, Tenant Sites, Web Studio, Tenant Admin, Marketplace, Developer, Mobile, Desktop). 
+*Decision:* These 10 platforms will share exactly one backend (`unierp-api`) and one identity provider (`unierp-idp`). We will not build 10 separate backend services. 
+*Why:* A single backend guarantees that cross-platform interactions (e.g., buying an app in the Marketplace and using it in the Tenant ERP) operate on a single source of truth within a single transactional boundary, preventing distributed data anomalies.
+*Consequence:* The UI layer is highly decoupled and role-specific, while the service tier remains a majestic monolith. Ports are strictly allocated (4001-4010) to prevent local development collisions.
+
 ---
 
 ## 10. Amendment log
@@ -399,3 +405,4 @@ makes the number trustworthy; it does not make it acceptable.
 | Date       | Change                                                         | By          |
 | :--------- | :------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; replaces the deleted `.ai/` document set | Claude Code |
+| 2026-08-16 | Added ADR-008 (10-platform architecture)                       | Antigravity |

@@ -163,6 +163,30 @@ Every module ships on **Web** (Next.js), **Mobile** (Flutter, iOS + Android), an
 (e.g. the tax-return builder does not need a phone UI). Offline-first with a sync queue is
 required for POS, attendance, and field service.
 
+### 5.5 The 10-Platform Architecture
+
+UniERP operates as a constellation of 10 distinct presentation platforms backed by a single unified core (`unierp-api` and `unierp-idp`). This isolates provider concerns from tenant concerns and runtime environments from authoring environments.
+
+**Provider Platforms (UniERP Internal)**
+1. **Marketing Site** (`unierp-corporate-website`): The global front door for UniERP.
+2. **Provider Admin OS** (`unierp-console`): The control centre for the platform operator to manage all tenants, billing, and global infrastructure.
+
+**Tenant Platforms (Public/Customers)**
+3. **Tenant Apps / ERP** (`unierp-web`): The core business system where end-users run Finance, HR, Sales, etc.
+4. **Tenant Sites** (`unierp-tenant-sites`): Public-facing websites, e-commerce storefronts, and portfolios published by tenants.
+5. **Web Studio** (`unierp-web-studio`): A no-code/low-code builder (with full-stack escape hatches) where tenants design their Tenant Sites.
+6. **Tenant Admin Console** (`unierp-tenant-admin`): A dedicated SaaS portal for tenant administrators to manage users, usage, billing, and platform-level settings for their organization.
+
+**Ecosystem & Edge Platforms**
+7. **Marketplace** (`unierp-marketplace`): The unified hub for installing core applications, connectors, plugins, and 3rd-party extensions.
+8. **Developer Platform** (`unierp-developer`): Tools and APIs for integrators and partners to build and publish custom extensions.
+9. **Mobile App** (`unierp-mobile`): iOS/Android client for frontline tasks.
+10. **Desktop App** (`unierp-desktop`): Native client wrapper (Tauri) for heavy offline or integrated workflows.
+
+### 5.6 Revenue Model & Monetization
+
+*(Placeholder: A detailed revenue model covering subscription tiers, metered billing, marketplace rev-share, and partner licensing is pending integration. Once defined, it will dictate the capabilities surfaced in the Provider Admin OS and Tenant Admin Console.)*
+
 ---
 
 ## 6. Non-functional requirements
@@ -246,3 +270,4 @@ foundation.** The full scored assessment and remediation programme is in
 | Date       | Change                                                         | By          |
 | :--------- | :------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; replaces the deleted `.ai/` document set | Claude Code |
+| 2026-08-16 | Added § 5.5 (10 Platforms) and § 5.6 (Revenue Model)           | Antigravity |

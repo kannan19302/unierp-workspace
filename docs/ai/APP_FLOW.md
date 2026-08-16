@@ -130,6 +130,20 @@ API errors are RFC 7807 `application/problem+json`:
 
 ---
 
+## 3a. Global Platform Wizard
+
+Because UniERP consists of 10 discrete platforms, the root navigation experience is a central switcher. Upon authentication, users who hold roles across multiple platforms (e.g., a Tenant Admin who also uses the Tenant ERP and Web Studio) are presented with a unified Platform Wizard.
+*   **Role-Gated Tiles:** The wizard displays only the platforms the user is authorized to access.
+*   **Seamless SSO:** Navigating between the Tenant Admin (Platform 6) and Web Studio (Platform 5) requires zero re-authentication, managed by `unierp-idp`.
+
+## 3b. Tenant App Wizard
+
+Within Platform 3 (Tenant Apps / ERP), a secondary App Wizard manages the tenant's installed business capabilities.
+*   **Module Launcher:** Displays installed modules (Finance, HR, Sales, etc.).
+*   **Marketplace Bridge:** Uninstalled or suggested modules link directly to Platform 7 (Marketplace) for provisioning.
+
+---
+
 ## 4. Journey A — Onboarding a new organisation (Dev, IT Admin)
 
 The single most important journey: **bare metal → usable tenant in under 30 minutes.**
@@ -389,3 +403,4 @@ snippet has violated the product's core promise.
 | Date       | Change                                                         | By          |
 | :--------- | :------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; replaces the deleted `.ai/` document set | Claude Code |
+| 2026-08-16 | Added § 3a/3b (Platform Wizard / App Wizard)                   | Antigravity |

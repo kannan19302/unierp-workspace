@@ -306,7 +306,21 @@ inside its own `overflow-x: auto` container.
 
 ---
 
-## 11. Amendment log
+## 11. Platform Identity
+
+While tokens are shared across all 10 platforms in the UniERP suite, each platform maintains a distinct visual hierarchy suitable for its audience:
+
+- **Provider Admin OS**: High density, data-first. Focus on system-wide metrics and control.
+- **Tenant Admin**: Medium-high density. Focus on business operations and configuration.
+- **Tenant Apps (ERP, HR, etc.)**: Comfortable density default. Focus on daily workflows and distinct business domains.
+- **Web Studio**: Low density builder interface. Maximum canvas area, prominent toolbars.
+- **Marketing & Tenant Sites**: Highly visual, comfortable density, prominent brand colours and typography.
+- **Developer Platform / Extensions / Marketplace**: Code-forward, high contrast, documentation-focused.
+- **Mobile Platforms**: Touch-optimized (minimum 44px targets), stacked layouts, bottom navigation.
+
+---
+
+## 12. Amendment log
 
 | Date       | Change                                                                                       | By          |
 | :--------- | :------------------------------------------------------------------------------------------- | :---------- |

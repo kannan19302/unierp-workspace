@@ -250,7 +250,7 @@ already in use), and semantic-release / changesets for mechanical version discip
 | **P12-093** | Utility and helper consolidation | P12-002 | Duplicated helpers across repositories consolidated into one implementation | `check-duplication.mjs` reports no duplicate helper above threshold across claimed repositories | DONE |
 | **P12-094** | Shared type definitions | P12-062 | Domain types shared rather than redeclared per service | A redeclared shared type fails a gate, proven on a seeded duplicate | DONE |
 | **P12-095** | Validation primitives | P12-059 | One validation approach used by every service, aligned with the contracts | A service using a second validation approach fails an architecture gate | DONE |
-| **P12-096** | Date, time and timezone primitives | P12-094 | Shared, correct temporal handling used everywhere | Temporal arithmetic matches expected values across a DST and timezone fixture set | OPEN |
+| **P12-096** | Date, time and timezone primitives | P12-094 | Shared, correct temporal handling used everywhere | Temporal arithmetic matches expected values across a DST and timezone fixture set | WIP |
 | **P12-097** | Decimal and money primitives | P12-030 | Shared money type and arithmetic that never leaves Decimal | Money arithmetic matches hand computation across a rounding edge-case suite | OPEN |
 | **P12-098** | Identifier primitives | P12-094 | Shared identifier generation, validation and formatting | Identifier generation is collision-free under concurrency, proven by test | OPEN |
 | **P12-099** | Localisation primitives | P12-096 | Shared message, formatting and locale resolution used by every service | A service implementing its own locale handling fails an architecture gate | OPEN |

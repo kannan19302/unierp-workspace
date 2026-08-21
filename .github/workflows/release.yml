@@ -75,6 +75,6 @@ jobs:
           if [ "$MISSING" -gt 0 ]; then
             echo "::error::$MISSING pinned component(s) are not on the registry."
             echo "A manifest is a rollback target. One that pins an uninstallable version"
-            echo "is not a rollback target. See docs/programme phase A01."
+            echo "is not a rollback target."
             exit 1
           fi

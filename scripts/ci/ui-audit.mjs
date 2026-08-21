@@ -19,17 +19,17 @@ const ignoredDirectories = new Set([
 ]);
 
 const surfaces = [
-  { repo: "infra/platform-wizard", anatomy: "launch-hero", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "marketing-site", anatomy: "editorial", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-apps", anatomy: "record", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-admin", anatomy: "settings", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "provider-admin-os", anatomy: "ops", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "marketplace", anatomy: "catalog", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "developer-platform", anatomy: "workspace-studio", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "web-studio", anatomy: "workspace-studio", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-sites", anatomy: "tenant-branded", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "unierp-mobile", anatomy: "mobile", route: /(?:_page|_screen)\.dart$/ },
-  { repo: "desktop-app", anatomy: "desktop", route: /public(?:\\|\/)index\.html$/ },
+  { repo: "infra/platform-wizard", anatomy: "launch-hero", shell: "LaunchShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "marketing-site", anatomy: "editorial", shell: "EditorialShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-apps", anatomy: "record", shell: "RecordShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-admin", anatomy: "settings", shell: "SettingsShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "provider-admin-os", anatomy: "ops", shell: "OpsShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "marketplace", anatomy: "catalog", shell: "CatalogShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "developer-platform", anatomy: "workspace-studio", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "web-studio", anatomy: "workspace-studio", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-sites", anatomy: "tenant-branded", noShell: true, route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "unierp-mobile", anatomy: "mobile", shell: "AppShell", route: /(?:_page|_screen)\.dart$/ },
+  { repo: "desktop-app", anatomy: "desktop", shell: "data-ui-root=\"desktop-adapter\"", route: /public(?:\\|\/)index\.html$/ },
 ];
 
 const approvedShellFiles = new Set([
@@ -72,6 +72,23 @@ function relative(file) {
   return path.relative(estateRoot, file).replaceAll("\\", "/");
 }
 
+function nearestRootContract(file, root, surface) {
+  if (surface.noShell) return "tenant-site-no-shell";
+  const marker = new RegExp(`(?:${surface.shell})`);
+  let current = path.dirname(file);
+  while (current.startsWith(root)) {
+    for (const candidate of ["layout.tsx", "layout.ts", "app_shell.dart", "index.html", "page.tsx"]) {
+      const contract = path.join(current, candidate);
+      if (fs.existsSync(contract) && marker.test(fs.readFileSync(contract, "utf8"))) {
+        return surface.anatomy;
+      }
+    }
+    if (current === root) break;
+    current = path.dirname(current);
+  }
+  return null;
+}
+
 const routes = [];
 const findings = {};
 
@@ -89,6 +106,7 @@ for (const surface of surfaces) {
     if (!surface.route.test(fileRelativeToRepo)) continue;
     const content = fs.readFileSync(file, "utf8");
     const routeFile = relative(file);
+    const rootAnatomy = nearestRootContract(file, root, surface);
     const stateCount = sixStates.filter((state) => content.includes(state)).length;
     const rawTables = countMatches(content, /<table(?:\s|>)/g);
     const inlineStyles = countMatches(content, /style\s*=\s*\{\{/g);
@@ -104,6 +122,7 @@ for (const surface of surfaces) {
       surface: surface.repo,
       file: routeFile,
       anatomy: surface.anatomy,
+      rootAnatomy,
       sharedUi,
       stateCount,
       rawTables,
@@ -116,6 +135,7 @@ for (const surface of surfaces) {
     record("inlineStyle", routeFile, inlineStyles);
     record("tokenLiteral", routeFile, tokenLiterals);
     record("missingStates", routeFile, stateCount < sixStates.length ? sixStates.length - stateCount : 0);
+    if (!rootAnatomy) record("missingRootContract", routeFile, 1);
   }
 
   for (const file of files) {
@@ -128,7 +148,6 @@ for (const surface of surfaces) {
 
 routes.sort((a, b) => a.file.localeCompare(b.file));
 const inventory = {
-  generatedAt: new Date().toISOString(),
   routeCount: routes.length,
   surfaces: Object.fromEntries(
     surfaces.map(({ repo, anatomy }) => [
@@ -178,4 +197,4 @@ if (regressions.length > 0) {
   process.exit(1);
 }
 
-console.log("UI audit passed: no shell, state, table, token, or styling regression.");
+console.log("UI audit passed: every active route resolves an approved root anatomy; no shell, state, table, token, or styling regression.");

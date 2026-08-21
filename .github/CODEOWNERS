@@ -1,9 +1,3 @@
 # Layer L7 — Operations
 * @unierp/platform-team
 
-# The development programme. Phase IDs are permanent and these documents are
-# amended by surgical edit, never regenerated — see docs/programme/README.md § 0.
-# The real protection is scripts/check-plan-integrity.mjs, wired as a blocking
-# gate in ci.yml; this entry is the reminder that a human should look.
-/docs/programme/            @unierp/platform-team
-/scripts/check-plan-integrity.mjs  @unierp/platform-team

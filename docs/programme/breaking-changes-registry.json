@@ -1,9 +1,0 @@
-{
-  "policy": "All changes to published artefacts (@kannan19302/contracts, @kannan19302/auth, @kannan19302/shared, @kannan19302/framework) must be classified as BREAKING, DEPRECATED, or COMPATIBLE before landing. BREAKING changes require a target version, migration guide, and enumeration of affected consumers. DEPRECATED symbols require a deprecation date and removal-allowed-after date. Unclassified changes to protected packages fail CI.",
-  "classifications": {
-    "BREAKING": "The change removes, renames, or alters the observable contract of an exported symbol in a way that requires consumers to change their code.",
-    "DEPRECATED": "The change marks a symbol as pending removal with a declared deprecation window. Consumers must migrate before the removal date.",
-    "COMPATIBLE": "The change adds new symbols, fields, or capabilities without altering or removing existing ones. No consumer action required."
-  },
-  "entries": []
-}

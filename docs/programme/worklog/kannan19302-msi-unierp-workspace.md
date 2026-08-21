@@ -26967,3 +26967,9 @@ Work has NOT started. This block exists so no other agent takes this phase.
 B26 baseline exposed a false-positive exit gate: ui:audit assigns anatomy from surface configuration rather than proving route inheritance from an approved root shell. Next: add explicit root-contract resolution for web/mobile/desktop and migrate nonconforming platform roots before deliberate second-shell failure proof.
 ```
 
+### B26 · PROGRESS · 2026-08-21T15:48:15Z · kannan19302@MSI/unierp-workspace
+
+```
+B26 strengthened ui:audit to resolve actual nearest root contracts instead of assigning anatomy from a surface label. The intentional baseline now fails on 1,421 active routes lacking an approved inherited root (rather than passing by configuration); next is root migration in surface priority order, beginning platform-wizard and marketing-site.
+```
+

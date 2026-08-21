@@ -1,7 +1,7 @@
-# TRACK B · DESIGN SYSTEM — B01–B24
+# TRACK B · DESIGN SYSTEM — B01–B30
 
 > Part of [the UniERP Development Programme](README.md). Read `README.md § 0` before editing.
-> **Wave 1, continuing into 2.** Ranked **second overall** in `01-PRIORITY-AND-SEQUENCING § 2`
+> **Wave 1, continuing into 2.** Ranked **first overall** by the 2026-08-21 maintainer amendment in `01-PRIORITY-AND-SEQUENCING § 2`
 > and the highest-leverage track in the programme: every screen in C, D, E, F, G, H and I is
 > built from it.
 
@@ -110,11 +110,30 @@ client.
 
 ---
 
+## 5a. Stage B-IV · Platform-wide UI/UX transformation (maintainer priority 1)
+
+> Added by explicit maintainer decision on 2026-08-21 after a static audit of all eleven
+> presentation anatomies. B01–B24 made the design system possible; this stage makes its adoption
+> true across the product. It is deliberately sequenced in Wave 1 because allowing new screens to
+> accumulate on legacy shells increases the migration surface on every subsequent phase.
+
+| ID | Phase | Depends | Deliverable | Exit | Status |
+| :- | :---- | :------ | :---------- | :--- | :----- |
+| **B25** | UI truth and guardrails | B15, B17, B23 | Fix inherited semantic defects; generate a route-level inventory of shell, state, token, responsive and accessibility adoption; gate new local shells, raw tables, unapproved styling and missing six-state coverage | `pnpm ui:audit` emits every active route and returns non-zero after seeding an unregistered shell, raw table, new token violation, or missing required state; the shared `ComboBox` contains no nested interactive control and its regression test fails when restored | OPEN |
+| **B26** | Shell convergence | B25 | Adopt the approved anatomy at every platform root: `LaunchShell`, `EditorialShell`, `RecordShell`, `SettingsShell`, `OpsShell`, `CatalogShell`, `PlatformShell`/`WorkspaceShell`/`StudioShell`, tenant-branded sites, mobile shell and desktop adapter | The generated route inventory maps 100% of active routes to exactly one approved root anatomy (or the explicit tenant-site no-shell contract); adding a second root shell fails the audit | OPEN |
+| **B27** | Workflow convergence | B26 | Schema-driven list-report, object-page, draft/edit, approval, reversal, bulk action, import/export, reconciliation, audit history and publish/rollback patterns shared across modules | Reference journeys in finance, procurement, inventory, tenant administration, provider operations, marketplace install and Studio publish complete using shared patterns; replacing one shared pattern with a page-local implementation makes the conformance suite fail | OPEN |
+| **B28** | Responsive and native intent parity | B27 | Responsive transformations and cross-client contracts for navigation, cards/tables, inspectors/sheets, drafts, offline work, conflicts, notifications, deep links and native desktop affordances | Representative journeys pass at 320px, tablet and desktop, 200% zoom, keyboard-only and reduced motion; Flutter and desktop parity checks fail when one required intent is removed | OPEN |
+| **B29** | Premium enterprise experience | B28 | Geometry-matched skeletons, optimistic recovery, durable background work, recents/favourites/saved views, command-first operation, intelligent defaults and explainable reversible AI assistance | Measured reference journeys meet declared interaction and layout-stability budgets; every optimistic or AI-assisted mutation has a tested rollback path and a seeded missing rollback fails CI | OPEN |
+| **B30** | Continuous UX governance | B29 | Route-level conformance, browser accessibility matrix, cross-theme visual regression, manual assistive-technology release protocol, adoption metrics and quarterly vocabulary/navigation review | CI publishes per-repository adoption and accessibility status; coverage cannot fall, every critical route has browser evidence, and a seeded regression in shell, keyboard, contrast, responsive overflow or terminology is detected | OPEN |
+
+---
+
 ## 6. Amendment log
 
 | Date | Change | By |
 | :--- | :----- | :- |
 | 2026-08-07 | Track established. 24 phases in three stages. Sized against the verified 14-primitive inventory; B18–B21 added because no Flutter token consumption path exists, so objective ③'s "all clients" is currently one client. | Claude Code |
 | 2026-08-08 | Amended exit criterion from counting `*.tsx` files to counting components with a `.stories.tsx`. The previous criterion was gamed by a run that created 61 one-line re-export shims to satisfy a file count without writing implementations. A plan that hides its wrong turns teaches nothing. | opencode |
+| 2026-08-21 | **B25–B30 added and elevated to maintainer priority 1.** A platform-wide audit found that B01–B24 established strong tokens, primitives and eleven approved anatomies, but adoption remained sparse across approximately 1,652 route/screen files. The six phases convert the audit roadmap into permanent, falsifiable work: guardrails → shells → workflows → responsive/native parity → premium experience → continuous governance. This is a deliberate priority amendment requested by the maintainer, not a silent wave skip; each phase remains dependency-gated and the existing safety gates are not weakened. | Codex |
 |   2 0 2 6 - 0 8 - 0 8   |   C O N F L I C T   L O G   ( 0 b ) :   n p m   v i e w   @ u n e r p / c o n f i g   r e t u r n s   4 0 4   a n d   n p m   w h o a m i   r e t u r n s   E N E E D A U T H .   C a n n o t   p u b l i s h   @ u n e r p / c o n f i g   w i t h o u t   u s e r   n p m   c r e d e n t i a l s .   P h a s e   0 b ,   0 c ,   B 1 3   c a n n o t   c l o s e .   B l o c k e d   o n   u s e r   a c c o u n t   a c t i o n .   |   A n t i g r a v i t y   |  
  

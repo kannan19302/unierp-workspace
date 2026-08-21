@@ -113,7 +113,7 @@ decomposition of those five into work a session can actually pick up. The mappin
 | 4 | [`03-GAP-ANALYSIS.md`](03-GAP-ANALYSIS.md) | The 24 things the ten-point brief did not name, and which of them are load-bearing. |
 | 4b | [`04-V1-RELEASE-DEFINITION.md`](04-V1-RELEASE-DEFINITION.md) | **What v1.0 is, when it ships, the programme working order, and the go-live gate.** Holds no phase IDs. § 3 is the authority for which programme to open next. |
 | 5 | [`10-TRACK-A-FOUNDATION.md`](10-TRACK-A-FOUNDATION.md) | **A01–A31** · Proof, packaging, release, CI/CD, tenancy correctness. The gate on everything. |
-| 6 | [`11-TRACK-B-DESIGN-SYSTEM.md`](11-TRACK-B-DESIGN-SYSTEM.md) | **B01–B24** · Enterprise design system across web, mobile, desktop. |
+| 6 | [`11-TRACK-B-DESIGN-SYSTEM.md`](11-TRACK-B-DESIGN-SYSTEM.md) | **B01–B30** · Enterprise design system and platform-wide UI/UX convergence across web, mobile, desktop. |
 | 7 | [`12-TRACK-C-PLATFORM-CONSOLE.md`](12-TRACK-C-PLATFORM-CONSOLE.md) | **C01–C29** · Provider/internal control plane (plane 1). |
 | 8 | [`13-TRACK-D-TENANT-ADMIN.md`](13-TRACK-D-TENANT-ADMIN.md) | **D01–D22** · Tenant SaaS portal and per-app settings (plane 2). |
 | 9 | [`14-TRACK-E-BUSINESS-APPS.md`](14-TRACK-E-BUSINESS-APPS.md) | **E01–E47** · The 45 modules, from CRUD to genuinely functional (plane 3). |

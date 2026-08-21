@@ -40,8 +40,8 @@ from:
 
 | Rank | Objective | Track | Why here |
 | :--- | :-------- | :---- | :------- |
-| **1** | *(not in the brief)* Foundation proof, packaging, release, tenancy correctness | **A** | ① Unsafe if late. Nothing below can be *believed* without it, and D013 means the topology itself is currently unverified. Also the only track that unblocks the others' CI. |
-| **2** | ③ Design system to enterprise grade | **B** | ② Unbuildable if late. Every screen in C, D, E, F, G, H, I is built from it. Building 500 screens against 14 primitives means hand-rolling components 500 times and re-doing them once B lands. **Highest leverage in the programme.** |
+| **1** | ③ Design system to enterprise grade and platform-wide UI/UX convergence | **B** | **Maintainer priority amendment, 2026-08-21.** B01–B24 established the safe foundation; B25–B30 now stop legacy shells and workflows accumulating across approximately 1,652 routes while the rest of the programme advances. Existing safety gates and phase dependencies remain mandatory. |
+| **2** | *(not in the brief)* Foundation proof, packaging, release, tenancy correctness | **A** | ① Unsafe if late. Nothing below can be *believed* without it, and D013 means the topology itself is currently unverified. Also the only track that unblocks the others' CI. |
 | **3** | *(not in the brief)* Code quality, maintainability, standards enforcement | **L** | ② Unbuildable if late, in the literal sense: `CODE_STANDARDS § 4` argues that a file an agent cannot load alongside the code it must integrate with is a file it will modify blindly, and 86 files exceed that ceiling. L11–L13 additionally **block A06** — see § 4a. Cheap, mechanical, and it compounds over every remaining phase. |
 | **4** | ⑩ Testing, all disciplines | **J** | ① Unsafe if late, and it must run *alongside* everything, not after. J01–J08 land early as gates; J09–J26 accumulate as each surface arrives. A test discipline retrofitted at the end tests what was built, not what was required. |
 | **5** | ① SaaS platform admin console | **C** | ③ Unsellable if late — and it is the largest single gap (`00-BASELINE § 4①`). You cannot operate a multi-tenant platform without it: no provisioning, no impersonation, no billing correction, no incident response. Its backend already exists, so it is unusually cheap for its value. |
@@ -71,7 +71,7 @@ Solid arrows are hard blocks. A phase may not start until every upstream track's
                resolve)       ▼          │          │            │
                     ┌───────────────┐    │          │            │
                     │  B · DESIGN   │    │          │            │
-                    │  (B01–B24)    │    │          │            │
+                    │  (B01–B30)    │    │          │            │
                     └───┬───┬───┬───┘    │          │            │
                         │   │   │        │          │            │
         B01–B12 ────────┤   │   └────────┼──────┐   │            │
@@ -144,7 +144,7 @@ and every gate the platform advertises has been observed failing on a deliberate
 
 ### Wave 1 · "The foundation is proven, and the design system is real"
 
-**Phases:** A13–A31 · B01–B24 · J05–J08 · K03–K04 · H01–H04 · L07–L10 · L14–L18
+**Phases:** A13–A31 · B01–B30 · J05–J08 · K03–K04 · H01–H04 · L07–L10 · L14–L18
 **Claim:** *Tenancy, isolation and the sandbox are proven by adversarial tests; the design system
 covers the components an enterprise application actually needs.*
 **Exit:** `check-rls-verify` green across all 1,029+ tenant tables; sandbox escape suite passing;
@@ -276,4 +276,5 @@ phase is `OPEN`.
 | 2026-08-07 | Established. Ten brief objectives ranked into twelve tracks; dependency graph and seven waves defined. | Claude Code |
 | 2026-08-11 | **Track M placed: M01–M20 into Wave 2, M21–M46 into Wave 6.** Wave 2's claim was measurably false for the estate — see the amendment under § 4 Wave 2 and D044. No wave's claim text was altered; a wave whose claim needed weakening to stay true would be a § 0 rule 4 violation, and this is the opposite move: the phases were added so the existing sentence becomes true. | Claude Code |
 | 2026-08-16 | **Layer-first execution reorder and P15–P20 withdrawal.** `04-V1-RELEASE-DEFINITION.md § 3` restructured from a flat 13-programme priority list into 5 execution tiers mapped to the L0→L7 layer architecture: Tier 1 (L0–L2 Foundation: P1 + P12), Tier 2 (L3 Backend: P4 + P21), Tier 3 (L4 Presentation: P9→P6→P8→P2→P3→P5→P7), Tier 4 (L5 Clients: P10→P11), Tier 5 (L6+L7 Ops: P14 + P13). Six stub programmes (P15–P20, 12 phases total) WITHDRAWN — each was a 2-phase scaffold duplicating an existing programme (P15→P5, P16→P5, P17→P6, P18→P3, P19→P8, P20→P10). Programme 21 (Revenue & Billing) added at Tier 2 priority 4. Programme 14 (Development Harness) added at Tier 5 priority 14. The ordering rule is unchanged (§ 1's three questions still apply); the structural change is expressing that rule as layers rather than as a flat list, which aligns the programme order with the build order (`AGENTS.md § 3`) that was always the constraint. | Antigravity |
+| 2026-08-21 | **Track B elevated to priority 1 and B25–B30 added to Wave 1 by explicit maintainer decision.** The completed B01–B24 foundation is now followed immediately by platform-wide guardrails, shell convergence, workflow convergence, responsive/native parity, premium interaction work and continuous UX governance. This does not weaken or bypass any safety gate; it prevents new presentation work increasing the measured migration debt while later phases execute. | Codex |
 

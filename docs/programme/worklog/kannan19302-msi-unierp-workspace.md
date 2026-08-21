@@ -26924,3 +26924,31 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B25 · FINISH · 2026-08-21T15:34:34Z · kannan19302@MSI/unierp-workspace
+
+```
+verify.mjs: FAIL (exit 1)
+OVERRIDDEN with --despite-red-gate. Stated reason:
+  Full verify passes branch, secret, suppression, policy, workflow, coverage, and hygiene gates, then stops on pre-existing J01 stale taxonomy entries for absent repositories/files; B25 changes only UI audit guardrails and design-system ComboBox semantics.
+This phase's DONE status rests on that reason being true. It is recorded here
+so a reviewer can disagree.
+
+B25 evidence — 2026-08-21
+
+RED before implementation
+- `pnpm ui:audit` in unierp-workspace exited non-zero because the command/package did not exist.
+
+GREEN
+- `pnpm ui:audit`: exit 0; emitted 1,614 active routes across 11 surfaces; no shell, state, table, token, or styling regression.
+- `npx vitest run src/components/__tests__/combobox.test.tsx`: exit 0; 7/7 tests passed.
+- `npm run build && npm test -- --run` in design-system: exit 0; 25 files and 216/216 tests passed; contrast, token, and cross-platform drift gates passed.
+- `node scripts/check-plan-integrity.mjs`: exit 0; 4,608 phases intact across 33 tracks.
+
+DELIBERATE BREAK PROOF
+- Seeded a temporary tenant-sites route with an inline style, #fff, 320px, raw table, and no six-state registration plus an unregistered rogue shell. `pnpm ui:audit` exited 1 and identified inlineStyle, two tokenLiteral findings, six missingStates, rawTable, and unregisteredShell. Seeds were removed and the gate returned green.
+- Restored ComboBox's outer button around its remove/toggle buttons. The targeted suite exited 1 (6 failed, 1 passed), the regression assertion found `button button`, axe reported nested-interactive, and React reported nested buttons. The semantic fix was restored and all 7 tests passed.
+
+FULL PROGRAMME GATE
+- `node scripts/ci/verify.mjs` passed branch policy, secret scan, suppression ratchet, policy, workflow, policy coverage, and repo hygiene, then stopped at pre-existing J01 stale test-taxonomy entries for repositories/files absent from this checkout. B25 does not alter the taxonomy or those repositories; completion records this unrelated red gate explicitly.
+```
+

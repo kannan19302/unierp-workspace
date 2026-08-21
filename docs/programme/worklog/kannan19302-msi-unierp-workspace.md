@@ -26961,3 +26961,9 @@ selected  lowest READY phase in Wave 1
 Work has NOT started. This block exists so no other agent takes this phase.
 ```
 
+### B26 · PROGRESS · 2026-08-21T15:35:37Z · kannan19302@MSI/unierp-workspace
+
+```
+B26 baseline exposed a false-positive exit gate: ui:audit assigns anatomy from surface configuration rather than proving route inheritance from an approved root shell. Next: add explicit root-contract resolution for web/mobile/desktop and migrate nonconforming platform roots before deliberate second-shell failure proof.
+```
+

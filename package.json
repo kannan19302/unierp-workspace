@@ -1,0 +1,7 @@
+{
+  "name": "unierp-programme",
+  "private": true,
+  "scripts": {
+    "ui:audit": "node scripts/ci/ui-audit.mjs"
+  }
+}

@@ -5202,3 +5202,13 @@ gate."* This should be fixed early — it is currently taxing every phase in eve
 - **Impact**: A bug inverting cash flow aggregation would pass all tests.
 - **Fix owner**: Next Track J phase that addresses financial arithmetic test quality.
 - **Recommended fix**: Add value-asserting tests for getDashboardData arithmetic: specific amounts in → specific computed values out. Do not mock intermediate computation, only DB calls.
+
+### D154 - MEDIUM - test-taxonomy gate treats repositories absent from a partial checkout as stale manifest entries
+
+- **Date**: 2026-08-21
+- **Phase found**: B25
+- **Severity**: Medium (programme verification cannot complete in a valid partial polyrepo checkout)
+- **Reproduction**: Run `node scripts/ci/verify.mjs` from `unierp-workspace` when repositories such as `unierp-data`, `unierp-idp`, and `unierp-web` are not present beside it. J01 reports every manifest entry for those repositories as a stale deleted test and exits non-zero.
+- **Impact**: UI-only phases pass branch, secret, suppression, policy, workflow, coverage, and hygiene checks but require a documented red-gate override for an unrelated checkout-shape condition.
+- **Recommended fix**: Make taxonomy validation distinguish an absent repository from a present repository containing a deleted test, or require and verify a declared full-checkout profile before treating entries as stale.
+- **Owner**: Track J test-taxonomy governance.

@@ -49,14 +49,20 @@ literal font size in application code is a **build failure**, enforced by a CI g
 Tokens live in `@kannan19302/ui-tokens` and ship as CSS custom properties. Themes swap the values;
 component code never changes.
 
-**Themes:** `light` (default) · `dark` · `enterprise` · `modern` · `minimal` · `classic` ·
-`high-contrast`.
+**Themes:** `meridian` / `meridian-dark` (§13 — the design language; the target default for
+every platform) · `light` (current package default) · `dark` · `enterprise` · `modern` ·
+`minimal` · `classic` · `high-contrast`.
 **Density:** `comfortable` (default) · `compact` — orthogonal to theme, applied via
 `[data-density]`, and a user preference.
 
 ---
 
 ## 3. Colour
+
+> **Amended 2026-08-21.** §3 documents the `light` theme, which is still shipped and still the
+> package default. It is no longer the brand: **Meridian (§13) is the design language**, its
+> primary is a deep teal rather than indigo, and its values supersede the tables below on any
+> surface that has adopted it. The *rules* in §3.4 and §3.5 apply unchanged to every theme.
 
 ### 3.1 Semantic surfaces (light theme — the reference)
 
@@ -306,17 +312,80 @@ inside its own `overflow-x: auto` container.
 
 ---
 
-## 11. Platform Identity
+## 11. Platform identity — eleven anatomies
 
-While tokens are shared across all 10 platforms in the UniERP suite, each platform maintains a distinct visual hierarchy suitable for its audience:
+> Amended 2026-08-21. The previous version of this section listed a **density**
+> per platform and nothing else. That was not an identity: density is one token
+> axis, and every platform that consumed the design system still drew the same
+> shape — left sidebar, top bar, page header, card grid. §12 diagnosed exactly
+> this failure one altitude down ("thirteen builders shared tokens and still
+> looked like thirteen products, because **layout** was the part that was
+> diverging") and fixed it with a frame. This section applies the same reasoning
+> in the opposite direction: the platforms need layouts that deliberately
+> diverge, and one element that deliberately does not.
 
-- **Provider Admin OS**: High density, data-first. Focus on system-wide metrics and control.
-- **Tenant Admin**: Medium-high density. Focus on business operations and configuration.
-- **Tenant Apps (ERP, HR, etc.)**: Comfortable density default. Focus on daily workflows and distinct business domains.
-- **Web Studio**: Low density builder interface. Maximum canvas area, prominent toolbars.
-- **Marketing & Tenant Sites**: Highly visual, comfortable density, prominent brand colours and typography.
-- **Developer Platform / Extensions / Marketplace**: Code-forward, high contrast, documentation-focused.
-- **Mobile Platforms**: Touch-optimized (minimum 44px targets), stacked layouts, bottom navigation.
+**A platform's anatomy is determined by its persona's session, not by its team.**
+A user who is on a screen for fifteen seconds and a user who is on it for eight
+hours do not want the same frame, and giving them the same frame is how one of
+them gets a bad one.
+
+| # | Surface | Persona · session | Anatomy |
+| :-- | :------ | :---------------- | :------ |
+| 1 | **Global Platform Wizard** (:4000) | any signed-in user · ~15s | **No chrome.** No sidebar, no top bar, no page header. A full-bleed centred field of platform plates. The only in-product screen permitted a hero. Type-to-filter, `Enter` to launch. |
+| 2 | **Marketing Site** (P1) | anonymous buyer · minutes | **Editorial.** Asymmetric grid, full-bleed alternating bands, display type at sizes that appear nowhere else, and a motion budget the product does not get. Its `/admin` CMS uses anatomy 4, not this one. |
+| 3 | **Tenant Applications** (P3) | business user · 8h/day | **Flexible columns.** Module rail → list → detail → inspector, sliding, never losing context. Record pages are object pages with anchor nav. Comfortable density. |
+| 4 | **Tenant Admin Console** (P6) | tenant admin · minutes, infrequent | **Index/detail settings.** Searchable left index over the setting tabs; the right pane is always a form; a sticky dirty-state footer is pinned to the bottom. No dashboard, no KPI row. Deliberately the inverse of anatomy 3. |
+| 5 | **Application Wizard** (in P3) | business user · ~10s | **A shelf, not a hero.** The same plate component as anatomy 1 at a smaller scale, bounded inside the tenant shell. The two wizards must never be interchangeable, and scale is what enforces it. |
+| 6 | **Provider Admin OS** (P2) | internal staff · monitoring | **Ops console.** Icon rail + horizontal domain bar + an always-present live status strip + a bottom console drawer. Compact by default, tables full-bleed. Control-plane work is watching work; the layout says so. |
+| 7 | **Marketplace** (P7) | buyer/installer · browsing | **Storefront.** Faceted filter rail + gallery + a listing built like a product page (imagery, permissions manifest, changelog, install CTA). The widest gutters in the product. |
+| 8 | **Developer Platform** (P8) | maker · hours | **Workspace + Studio.** `PlatformShell` → `WorkspaceShell` → `StudioShell`. §12's four rules are unchanged and still gated. Chrome recedes; canvas ≥ 60% at 1280px. |
+| 9 | **Tenant Websites** (P4) | the tenant's own customer | **No UniERP chrome, by design.** We contribute the block contract and typographic rhythm only; the tenant's brand tokens override everything visible. |
+| 10 | **Mobile** (P9) | field user · bursts | **Bottom nav, sheet-first.** Tables become card lists, the inspector becomes a bottom sheet. Targets ≥ 44px. |
+| 11 | **Desktop** (P10) | power user | **Native chrome merge.** Titlebar integration, native menus, and one global ⌘K that spans platforms rather than restarting per app. |
+
+### 11.0 The shells that implement this
+
+| Anatomy | Component | Ships from |
+| :------ | :-------- | :--------- |
+| 1 · no chrome | `LaunchShell` (`variant="hero"`) | `@kannan19302/ui/shell` |
+| 2 · editorial | `EditorialShell` + `EditorialBand` | `@kannan19302/ui/shell` |
+| 3 · flexible columns | `RecordShell` + `ObjectPage` | `@kannan19302/ui/shell` |
+| 4 · index/detail settings | `SettingsShell` | `@kannan19302/ui/shell` |
+| 5 · a shelf | `LaunchShell` (`variant="shelf"`) | `@kannan19302/ui/shell` |
+| 6 · ops console | `OpsShell` | `@kannan19302/ui/shell` |
+| 7 · storefront | `CatalogShell` + `CatalogGallery` + `CatalogListing` | `@kannan19302/ui/shell` |
+| 8 · workspace + studio | `PlatformShell` · `WorkspaceShell` · `StudioShell` | `@kannan19302/ui/shell`, `/studio` |
+| 9 · tenant-branded | block registry only — no shell by design | `tenant-sites` |
+| 10 · bottom nav, sheet-first | Flutter `app_shell.dart` | `unierp-mobile` |
+| 11 · native chrome | Tauri wrapper around 3 and 8 | `desktop-app` |
+
+Anatomies 1 and 5 are **one component with two scales** on purpose. The two
+wizards must never be interchangeable, and the thing that actually prevents a
+user confusing them is not that they live in two files — it is that one fills
+the viewport and the other sits inside a page. `launch-shell.test.tsx` asserts
+the type scale genuinely differs, so the distinction cannot be lost in a
+refactor.
+
+**A dimension used by more than one shell is a token.** Four sidebar widths
+(260 / 264 / 244 / 232) once existed for one product because each shell picked
+its own and nothing could move them together afterwards. When these five
+anatomies were written, `260px` immediately reappeared in four files and
+`280px` in three — `--tile-min`, `--panel-width`, `--list-column-min` and the
+rest in `base.css` are what stop that becoming the next set of four widths, and
+`check-tokens.mjs` fails the build on a new literal.
+
+### 11.1 What must NOT diverge
+
+Eleven anatomies is eleven products unless something is identical everywhere.
+Anatomy is free. Vocabulary is not:
+
+- **The Meridian bar** (§13.2) — same three answers, same order, same position.
+- Tokens, and the rule that a colour never changes meaning between platforms.
+- The six states (§ APP_FLOW §2), `DataTable`, form conventions, status-pill
+  vocabulary, motion budget, ⌘K, and WCAG 2.2 AA.
+
+A platform that invents a second nav list, a second stepper, or a second empty
+state has not expressed an identity — it has forked the product.
 
 ---
 
@@ -464,9 +533,132 @@ AI output reaches a tenant's data without a person accepting a diff.
 
 ---
 
-## 13. Amendment log
+## 13. Meridian — the design language
+
+> Established 2026-08-21. Ships as `[data-theme="meridian"]` /
+> `[data-theme="meridian-dark"]` in `@kannan19302/ui`. Replaces `patina`, which
+> was one app's private language and has been deleted.
+
+### 13.1 Why the palette changed
+
+§3.3 justified indigo `#6366f1` as reading "trustworthy and technical without
+the *every SaaS product* blue". That claim no longer survives contact with the
+market. Salesforce (`#0176D3`), SAP (`#0A6ED1`), Microsoft (`#0078D4`), Google
+(`#1A73E8`) and Oracle all lead with a blue within a few degrees of hue of one
+another; Odoo leads with an adjacent purple; and our indigo sat among them. A
+buyer comparing six ERP screenshots was seeing one colour.
+
+**Meridian's primary is neither blue nor purple.** It is a deep, desaturated
+teal — `#0e6b75` light, `#48c5ce` dark — chosen to read as instrumentation
+rather than as marketing, and it remains the only hue in the product that means
+*you can click this*.
+
+Three supporting decisions:
+
+- **Inter stays** as the body and data face. It is correct at 14px, it has the
+  tabular figures §4.1 requires, and ~785 files depend on its metrics. Swapping
+  the workhorse buys a large visual regression and nothing else. Personality is
+  carried by **Instrument Sans** (display, used only where something announces
+  itself) and **Martian Mono** (machine-read text: addresses, ids, versions).
+- **Warmth is quarantined, not absent.** `--brand-signal` (coral `#e4572e`)
+  exists for marketing surfaces and empty-state illustration and is gated out of
+  product CSS. The answer to "how do we attract a buyer" and the answer to "what
+  does an eight-hour ledger screen feel like" are not the same answer.
+- **Scope is a third colour axis** — `--scope-app|site|library|manage`. Scope
+  says *where a thing lives*, status says *what state it is in*, the accent says
+  *what is clickable*. Rendered as a 3px edge or hairline, **never a filled
+  badge**. This is what stops eleven anatomies becoming a rainbow.
+
+### 13.2 The signature — the Meridian bar
+
+One component, identical on every surface, in the same position, answering three
+questions in a fixed order:
+
+```
+acme / finance / invoices / INV-2043    ● Awaiting approval    [ Approve ]
+└─ where am I (identity, mono) ─┘       └─ what state ─┘       └─ next verb ─┘
+```
+
+- **Left — address.** Identity, not navigation. A breadcrumb is where you have
+  been; an address is the string you paste into a ticket. Rendered by
+  `ArtifactAddress`, which keeps its rule that a null segment shows an em dash
+  rather than collapsing the path.
+- **Centre — state.** Exactly one status, in the shared pill vocabulary. Empty
+  when nothing is pending — design law 4, calm by default.
+- **Right — the next verb.** Exactly one primary action (§7). Disabled with a
+  stated reason, never hidden.
+
+No benchmark vendor has a single element spanning every surface of its suite.
+This is where the boldness is spent; everything around it stays quiet.
+
+**It ships as `MeridianBar`** (`design-system/src/shell/meridian-bar.tsx`), and
+three of its rules are enforced rather than described:
+
+- **One primary verb** is singular in the API — `action` is one object, not an
+  array — because "exactly one primary per view" survives review pressure only
+  if a second one cannot be expressed.
+- **A disabled verb must state why**, and `MeridianAction` is a discriminated
+  union so that `{ label, disabled: true }` is a *compile error*. §12.3 made
+  this a rule for the Studio toolbar; here it is a type.
+- **Height comes from `--meridian-bar-height`**, and `meridian-bar.test.tsx`
+  reads the stylesheet to assert no literal replaced it. The "same position on
+  every surface" claim fails silently otherwise, because each individual screen
+  still looks right on its own.
+
+The bar takes **either** a rendered `address` node or a plain `segments` list.
+It does *not* widen `ArtifactAddress` to cover both, which was the original
+plan: that component defends an invariant — a null project renders as an em dash
+rather than collapsing, because a library artifact is exactly one whose
+`ownerProjectId IS NULL` — and generalising it to also express
+`finance / invoices / INV-2043` would have cost either the invariant or the
+type. Two shapes, one bar, neither distorted to fit the other.
+
+### 13.3 What we took from the incumbents, and what we refused
+
+Same discipline as §12.2 — take interaction models proven over twenty years,
+refuse the surfaces.
+
+| Source | Taken | Refused |
+| :----- | :---- | :------ |
+| **Salesforce Lightning** | Object-page anatomy; the highlights panel's fixed answer to "what is this and what do I do with it". | Card-inside-card density; brand blue as the only accent; modal-heavy flows. |
+| **SAP Fiori** | The flexible column layout — still the best list→detail→inspector model in enterprise software. Draft-vs-active on every artefact. | The grey grid, the icon font, the assumption that density means crowding. |
+| **Odoo** | The view switcher (list · kanban · calendar · pivot) as a first-class control; inline-editable lists. | Per-module visual drift; the purple. |
+| **Zoho** | Per-app identity within one suite. | Rainbow app-colour coding; chrome that changes meaning between apps. |
+| **Microsoft Fluent 2** | The command bar; neutral discipline — one accent, everything else grey. | Acrylic blur; uniform rounding. |
+| **Oracle Redwood** | Warmth; illustration that carries meaning in empty and onboarding states. | Consumer density on functional pages. |
+| **Google Material 3** | Tonal elevation as the alternative to drop shadows in dark mode. | FAB, ripple, dynamic colour, Roboto. |
+
+### 13.4 Geometry, motion, elevation
+
+Nothing in the product is more rounded than 8px (`--radius-sm` 2px, `--radius-md`
+4px on inputs and buttons); the editorial shell re-opens 16px inside its own
+scope as a deliberate register change. Motion is faster than §6's marketing-era
+scale — `--duration-normal` 150ms — because at 200ms a dropdown a clerk opens
+four hundred times a day is felt as latency, not polish. **Dark mode carries
+elevation by tone and hairline, never blur:** every `--shadow-*`/`--elevation-*`
+collapses to a 1px ring, because a blurred black shadow on a dark ground is
+invisible as depth and visible as smear.
+
+### 13.5 The contrast gate
+
+`design-system/scripts/check-contrast.mjs` runs as the first step of `build`. It
+resolves every shipped theme's tokens as the browser would and fails on any pair
+below its threshold (4.5:1 body, 3:1 large text and UI boundaries), plus a
+chart-ramp check that adjacent series differ by ≥1.25:1 in luminance so the ramp
+survives greyscale, print and colour-vision deficiency.
+
+This exists because §3.5's "verified automatically in CI" was, until now, a
+sentence rather than a mechanism — the only contrast code in the package checked
+a *tenant's* runtime branding and never looked at the themes we ship ourselves.
+The gate caught **20 real failures in Meridian's own first draft**, including a
+ten-hue chart ramp whose every adjacent pair sat inside one luminance band.
+
+---
+
+## 14. Amendment log
 
 | Date       | Change                                                                                       | By          |
 | :--------- | :------------------------------------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; codifies the existing `@kannan19302/ui-tokens` system as the canonical brief | Claude Code |
 | 2026-08-19 | §12 added — the Studio authoring design language, and the `@kannan19302/ui/studio` frame that enforces it. Written because thirteen builders shared tokens and still looked like thirteen products: layout, not colour, was what diverged. Records what was taken from Salesforce and SAP interaction models and what was refused, per §10. | Claude Code |
+| 2026-08-21 | §11 rewritten from a per-platform density list into eleven layout anatomies, and §13 added — Meridian, the suite design language. Written because §11 claimed a platform identity that was only a density token: every platform drew the same sidebar/topbar/page-header/card-grid, which is the same failure §12 found among the builders, one altitude up. Records why the primary moved off indigo (six of seven benchmark vendors lead with a near-identical blue), why Inter stays, why coral is quarantined to marketing, and the contrast gate that now enforces §3.5. Retires `patina`. | Claude Code |

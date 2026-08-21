@@ -320,8 +320,153 @@ While tokens are shared across all 10 platforms in the UniERP suite, each platfo
 
 ---
 
-## 12. Amendment log
+## 12. Studio surfaces — the authoring design language
+
+> Applies to every builder in the Developer Platform (P8): data objects, forms,
+> advanced forms, flows, BPMN, rules, logic, queries, dashboards, custom UI, app
+> composition, pages/web content, sites, ETL, API and mobile. **Thirteen
+> builders, one frame.**
+
+### 12.1 Why this section exists
+
+Section 11 already said what a Studio surface should feel like — "low density,
+maximum canvas area, prominent toolbars". The builders shared tokens and still
+looked like thirteen separate products, because **layout was the part that was
+diverging**: each builder invented its own rails, its own toolbar order, its own
+error surface and its own idea of what publishing means. Tokens cannot fix that.
+A frame can.
+
+The frame is `@kannan19302/ui/studio` (`StudioShell`, `StudioToolbar`,
+`StudioPalette`, `StudioCanvas`, `StudioInspector`, `StudioConsole`,
+`PublishDiffDialog`, `useStudioDocument`). **A builder that renders its own
+chrome is a defect**, in the same way a hardcoded hex is.
+
+### 12.2 What we learned from the incumbents — and what we refused
+
+Section 10 forbids being "a Frappe/SAP/Odoo skin". That is about *visual
+language*, not about *interaction models*: Salesforce and SAP have spent twenty
+years discovering which authoring gestures survive contact with real
+administrators, and refusing to learn from that would be pride, not
+originality. So we take the models and reject the surfaces.
+
+| Source | Taken | Refused |
+| :----- | :---- | :------ |
+| **Salesforce** — Lightning App Builder, Flow Builder | Three-zone authoring (palette · canvas · inspector). The *element* metaphor with a typed property panel. "Activate" as a versioned act distinct from "Save". Debug-run with per-step inspection. Governor limits made visible to the author, not just enforced. | The blue rail and card-on-card density. The modal-heavy flows. The two-API problem, where the vendor's own tooling has privileges an external developer cannot get — our L4 invariant is the opposite. |
+| **SAP** — Fiori, Build Apps | Flexible-column progressive disclosure: list → detail → inspector without losing context. The object-page anatomy for artefact detail. Explicit draft-versus-active state on every artefact. | The typography, the icon language, the grey grid. The assumption that density means crowding. |
+| **This brief** (§§ 1–12) | All of it, unchanged. Tokens are still the law, seven themes × two densities still apply, WCAG 2.2 AA is still non-negotiable, six states are still mandatory, modal-on-modal is still forbidden. | — |
+
+### 12.3 The four Studio rules
+
+**Rule 1 — The canvas is the page.**
+Chrome collapses; the artefact never does. At 1280px, with both rails open, the
+canvas holds **at least 60% of the viewport**. The rail widths in
+`tokens/studio.css` are chosen to meet that exactly (1280 − 232 − 280 = 768 =
+60.0%), and `studio-shell.test.tsx` asserts the arithmetic — widen a rail and
+the test fails, so the trade-off has to be made deliberately rather than by
+accident.
+
+Below `--studio-bp-inspector` the inspector collapses first (a property panel is
+useless once the thing it edits is off screen); below `--studio-bp-palette` the
+palette follows. Neither is ever *removed* — both stay reachable as labelled
+handles, and a user who opens one at any width gets it. A breakpoint sets the
+default; it never overrides a person.
+
+**Rule 2 — The tool is visually distinct from the artefact.**
+Studio chrome uses the `--studio-*` scale. Anything rendered *on* the canvas
+uses the tenant's semantic tokens, because the canvas is showing the user what
+their users will see. A builder control that looks like the thing being built is
+how someone edits the wrong object. `tokens/studio.css` has always stated this
+intent; §12 makes it a rule with a gate.
+
+**Rule 3 — Five verbs, same order, same place, every builder.**
+
+```
+Validate · Preview · Test-run · Version · Publish
+```
+
+`StudioToolbar` fixes the order; a builder supplies handlers, never layout. A
+verb a builder genuinely cannot perform renders **disabled with a stated
+reason**, not hidden — so the bar has the same shape everywhere and nobody has
+to re-find a control that moved. This is design law 3 ("learning one module must
+teach you all 45") applied to the authoring surface.
+
+**Rule 4 — Nothing publishes silently.**
+Every publish path goes through `PublishDiffDialog`, which must show three
+things before the button is live:
+
+1. **What changes** — a diff against the currently live version, in the user's
+   vocabulary ("Email field"), not a count and not `field[3]`.
+2. **Where it goes** — the named environment, never implied.
+3. **How to undo it** — the version this rolls back to.
+
+A publish whose diff is empty is **refused**, not accepted as a no-op: a version
+bump that changes nothing is how an audit trail fills with noise.
+
+This is also how Track G's **G29** is enforced rather than promised. An
+AI-generated artefact writes to the *draft* and becomes a reviewable change. No
+AI output reaches a tenant's data without a person accepting a diff.
+
+### 12.4 The shared interaction contract
+
+- **Palette (left rail).** Searchable, grouped 5–7 per group (Miller's Law, §1).
+  `/` focuses search, `↑↓` move, `Enter` inserts, `Esc` clears. **Drag is an
+  accelerator, never the only path** — every item is a real `<button>`. Four
+  builders shipped drag-only insertion via `@dnd-kit`, `@xyflow/react` and
+  `react-grid-layout`, which is unusable without a pointer and fails §8.
+- **Canvas (centre).** One selection model, owned by `StudioCanvas`:
+  `Tab`/arrows traverse, `Esc` deselects, `Ctrl/Cmd+Z` undoes with visible
+  history. Two variants — `linear` for list-shaped artefacts (forms, rules,
+  queries), which keeps a bounded measure so fields stay readable, and `spatial`
+  for flows, BPMN, pages and dashboards, which owns its full area and lets the
+  embedded library keep its own zoom and pan.
+- **Inspector (right rail).** Typed, schema-driven, tabbed
+  `Properties · Logic · Style · Advanced`. **Never a modal** — editing a
+  property is not a decision that needs the rest of the screen taken away; the
+  canvas must stay visible so the author can see what their change did. Tabs a
+  builder does not fill say so, rather than disappearing.
+- **Console (bottom drawer).** `Problems · Output · Logs`. Collapsed by default
+  (design law 4 — calm by default), with the error and warning counts on the
+  collapsed bar so collapsing can never hide a failure, announced through
+  `aria-live`. **A problem is actionable or it is not a problem**: every entry
+  carries the id of the thing it is about and clicking it selects that thing on
+  the canvas. "Invalid configuration" with nothing to click is not a validation
+  message.
+- **Six states everywhere.** `LoadingState`, `ErrorState`, `EmptyState`,
+  `ForbiddenState` from `components/six-states.tsx`. No bespoke empty rendering.
+- **Document state.** `useStudioDocument` — undo/redo, dirty tracking, draft
+  autosave and a carried `baseVersion` so a stale write is rejected rather than
+  silently clobbering a colleague's edit.
+
+### 12.5 Accessibility, specifically for authoring
+
+§8 applies in full. Three points that only arise on a canvas:
+
+- The canvas is a real composite widget, not a `<div>` of draggable `<div>`s.
+  `StudioCanvas` uses `role="group"` by default and `role="listbox"` **only when
+  the builder genuinely renders `role="option"` children** — declaring `listbox`
+  over arbitrary content is a lie a screen reader acts on, and `aria-required-children`
+  catches it.
+- **Every drag has a keyboard equivalent.** Insert from the palette with
+  `Enter`; reorder on the canvas with the keyboard sensor. If an operation can
+  only be performed by dragging, it is not finished.
+- A custom page authored in the Studio passes the **same** `axe` and token gates
+  as a first-party page (Track G **G17**). Bypassing them is not offered.
+
+### 12.6 What a Studio surface must never do
+
+- ❌ Render its own header, rails, toolbar or error surface instead of the shell.
+- ❌ Put a property editor in a modal.
+- ❌ Publish without a diff, or publish to an unnamed environment.
+- ❌ Accept AI-authored content into a live artefact without a reviewed diff.
+- ❌ Offer an operation that only works by dragging.
+- ❌ Use `--studio-*` tokens for canvas content, or semantic tokens for chrome.
+- ❌ Hide a validation failure behind a collapsed console with no count.
+
+---
+
+## 13. Amendment log
 
 | Date       | Change                                                                                       | By          |
 | :--------- | :------------------------------------------------------------------------------------------- | :---------- |
 | 2026-07-30 | Document established; codifies the existing `@kannan19302/ui-tokens` system as the canonical brief | Claude Code |
+| 2026-08-19 | §12 added — the Studio authoring design language, and the `@kannan19302/ui/studio` frame that enforces it. Written because thirteen builders shared tokens and still looked like thirteen products: layout, not colour, was what diverged. Records what was taken from Salesforce and SAP interaction models and what was refused, per §10. | Claude Code |

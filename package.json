@@ -2,6 +2,9 @@
   "name": "unierp-programme",
   "private": true,
   "scripts": {
+    "check:control-center-routes": "node scripts/check-control-center-route-ownership.mjs",
+    "check:control-center-boundaries": "node scripts/check-control-center-route-ownership.mjs --verify-boundaries",
+    "check:control-center-manifests": "node scripts/check-control-center-shell-manifests.mjs",
     "ui:audit": "node scripts/ci/ui-audit.mjs"
   }
 }

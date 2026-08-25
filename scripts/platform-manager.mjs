@@ -29,11 +29,11 @@ const INFRA_DIR = path.resolve(ROOT_DIR, 'infra');
 const PLATFORMS = [
   { id: 'platform-wizard', code: 'WIZARD', name: 'Master SSO Platform Wizard', port: 4000, repo: 'infra/platform-wizard', layer: 'Gateway', public: true },
   { id: 'marketing-site', code: 'P1', name: 'Marketing Site', port: 4001, repo: 'marketing-site', layer: 'L4 Presentation', public: true },
-  { id: 'provider-admin-os', code: 'P2', name: 'Provider Admin OS', port: 4002, repo: 'provider-admin-os', layer: 'L4 Presentation', public: false, internal: true },
+  { id: 'provider-admin-os', code: 'P2', name: 'Provider Control Center (PCC)', port: 4002, repo: 'provider-admin-os', layer: 'L4 Presentation', public: false, internal: true },
   { id: 'tenant-apps', code: 'P3', name: 'Tenant Apps / ERP', port: 4003, repo: 'tenant-apps', layer: 'L4 Presentation', public: false },
   { id: 'tenant-sites', code: 'P4', name: 'Tenant Websites', port: 4004, repo: 'tenant-sites', layer: 'L4 Presentation', public: true },
   { id: 'web-studio', code: 'P5', name: 'Web Studio', port: 4005, repo: 'web-studio', layer: 'L4 Presentation', public: false },
-  { id: 'tenant-admin', code: 'P6', name: 'Tenant Admin Console', port: 4006, repo: 'tenant-admin', layer: 'L4 Presentation', public: false },
+  { id: 'tenant-admin', code: 'P6', name: 'Organization Control Center (OCC)', port: 4006, repo: 'tenant-admin', layer: 'L4 Presentation', public: false },
   { id: 'marketplace', code: 'P7', name: 'Marketplace', port: 4007, repo: 'marketplace', layer: 'L4 Presentation', public: true },
   { id: 'developer-platform', code: 'P8', name: 'Developer Platform', port: 4008, repo: 'developer-platform', layer: 'L4 Presentation', public: true },
   { id: 'unierp-mobile', code: 'P9', name: 'Mobile App (Flutter)', port: 4009, repo: 'unierp-mobile', layer: 'L5 Client', public: false },

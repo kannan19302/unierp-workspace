@@ -7,6 +7,10 @@ on:
         required: false
         type: string
         default: '20'
+      run-integration:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -45,12 +49,20 @@ jobs:
           pnpm run build
           pnpm run lint
           pnpm run test
+      - name: Check out data repository for integration tests
+        if: inputs.run-integration
+        uses: actions/checkout@v4
+        with:
+          repository: kannan19302/unierp-data
+          path: .unierp-data
       - name: Run integration tests
+        if: inputs.run-integration
         env:
           DATABASE_URL: postgresql://unerp:unerp_password@localhost:5432/unerp_test?schema=public
         run: |
-          cd unierp-data && pnpm db:deploy
-          cd .. && pnpm db:seed
+          pnpm --dir .unierp-data install --frozen-lockfile
+          pnpm --dir .unierp-data db:deploy
+          pnpm --dir .unierp-data db:seed
           pnpm test:integration:run
       - name: Check dependency licences
         run: node unierp-workspace/scripts/ci/check-licenses.mjs

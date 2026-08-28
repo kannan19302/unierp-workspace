@@ -10,6 +10,19 @@ The canonical policy is
 Its clauses are mandatory. The machine-readable profile is
 [`unierp-platform/docs/standards/AI_AGENT_PROTOCOL.json`](unierp-platform/docs/standards/AI_AGENT_PROTOCOL.json).
 
+## Project-level enterprise brain
+
+Before material analysis, planning, review or mutation, every agent MUST read and apply the project skill at
+`unierp-workspace/governance/skills/unierp-enterprise-brain/SKILL.md`. The skill is the shared operational
+navigation and decision layer for product vision, platform boundaries, enterprise architecture, domains, data,
+security, contracts, experience, delivery, operations and governance. It does not override the instruction
+precedence below or duplicate owning platform specifications.
+
+Every material change MUST classify its knowledge delta and follow
+`unierp-platform/docs/standards/AI_KNOWLEDGE_LIFECYCLE.md`, so authoritative knowledge,
+contracts, traceability and evidence evolve with the codebase. If the project skill or knowledge-lifecycle standard
+is unavailable, the governance bundle is incomplete; stop before mutation and report the missing dependency.
+
 ## Instruction precedence
 
 Apply the first relevant authority in this order:
@@ -111,4 +124,3 @@ require the security plane gate. UI changes require token, accessibility, and re
 
 If a check cannot run, report `NOT RUN` and the concrete reason. A pre-existing failure must be reproduced and
 reported separately; do not erase or mislabel it.
-

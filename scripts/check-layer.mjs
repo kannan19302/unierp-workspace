@@ -1,113 +1,82 @@
 #!/usr/bin/env node
-/**
- * Layer Rule Verification — docs/PLATFORM_ARCHITECTURE.md § 4.2.
- *
- * Asserts that a repository depends ONLY on strictly lower-layer published artifacts.
- * Sideways (same layer) and upward (higher layer) dependencies are strictly forbidden.
- */
-import { readFileSync, existsSync } from 'node:fs';
-import { join, basename } from 'node:path';
+/** Enforce dependency direction using the versioned active-estate package catalog. */
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const LAYERS = {
-  'unierp-contracts': 0,
-  'unierp-config': 0,
+const scriptDirectory = dirname(fileURLToPath(import.meta.url));
+const catalogFile = resolve(scriptDirectory, "..", "governance", "active-estate.json");
 
-  'unierp-kernel': 1,
-  'unierp-design-system': 1,
-  'unierp-sdk': 1,
-  'unierp-shared': 1,
-  'unierp-auth': 1,
-  'unierp-service-kit': 1,
+function argumentValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : null;
+}
 
-  'unierp-data': 2,
-  'unierp-framework': 2,
-  'unierp-extension-api': 2,
-  'unierp-sandbox': 2,
-  'unierp-blockchain': 2,
-
-  'unierp-api': 3,
-  'unierp-idp': 3,
-
-  'unierp-web': 4,
-  'unierp-console': 4,
-  'unierp-developer': 4,
-  'unierp-corporate-website': 4,
-  'unierp-corporate-site-template': 4,
-  'unierp-app-education': 4,
-  'unierp-app-fieldservice': 4,
-  'unierp-app-healthcare': 4,
-  'unierp-app-realestate': 4,
-  'unierp-storybook': 4,
-
-  'unierp-mobile': 5,
-  'unierp-extensions': 6,
-  'unierp-infra': 7,
-  'unierp-workspace': 7,
-};
-
-function pkgToRepo(pkgName) {
-  if (pkgName.startsWith('@kannan19302/')) {
-    return 'unierp-' + pkgName.slice(7);
+export function loadLayerCatalog(file = catalogFile) {
+  if (!existsSync(file)) throw new Error(`active-estate catalog is missing at ${file}`);
+  const catalog = JSON.parse(readFileSync(file, "utf8"));
+  if (!Array.isArray(catalog.repositories) || catalog.repositories.length === 0) {
+    throw new Error(`active-estate catalog at ${file} has zero repositories`);
   }
-  return pkgName;
+  const byRepository = new Map();
+  const byPackage = new Map();
+  for (const entry of catalog.repositories) {
+    if (typeof entry.repository !== "string" || (!Number.isInteger(entry.layer) && entry.layer !== null) || !Array.isArray(entry.packages)) {
+      throw new Error(`active-estate catalog has an invalid entry: ${JSON.stringify(entry)}`);
+    }
+    if (byRepository.has(entry.repository)) throw new Error(`active-estate catalog duplicates repository ${entry.repository}`);
+    byRepository.set(entry.repository, entry);
+    for (const packageName of entry.packages) {
+      if (byPackage.has(packageName)) throw new Error(`active-estate catalog maps package ${packageName} more than once`);
+      byPackage.set(packageName, entry);
+    }
+  }
+  return { byRepository, byPackage };
 }
 
-const cwd = process.cwd();
-const repoName = basename(cwd);
-
-const currentLayer = LAYERS[repoName];
-if (currentLayer === undefined) {
-  console.log(`  ℹ Layer check: ${repoName} is unmapped / root.`);
-  process.exit(0);
+export function evaluateLayerDependencies({ manifest, catalog, repository }) {
+  const current = repository ? catalog.byRepository.get(repository) : catalog.byPackage.get(manifest.name);
+  if (!current) throw new Error(`package '${manifest.name ?? "<unnamed>"}' is not mapped in the active-estate catalog`);
+  if (current.layer === null) throw new Error(`repository '${current.repository}' has no executable dependency layer`);
+  const dependencies = {
+    ...manifest.dependencies,
+    ...manifest.optionalDependencies,
+    ...manifest.peerDependencies,
+    ...manifest.devDependencies,
+  };
+  const violations = [];
+  for (const dependency of Object.keys(dependencies)) {
+    const target = catalog.byPackage.get(dependency);
+    if (!target || target.layer === null) continue;
+    if (target.layer >= current.layer) {
+      violations.push({ dependency, targetRepository: target.repository, targetLayer: target.layer, currentLayer: current.layer });
+    }
+  }
+  return { current, violations };
 }
 
-const pkgPath = join(cwd, 'package.json');
-if (!existsSync(pkgPath)) {
-  console.log(`  ℹ Layer check: no package.json found in ${repoName}.`);
-  process.exit(0);
+function main() {
+  const repositoryRoot = resolve(argumentValue("--repo-root") ?? process.cwd());
+  const manifestFile = resolve(repositoryRoot, "package.json");
+  if (!existsSync(manifestFile)) throw new Error(`package manifest is missing at ${manifestFile}`);
+  const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
+  const catalog = loadLayerCatalog(argumentValue("--catalog") ?? catalogFile);
+  const result = evaluateLayerDependencies({ manifest, catalog, repository: argumentValue("--repository") });
+  if (result.violations.length > 0) {
+    console.error(`❌ Layer rule violation in ${result.current.repository} (L${result.current.layer}):`);
+    for (const violation of result.violations) {
+      console.error(`  - ${violation.dependency} resolves to ${violation.targetRepository} (L${violation.targetLayer}), not a lower layer.`);
+    }
+    process.exit(1);
+  }
+  console.log(`✅ Layer rule verified for ${result.current.repository} (L${result.current.layer}): ${manifest.name}.`);
 }
 
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-const deps = {
-  ...pkg.dependencies,
-  ...pkg.devDependencies,
-  ...pkg.peerDependencies,
-};
-
-const violations = [];
-
-for (const depName of Object.keys(deps)) {
-  if (!depName.startsWith('@kannan19302/')) continue;
-  const targetRepo = pkgToRepo(depName);
-  const targetLayer = LAYERS[targetRepo];
-
-  if (targetLayer === undefined) continue;
-
-  if (targetLayer >= currentLayer) {
-    violations.push({
-      dep: depName,
-      targetRepo,
-      targetLayer,
-      currentLayer,
-    });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    main();
+  } catch (error) {
+    console.error(`❌ Layer rule could not establish active-estate scope: ${error.message}`);
+    process.exit(1);
   }
 }
-
-if (violations.length === 0) {
-  console.log(`  ✅ Layer rule verified for ${repoName} (L${currentLayer}): all @kannan19302/* dependencies are strictly lower-layer.`);
-  process.exit(0);
-}
-
-console.error(`
-────────────────────────────────────────────────────────────────────────
-  ❌ LAYER RULE VIOLATION IN ${repoName} (Layer ${currentLayer})
-────────────────────────────────────────────────────────────────────────`);
-for (const v of violations) {
-  console.error(`   - Depends on ${v.dep} (${v.targetRepo}, Layer ${v.targetLayer}) — Layer ${v.targetLayer} >= Layer ${v.currentLayer}`);
-}
-console.error(`
-  A repository may ONLY depend on strictly lower-layer packages.
-  Sideways and upward dependencies violate PLATFORM_ARCHITECTURE.md § 4.2.
-────────────────────────────────────────────────────────────────────────
-`);
-process.exit(1);

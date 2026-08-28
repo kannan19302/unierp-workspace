@@ -1,70 +1,93 @@
 #!/usr/bin/env node
 /**
- * Documentation Truth Gate — Phase A12 / D013 prevention.
+ * Documentation Truth Gate
  *
- * Verifies that script paths and gates cited in governance documentation
- * (docs/PLATFORM_ARCHITECTURE.md, docs/ai/*.md, README.md) exist on disk.
- *
- * Prevents claims from outliving their mechanisms.
+ * Verifies executable script references in active governance and normative authority documents. It intentionally
+ * does not scan historical/dated evidence, where a retired command may be useful historical context.
  */
-import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertNonEmptyDiscovery, loadActiveEstate, requiredSourceDirectory } from "./lib/estate.mjs";
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
-const WORKSPACE = join(ROOT, "unierp-workspace");
+const CURRENT_FILE = fileURLToPath(import.meta.url);
+const scriptReference = /`?((?:[a-z0-9_-]+\/)*scripts\/[a-zA-Z0-9_.\-/]+\.(?:mjs|js))`?/g;
 
-const GOV_DOCS = [
-  join(WORKSPACE, "docs/PLATFORM_ARCHITECTURE.md"),
-  join(WORKSPACE, "README.md"),
-  join(WORKSPACE, "AGENTS.md"),
-  ...readdirSync(join(WORKSPACE, "docs/ai")).map((f) => join(WORKSPACE, "docs/ai", f)),
-];
-
-const scriptRefRegex = /`?(scripts\/[a-zA-Z0-9_\-\.\/]+\.mjs)`?/g;
-
-const findings = [];
-let totalRefs = 0;
-
-for (const docFile of GOV_DOCS) {
-  if (!existsSync(docFile)) continue;
-  const content = readFileSync(docFile, "utf8");
-  const relDoc = relative(WORKSPACE, docFile).replace(/\\/g, "/");
-
-  let match;
-  while ((match = scriptRefRegex.exec(content)) !== null) {
-    totalRefs++;
-    const scriptPath = match[1];
-
-    if (relDoc.includes("CHANGELOG.md") || relDoc.includes("DEFECT-LOG")) continue;
-
-    const fullWorkspacePath = join(WORKSPACE, scriptPath);
-    const fullRootPath = join(ROOT, scriptPath);
-
-    if (!existsSync(fullWorkspacePath) && !existsSync(fullRootPath)) {
-      findings.push({
-        doc: relDoc,
-        script: scriptPath,
-      });
+function markdownFiles(directory, found = []) {
+  for (const entry of readdirSync(directory)) {
+    const fullPath = join(directory, entry);
+    const stats = statSync(fullPath);
+    if (stats.isDirectory()) {
+      if (["evidence", "archive", "archives", "node_modules", ".git"].includes(entry)) continue;
+      markdownFiles(fullPath, found);
+    } else if (entry.endsWith(".md")) {
+      found.push(fullPath);
     }
   }
+  return found;
 }
 
-if (findings.length === 0) {
-  console.log(`  ✅ Documentation truth verified (${totalRefs} script references checked across ${GOV_DOCS.length} governance docs).`);
-  process.exit(0);
+function candidateScriptPaths(estate, documentPath, reference) {
+  const candidates = [resolve(estate.root, reference)];
+  const workspaceRoot = requiredSourceDirectory(estate, "unierp-workspace");
+  const platformDocsRoot = requiredSourceDirectory(estate, "unierp-platform", "docs");
+  if (documentPath.startsWith(workspaceRoot) || documentPath.startsWith(platformDocsRoot)) {
+    candidates.push(resolve(workspaceRoot, reference));
+  }
+  return [...new Set(candidates)];
 }
 
-console.error(`
-────────────────────────────────────────────────────────────────────────
-  ❌ DOCUMENTATION TRUTH VIOLATION — ${findings.length} unresolvable claim(s)
-────────────────────────────────────────────────────────────────────────`);
-for (const f of findings) {
-  console.error(`   - ${f.doc} references \`${f.script}\` which DOES NOT EXIST on disk.`);
+export function checkDocumentationTruth({ estate = loadActiveEstate() } = {}) {
+  const roots = [
+    join(estate.root, "AGENTS.md"),
+    requiredSourceDirectory(estate, "unierp-workspace", "governance"),
+    requiredSourceDirectory(estate, "unierp-platform", "docs", "standards"),
+    requiredSourceDirectory(estate, "unierp-platform", "docs", "product"),
+  ];
+  const documents = [roots[0], ...roots.slice(1).flatMap((root) => markdownFiles(root))];
+  assertNonEmptyDiscovery("active governance documents", documents);
+
+  const findings = [];
+  let referencesScanned = 0;
+  for (const documentPath of documents) {
+    const content = readFileSync(documentPath, "utf8");
+    for (const match of content.matchAll(scriptReference)) {
+      referencesScanned += 1;
+      const reference = match[1];
+      if (!candidateScriptPaths(estate, documentPath, reference).some((path) => {
+        try {
+          return statSync(path).isFile();
+        } catch {
+          return false;
+        }
+      })) {
+        findings.push({
+          document: relative(estate.root, documentPath).replace(/\\/g, "/"),
+          reference,
+        });
+      }
+    }
+  }
+  assertNonEmptyDiscovery("governance script references", referencesScanned);
+  return { documentsScanned: documents.length, referencesScanned, findings };
 }
-console.error(`
-  Governance documentation must not assert mechanisms that do not exist.
-  Either implement the script or amend the governance claim.
-────────────────────────────────────────────────────────────────────────
-`);
-process.exit(1);
+
+if (process.argv[1] && CURRENT_FILE === resolve(process.argv[1])) {
+  let result;
+  try {
+    result = checkDocumentationTruth();
+  } catch (error) {
+    console.error(`❌ Documentation truth gate could not establish discovery scope: ${error.message}`);
+    process.exit(1);
+  }
+
+  if (result.findings.length > 0) {
+    console.error(`❌ Documentation truth violation: ${result.findings.length} unresolvable active claim(s) across ${result.documentsScanned} documents.`);
+    for (const finding of result.findings) {
+      console.error(`  - ${finding.document} references \`${finding.reference}\`, which does not exist.`);
+    }
+    process.exit(1);
+  }
+
+  console.log(`✅ Documentation truth verified (${result.referencesScanned} script references across ${result.documentsScanned} active governance documents).`);
+}

@@ -19,20 +19,13 @@
  *   node scripts/check-retention-architecture.mjs --verify
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertNonEmptyDiscovery, loadActiveEstate, requiredSourceDirectory } from './lib/estate.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const WORKSPACE_ROOT = resolve(__dirname, '..');
-const PARENT_ROOT = resolve(WORKSPACE_ROOT, '..');
-
-// Directories to scan for illegal ad-hoc retention implementations
-const SCAN_DIRS = [
-  join(PARENT_ROOT, 'unierp-api', 'src'),
-  join(PARENT_ROOT, 'unierp-data', 'src'),
-  join(PARENT_ROOT, 'unierp-framework', 'src'),
-];
+const CURRENT_FILE = fileURLToPath(import.meta.url);
+const SCAN_REPOSITORIES = ['api', 'data', 'framework'];
 
 // Anti-patterns: individual modules executing ad-hoc un-held purges
 const FORBIDDEN_PATTERNS = [
@@ -54,7 +47,6 @@ const FORBIDDEN_PATTERNS = [
 ];
 
 function scanDirectory(dir, fileList = []) {
-  if (!existsSync(dir)) return fileList;
   const entries = readdirSync(dir);
   for (const entry of entries) {
     if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
@@ -69,12 +61,18 @@ function scanDirectory(dir, fileList = []) {
   return fileList;
 }
 
-export function checkRetentionArchitecture() {
-  const allFiles = SCAN_DIRS.flatMap((d) => scanDirectory(d));
+export function checkRetentionArchitecture({ sourceDirectories } = {}) {
+  const estate = sourceDirectories ? null : loadActiveEstate();
+  const scanDirectories = sourceDirectories ?? SCAN_REPOSITORIES.map((repository) =>
+    requiredSourceDirectory(estate, repository, 'src'),
+  );
+  assertNonEmptyDiscovery('retention source roots', scanDirectories);
+  const allFiles = scanDirectories.flatMap((directory) => scanDirectory(directory));
+  assertNonEmptyDiscovery('retention source files', allFiles);
   const violations = [];
 
   for (const filePath of allFiles) {
-    const relativePath = filePath.replace(PARENT_ROOT + '/', '').replace(PARENT_ROOT + '\\', '');
+    const relativePath = estate ? relative(estate.root, filePath).replace(/\\/g, '/') : filePath;
     const content = readFileSync(filePath, 'utf8');
 
     for (const rule of FORBIDDEN_PATTERNS) {
@@ -94,8 +92,14 @@ export function checkRetentionArchitecture() {
   };
 }
 
-if (process.argv.includes('--verify') || process.argv.length <= 2) {
-  const result = checkRetentionArchitecture();
+if (process.argv[1] && CURRENT_FILE === resolve(process.argv[1])) {
+  let result;
+  try {
+    result = checkRetentionArchitecture();
+  } catch (error) {
+    console.error(`❌ Retention architecture gate could not establish discovery scope: ${error.message}`);
+    process.exit(1);
+  }
 
   if (result.violations.length > 0) {
     console.error(`\n❌ Retention architecture gate failed (${result.violations.length} rogue retention implementation(s) found):`);
@@ -106,6 +110,6 @@ if (process.argv.includes('--verify') || process.argv.length <= 2) {
     process.exit(1);
   }
 
-  console.log(`✅ Retention architecture gate passed (${result.filesScanned} files scanned, zero rogue retention implementations).`);
+  console.log(`✅ Retention architecture gate passed (${result.filesScanned} active-estate files scanned, zero rogue retention implementations).`);
   process.exit(0);
 }

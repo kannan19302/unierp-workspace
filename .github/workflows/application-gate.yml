@@ -1,6 +1,7 @@
 # Reusable: application gate (lint, typecheck, test, build, secrets, layer)
 #
-# Phase A29 & A31. Called by owner repositories (unierp-api, unierp-web, unierp-idp, unierp-data, etc.).
+# Called by owner repositories. Each required command must exist and pass; this workflow never converts a missing
+# test or build into a green result.
 name: Application Gate
 
 on:
@@ -48,12 +49,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm typecheck || npx tsc --noEmit
+        run: |
+          node -e "const p=require('./package.json'); if (!p.scripts?.typecheck) { console.error('Missing required package script: typecheck'); process.exit(1) }"
+          pnpm typecheck
 
       - name: Test
         if: inputs.run-test
-        run: pnpm test || echo "no test target"
+        run: |
+          node -e "const p=require('./package.json'); if (!p.scripts?.test) { console.error('Missing required package script: test'); process.exit(1) }"
+          pnpm test
 
       - name: Build
         if: inputs.run-build
-        run: pnpm build || echo "no build target"
+        run: |
+          node -e "const p=require('./package.json'); if (!p.scripts?.build) { console.error('Missing required package script: build'); process.exit(1) }"
+          pnpm build

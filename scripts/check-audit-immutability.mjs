@@ -19,19 +19,13 @@
  *   node scripts/check-audit-immutability.mjs --verify
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { resolve, dirname, join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assertNonEmptyDiscovery, loadActiveEstate, requiredSourceDirectory } from './lib/estate.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const WORKSPACE_ROOT = resolve(__dirname, '..');
-const PARENT_ROOT = resolve(WORKSPACE_ROOT, '..');
-
-const SCAN_DIRS = [
-  join(PARENT_ROOT, 'unierp-api', 'src'),
-  join(PARENT_ROOT, 'unierp-data', 'src'),
-  join(PARENT_ROOT, 'unierp-framework', 'src'),
-];
+const CURRENT_FILE = fileURLToPath(import.meta.url);
+const SCAN_REPOSITORIES = ['api', 'data', 'framework'];
 
 // Audit models that must be strictly append-only
 const AUDIT_MODELS = [
@@ -45,7 +39,6 @@ const AUDIT_MODELS = [
 const FORBIDDEN_OPERATIONS = ['update', 'updateMany', 'delete', 'deleteMany', 'upsert'];
 
 function scanDirectory(dir, fileList = []) {
-  if (!existsSync(dir)) return fileList;
   const entries = readdirSync(dir);
   for (const entry of entries) {
     if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
@@ -60,12 +53,18 @@ function scanDirectory(dir, fileList = []) {
   return fileList;
 }
 
-export function checkAuditImmutability() {
-  const allFiles = SCAN_DIRS.flatMap((d) => scanDirectory(d));
+export function checkAuditImmutability({ sourceDirectories } = {}) {
+  const estate = sourceDirectories ? null : loadActiveEstate();
+  const scanDirectories = sourceDirectories ?? SCAN_REPOSITORIES.map((repository) =>
+    requiredSourceDirectory(estate, repository, 'src'),
+  );
+  assertNonEmptyDiscovery('audit source roots', scanDirectories);
+  const allFiles = scanDirectories.flatMap((directory) => scanDirectory(directory));
+  assertNonEmptyDiscovery('audit source files', allFiles);
   const violations = [];
 
   for (const filePath of allFiles) {
-    const relativePath = filePath.replace(PARENT_ROOT + '/', '').replace(PARENT_ROOT + '\\', '');
+    const relativePath = estate ? relative(estate.root, filePath).replace(/\\/g, '/') : filePath;
     const content = readFileSync(filePath, 'utf8');
 
     for (const model of AUDIT_MODELS) {
@@ -90,8 +89,14 @@ export function checkAuditImmutability() {
   };
 }
 
-if (process.argv.includes('--verify') || process.argv.length <= 2) {
-  const result = checkAuditImmutability();
+if (process.argv[1] && CURRENT_FILE === resolve(process.argv[1])) {
+  let result;
+  try {
+    result = checkAuditImmutability();
+  } catch (error) {
+    console.error(`❌ Audit immutability gate could not establish discovery scope: ${error.message}`);
+    process.exit(1);
+  }
 
   if (result.violations.length > 0) {
     console.error(`\n❌ Audit immutability gate failed (${result.violations.length} forbidden mutation(s) found):`);
@@ -102,6 +107,6 @@ if (process.argv.includes('--verify') || process.argv.length <= 2) {
     process.exit(1);
   }
 
-  console.log(`✅ Audit immutability gate passed (${result.filesScanned} files scanned, zero audit mutation pathways).`);
+  console.log(`✅ Audit immutability gate passed (${result.filesScanned} active-estate files scanned, zero audit mutation pathways).`);
   process.exit(0);
 }

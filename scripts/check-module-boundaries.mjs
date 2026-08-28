@@ -1,11 +1,18 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { extname, normalize, resolve } from 'node:path';
+import { extname, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activeRepositoryPath, assertNonEmptyDiscovery, loadActiveEstate } from './lib/estate.mjs';
 
-const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const apiRoot = resolve(repositoryRoot, 'apps/api/src');
-const modulesRoot = resolve(apiRoot, 'modules');
-const baseline = new Set(JSON.parse(readFileSync(resolve(repositoryRoot, 'scripts/module-boundary-baseline.json'), 'utf8')));
+const CURRENT_FILE = fileURLToPath(import.meta.url);
+const apiRootArgument = process.argv.indexOf('--api-root');
+const requestedApiRoot = apiRootArgument >= 0 ? process.argv[apiRootArgument + 1] : null;
+const estate = loadActiveEstate();
+const apiSourceRoot = requestedApiRoot
+  ? resolve(requestedApiRoot)
+  : resolve(activeRepositoryPath(estate, 'api'), 'src');
+const apiRepositoryRoot = resolve(apiSourceRoot, '..');
+const modulesRoot = resolve(apiSourceRoot, 'modules');
+const baseline = new Set(JSON.parse(readFileSync(resolve(activeRepositoryPath(estate, 'unierp-workspace'), 'scripts/module-boundary-baseline.json'), 'utf8')));
 const importPattern = /(?:import|export)\s+(?:type\s+)?(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/g;
 const sourceExtensions = new Set(['.ts', '.tsx']);
 
@@ -42,7 +49,18 @@ function resolveImport(sourceFile, specifier) {
 // module that uses the outbox to trigger blockchain anchoring.
 
 const violations = [];
-for (const file of filesIn(modulesRoot)) {
+if (!existsSync(modulesRoot) || !statSync(modulesRoot).isDirectory()) {
+  console.error(`Module boundary check cannot find active API modules at ${modulesRoot}.`);
+  process.exit(1);
+}
+const moduleFiles = filesIn(modulesRoot);
+try {
+  assertNonEmptyDiscovery('API module source files', moduleFiles);
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+for (const file of moduleFiles) {
   if (file.includes(`${normalize('/tests/')}`) || /\.spec\.ts$/.test(file)) continue;
   const sourceModule = moduleName(file);
   const source = readFileSync(file, 'utf8');
@@ -57,7 +75,7 @@ for (const file of filesIn(modulesRoot)) {
       // developer's machine — the gate then fails locally for seven violations
       // it was explicitly told to tolerate. Native Windows is a supported
       // development target (TRD ADR-010), so gate output must be identical on both.
-      const relativeFile = file.replace(process.cwd(), '.').split('\\').join('/');
+      const relativeFile = `./${relative(apiRepositoryRoot, file).replace(/\\/g, '/')}`;
       violations.push(`${relativeFile} -> ${match[1]} (${sourceModule} -> ${targetModule})`);
     }
   }
@@ -70,4 +88,4 @@ if (newViolations.length > 0) {
   process.exit(1);
 }
 
-console.log(`Module boundary check passed. ${violations.length} tracked legacy violation(s) remain in #22.`);
+console.log(`Module boundary check passed. ${moduleFiles.length} active API source files scanned; ${violations.length} tracked legacy violation(s) remain.`);

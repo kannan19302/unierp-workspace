@@ -1,11 +1,20 @@
 {
   "name": "unierp-programme",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "private": true,
   "scripts": {
     "check:ai-agent-protocol": "node scripts/check-ai-agent-protocol.mjs",
     "check:ai-agent-governance": "node scripts/sync-ai-agent-governance.mjs --check",
     "check:active-estate": "node scripts/test-estate.mjs",
     "check:active-estate-catalog": "node scripts/check-active-estate-catalog.mjs",
+    "check:repository-toolchain": "node scripts/check-repository-toolchain-policy.mjs",
+    "test:repository-toolchain": "node scripts/check-repository-toolchain-policy.mjs --test",
+    "generate:repository-inventory": "node scripts/generate-repository-inventory.mjs",
+    "check:repository-inventory": "node scripts/generate-repository-inventory.mjs --check",
+    "check:non-active-estate": "node scripts/check-non-active-estate.mjs",
     "check:sensitive-workspace-hygiene": "node scripts/check-sensitive-workspace-hygiene.mjs",
     "test:durable-audit-and-outbox": "node scripts/check-durable-audit-and-outbox.mjs --test",
     "test:disabled-cd": "node scripts/check-disabled-cd.mjs --test",

@@ -33,7 +33,8 @@ owning platform suites
 3. Knowledge-growth triggers, ownership, freshness, deprecation and proof rules are normative.
 4. A deterministic validator fails on missing authorities, missing repository entrypoints or zero repository
    discovery.
-5. P0–P3 work has dependencies, deliverables, exit evidence and a development continuation gate.
+5. A mandatory SaaS readiness audit precedes remediation, and P0–P4 work has dependencies, deliverables, exit
+   evidence and a development continuation gate.
 
 ## Foundation baseline and decision
 
@@ -41,11 +42,17 @@ The 2026-08-27 prerequisite audit inspected the 31 repositories declared by `Uni
 workspace material. The authoritative platform traceability matrices contained zero `IMPLEMENTED` rows, alongside
 partial, unverified and gap states. Targeted checks showed both valid controls and false-green mechanisms.
 
-Decision: **pause broad feature/module expansion until the P0 and P1 continuation gate passes.** Work that closes
-security, tenancy, ownership, contracts, data integrity, CI truthfulness and shared-foundation gaps may continue.
+Decision: **pause broad feature/module expansion until the development continuation gate passes.** The expanded
+SaaS readiness audit was accepted by the human project owner on 2026-08-28. Ordered P0 foundation remediation is
+authorized; production/staging mutation, deployment and release remain unauthorized.
 
 ## Execution rules
 
+- Complete the mandatory audit in
+  [`SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md`](SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md) before
+  resuming P0–P3 implementation. Previously completed remediation is retained and assessed as evidence.
+- During the audit, inspect and report only: do not refactor, add frameworks, split/merge repositories, change
+  architecture, implement missing features, mutate environments, deploy or release.
 - Complete work as small, owner-approved vertical slices; do not run phases as one large rewrite.
 - Every item receives a change contract, named owner, consumers, acceptance proof, compatibility/rollout and
   rollback or roll-forward.
@@ -55,6 +62,27 @@ security, tenancy, ownership, contracts, data integrity, CI truthfulness and sha
   and traceability; a document or patch alone is not completion.
 - Human authorization remains required for production/staging mutation, release, destructive operations, breaking
   contracts and security-control weakening.
+
+## P-1 — Mandatory SaaS prerequisite and readiness audit
+
+P-1 is a hard predecessor to further remediation. It applies the complete 23-category checklist and evidence method
+in [`SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md`](SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md) across the
+active estate. It covers product/business foundations, requirements, architecture, tenancy, IAM, data, APIs,
+security, privacy/compliance, UX, engineering, testing, infrastructure, CI/CD, observability, SRE, commercial SaaS,
+administration, notifications, extensibility, customer lifecycle, launch readiness and scale.
+
+| ID | Workstream and accountable owner | Deliverables | Dependencies | Exit evidence |
+| --- | --- | --- | --- | --- |
+| FND-PA-001 | **Estate-wide SaaS readiness audit** — architecture governance coordinates; all platform, product, data, security and operations owners are accountable for their areas | Complete classified master checklist; exact evidence; category and overall scores; gap/risk/duplication registers; P0–P4 backlog; dependency sequence; explicit deferrals; development and production GO/NO-GO decisions; top-priority list | Current active-estate catalog and authoritative platform sources | Every checklist ID satisfies the audit exit gate; scores reconcile; owner review is recorded; accepted findings update this remediation plan before implementation resumes |
+
+Current P-1 status: `DONE — AUDIT ACCEPTED, P0 AUTHORIZED`. The
+[`UNIERP_SAAS_READINESS_AUDIT_2026-08-28.md`](UNIERP_SAAS_READINESS_AUDIT_2026-08-28.md) report classifies all
+237 items and calculates 37.4% readiness: 1 complete, 144 partial, 19 planned/documented-only, 32 implemented but
+problematic, 12 duplicated/overlapping and 29 missing. It records `NO-GO` for both continued large-scale
+development and production. The human project owner accepted the audit and ordered P0 sequence on 2026-08-28. The
+digest-bound single decision source is
+[`FND-PA-001_OWNER_REVIEW.md`](FND-PA-001_OWNER_REVIEW.md); `node scripts/check-saas-audit-acceptance.mjs` must pass
+and P0 may proceed only while it remains green.
 
 ## P0 — Critical foundation
 
@@ -112,20 +140,34 @@ P3 optimizes a production-proven foundation; it must not be used to defer P0–P
 | FND-P3-004 | Advanced analytics and governed AI | Semantic lineage, model/prompt/data governance, privacy, human oversight, evaluation, drift, cost and safe fallback are production-operated. |
 | FND-P3-005 | Continuous architecture fitness | Automated fitness functions, dependency/contract drift, knowledge freshness, technical-debt budgets and periodic architecture review remain green per release train. |
 
+## P4 — Deferred enterprise maturity
+
+P4 contains capabilities that are not justified by the current scale or product stage. Each item must have an
+owner, trigger, rationale and review date; P4 shall not be used to defer P0–P2 correctness.
+
+| ID | Workstream | Deferral and activation evidence |
+| --- | --- | --- |
+| FND-P4-001 | Advanced global topology | Additional regions/cells, sovereign deployments or active-active operation begin only when residency, latency, availability or customer commitments justify them. |
+| FND-P4-002 | Extreme-scale storage and streaming | Sharding, specialized streaming platforms and tiered storage begin only from measured data/throughput limits and a proven simpler architecture. |
+| FND-P4-003 | Advanced commercial optimization | Complex packaging, marketplace settlement and automated revenue optimization begin only after stable plans, metering, billing and reconciliation operate in production. |
+| FND-P4-004 | Advanced autonomous operations | Automated remediation and sophisticated capacity/cost optimization require mature telemetry, safe rollback, policy and operator oversight. |
+| FND-P4-005 | Additional certification programmes | Certification work begins only from customer/regulatory need, defined scope and legal/control-owner sponsorship; no certification is inferred from code. |
+
 ## Large-scale development continuation gate
 
 Broad feature expansion may resume only after architecture, security, data and product owners accept evidence that:
 
-1. every P0 item is complete;
-2. P1-001 through P1-007 are complete, and P1-008 is complete for every expanded user-facing surface;
-3. all governance/test gates discover correct nonzero targets and have no required skips or suppressed failures;
-4. whole-schema NOBYPASSRLS tenant isolation and provider/tenant authority separation pass;
-5. standards-compliant OIDC federation, explicit authorization, durable audit and atomic outbox behavior pass;
-6. canonical domain, organization and master-data ownership are accepted and machine-enforced;
-7. published contracts cover all consumed APIs/events/webhooks/SDK/extension boundaries;
-8. affected typed, behavior, migration, security, accessibility and critical-journey gates pass;
-9. authoritative traceability uses `IMPLEMENTED` only with current linked implementation and proof;
-10. no unresolved P0/P1 high-severity risk, required consumer, migration or owner decision remains.
+1. FND-PA-001 is complete and the development decision is accepted;
+2. every P0 item is complete;
+3. P1-001 through P1-007 are complete, and P1-008 is complete for every expanded user-facing surface;
+4. all governance/test gates discover correct nonzero targets and have no required skips or suppressed failures;
+5. whole-schema NOBYPASSRLS tenant isolation and provider/tenant authority separation pass;
+6. standards-compliant OIDC federation, explicit authorization, durable audit and atomic outbox behavior pass;
+7. canonical domain, organization and master-data ownership are accepted and machine-enforced;
+8. published contracts cover all consumed APIs/events/webhooks/SDK/extension boundaries;
+9. affected typed, behavior, migration, security, accessibility and critical-journey gates pass;
+10. authoritative traceability uses `IMPLEMENTED` only with current linked implementation and proof;
+11. no unresolved P0/P1 high-severity risk, required consumer, migration or owner decision remains.
 
 ## Verification plan for each work item
 
@@ -144,20 +186,26 @@ Every work item shall define exact evidence for applicable adversarial cases:
 
 - Plan designed: `YES`.
 - Enterprise brain and knowledge policy implemented: tracked by the creating change cycle, not asserted by this plan.
-- P0–P3 remediation implemented: `NO`.
+- P-1 analytical audit completed: `YES`; accountable-owner review/acceptance: `YES`.
+- P0–P4 remediation implemented: `NO`.
 - Product integrated, deployed or released from this plan: `NO`.
-- Execution snapshot (2026-08-27):
+- Execution snapshot (2026-08-28):
 
 | Item | Current state | Evidence / remaining condition |
 | --- | --- | --- |
-| FND-P0-001 / 002 | `PARTIAL` | Active estate catalog and selected discovery/CI gates now inspect 31 repositories and fail closed. The workflow immutability gate proves 103 mutable action/workflow references; remaining stale active scripts, those references and eight direct ERP-module imports still block completion. |
-| FND-P0-003 | `PARTIAL` | Inbound OIDC now uses discovery, opaque one-time state, nonce, S256 PKCE and JWKS token verification; focused adversarial tests pass. Verified-domain lifecycle, connection testing, egress control, durable federation audit and production key-rotation proof remain. |
+| FND-P0-001 | `COMPLETE (LOCAL)` | The canonical estate covers 31 repositories/28 manifests; six non-active roots have explicit disposition; Node 22/pnpm 9.15.4/one-lock policy passes; the generated 61-edge graph has zero upward edges/cycles; no active package uses the retired namespace. Exact-commit release integration remains part of P0-002. |
+| FND-P0-002 | `PARTIAL` | Discovery fixtures fail closed; schema ownership scans 2,033 models; workflow/action inventory has zero mutable or unregistered references; the API module boundary baseline is zero. Downstream reusable-workflow callers still pin the last committed workspace SHA because the current edits are uncommitted; exact-commit CI integration therefore remains unverified. |
+| FND-P0-003 | `PARTIAL` | Inbound OIDC now uses discovery, opaque one-time state, nonce, S256 PKCE and real JOSE/JWKS verification. Config secrets use an authenticated rotating-key envelope; saves force inactive/unverified; metadata/JWKS preflight and activation evidence are persisted; active legacy and hardcoded SSO surfaces converge on `SsoConfig`. Auth, IDP, data and focused API proof pass. SAML/end-to-end provider verification, production egress, durable federation audit, legacy-table retirement authorization, rotation exercise and security-owner sign-off remain. |
 | FND-P0-004 | `PARTIAL` | The simulated workspace isolation check now delegates to the data-owned structural verifier, which requires an explicit NOBYPASSRLS application connection. No application-role database is available in this workspace, so whole-schema behavioral proof is intentionally not green. |
 | FND-P0-005 | `PARTIAL` | The controller-local active-estate HTTP inventory scans 13,090 `api`/`idp` routes and now reports **0** declaration/enforcement gaps (down from 107); its adversarial fixture suite passes. It distinguishes tenant-staff RBAC, customer-portal record authority, session authority and protocol-public routes. Unsafe unverified-JWT entitlement, consent and logout revocation fallbacks were removed. Tenant-specific public PWA delivery was made fail-closed until a host-bound resolver exists; provisioning status is tenant-scoped JWT+RBAC; readiness is redacted and metrics requires `system.metrics.read`. Jobs, consumers, websockets, record scope and default-deny/negative proof remain. |
 | FND-P0-006 | `PARTIAL` | A fail-closed active-estate audit suppression gate has adversarial proof and reports 11 current blocking paths. Mandatory event catalog, transaction/outbox convergence, immutable DB enforcement, worker coverage and failure/replay proof remain. |
 | FND-P0-007 | `PARTIAL` | The stale auto-triggered CD workflow is now fail-closed with zero permissions and no environment action; an adversarial safety gate passes. Current polyrepo release topology, artifact provenance, staging, approval and rollback evidence remain required before CD can be enabled. |
 | FND-P0-008 | `PARTIAL` | A content-redacting hygiene gate now identifies ungoverned root scratch and active-estate environment artifacts without reading them into reports. Owner classification/quarantine, approved secret scanning and any necessary rotation remain required. |
 
-- Next required action: provide an isolated `DATABASE_APP_URL` for a disposable verification database, resolve the listed module-boundary, mutable-workflow, durable-audit/outbox and sensitive-artifact findings under owner authority, then complete the remaining P0 workstreams before any P1 feature expansion.
+- Next required action: complete the exact-commit handoff for FND-P0-002 when a reviewed commit is authorized, while
+  continuing safe local P0-003 implementation and proof in dependency order. The accepted sequence is
+  product/ownership decisions; estate/toolchain and immutable workflows; sensitive
+  artifact decisions; IAM authority; NOBYPASSRLS tenant isolation; data/transaction foundations; durable
+  audit/outbox; module/contract boundaries; risk-based test/CI proof; traceability reconciliation.
 
 > **This is not done.** The plan defines the required work; it is not evidence that the foundations are remediated.

@@ -75,6 +75,26 @@ const plan = requireFile(
   "unierp-workspace/governance/UNIERP_FOUNDATION_REMEDIATION_PLAN.md",
   "foundation remediation plan",
 );
+const saasAuditChecklist = requireFile(
+  "unierp-workspace/governance/SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md",
+  "SaaS prerequisite and readiness audit checklist",
+);
+const saasAuditContract = requireFile(
+  "unierp-workspace/governance/change-contracts/FND-PA-001-saas-readiness-audit.md",
+  "SaaS readiness audit change contract",
+);
+const saasAuditReport = requireFile(
+  "unierp-workspace/governance/UNIERP_SAAS_READINESS_AUDIT_2026-08-28.md",
+  "classified SaaS readiness audit report",
+);
+const saasAuditReview = requireFile(
+  "unierp-workspace/governance/FND-PA-001_OWNER_REVIEW.md",
+  "SaaS readiness audit owner review",
+);
+const saasAuditAcceptanceGate = requireFile(
+  "unierp-workspace/scripts/check-saas-audit-acceptance.mjs",
+  "SaaS readiness audit acceptance gate",
+);
 const workspaceFile = requireFile("UniERP.code-workspace", "workspace repository inventory");
 
 requireText(rootAgent, [
@@ -91,11 +111,52 @@ requireText(knowledgePolicy, [
 requireText(documentationIndex, [/AI_KNOWLEDGE_LIFECYCLE\.md/, /unierp-enterprise-brain/]);
 requireText(standardsIndex, [/AI_KNOWLEDGE_LIFECYCLE\.md/, /unierp-enterprise-brain/]);
 requireText(plan, [
+  /^## P-1 — Mandatory SaaS prerequisite and readiness audit/m,
   /^## P0 — Critical foundation/m,
   /^## P1 — Required before feature expansion/m,
   /^## P2 — Production readiness/m,
   /^## P3 — Future scale/m,
+  /^## P4 — Deferred enterprise maturity/m,
   /^## Large-scale development continuation gate/m,
+  /SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST\.md/,
+]);
+requireText(saasAuditChecklist, [
+  /^### SAAS-01 — Product and business foundation/m,
+  /^### SAAS-23 — Scalability and future readiness/m,
+  /`COMPLETE`/,
+  /`IMPLEMENTED BUT PROBLEMATIC`/,
+  /P0\/P1\/P2\/P3\/P4 prioritized remediation backlog/,
+  /GO`, `CONDITIONAL GO` or `NO-GO` assessment for continuing development/,
+  /GO`, `CONDITIONAL GO` or `NO-GO` assessment for production deployment/,
+]);
+requireText(saasAuditContract, [
+  /Status: `DONE`/,
+  /inspection-only P-1 phase/,
+  /SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST\.md/,
+  /FND-PA-001 is done/,
+]);
+requireText(saasAuditReport, [
+  /237 applicable requirements/,
+  /\*\*Continuing large-scale feature\/platform development: NO-GO\.\*\*/,
+  /\*\*Production deployment or GA: NO-GO\.\*\*/,
+  /^## Complete classified master checklist/m,
+  /^### P0 — Critical foundation: exact order before development resumes/m,
+  /audit is accepted and P0 remediation may proceed/,
+]);
+requireText(saasAuditReview, [
+  /Status: `PENDING`|Status: `ACCEPTED`/,
+  /Audit SHA-256: `[a-f0-9]{64}`/,
+  /^\| Product \|/m,
+  /^\| Architecture \|/m,
+  /^\| Security\/IAM\/Privacy \|/m,
+  /^\| Data \|/m,
+  /^\| Operations\/SRE\/Release \|/m,
+  /agent did not\s+>\s+self-approve/,
+]);
+requireText(saasAuditAcceptanceGate, [
+  /--structure-only/,
+  /createHash\("sha256"\)/,
+  /expected ACCEPTED/,
 ]);
 
 if (existsSync(workspaceFile)) {
@@ -137,7 +198,16 @@ if (existsSync(workspaceFile)) {
 for (const path of requiredSkillFiles.filter((path) => path.endsWith(".md"))) {
   if (existsSync(path)) verifyMarkdownLinks(path);
 }
-for (const path of [documentationIndex, standardsIndex, knowledgePolicy, plan]) {
+for (const path of [
+  documentationIndex,
+  standardsIndex,
+  knowledgePolicy,
+  plan,
+  saasAuditChecklist,
+  saasAuditContract,
+  saasAuditReport,
+  saasAuditReview,
+]) {
   if (existsSync(path)) verifyMarkdownLinks(path);
 }
 
@@ -149,5 +219,5 @@ if (failures.length > 0) {
 
 const repositoryCount = JSON.parse(readFileSync(workspaceFile, "utf8")).folders.length;
 console.log(
-  `UniERP enterprise brain is valid: ${requiredSkillFiles.length} skill artifacts, ${repositoryCount} repositories, mandatory authorities and P0-P3 plan discovered.`,
+  `UniERP enterprise brain is valid: ${requiredSkillFiles.length} skill artifacts, ${repositoryCount} repositories, mandatory authorities, P-1 SaaS audit and P0-P4 plan discovered.`,
 );

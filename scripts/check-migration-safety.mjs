@@ -24,11 +24,17 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadActiveEstate } from "./lib/estate.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_DIR = resolve(__dirname, "..");
 const PARENT_DIR = resolve(WORKSPACE_DIR, "..");
-const DATA_REPO = resolve(PARENT_DIR, "unierp-data");
+const estate = loadActiveEstate({ workspaceRoot: PARENT_DIR });
+const DATA_REPOSITORY = "data";
+if (!estate.names.includes(DATA_REPOSITORY)) {
+  throw new Error(`Canonical data repository ${DATA_REPOSITORY} is missing from the active estate.`);
+}
+const DATA_REPO = resolve(PARENT_DIR, DATA_REPOSITORY);
 const MIGRATIONS_DIR = join(DATA_REPO, "prisma/migrations");
 const BASELINE_FILE = resolve(WORKSPACE_DIR, "scripts/migration-safety-baseline.json");
 

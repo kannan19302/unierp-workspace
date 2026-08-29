@@ -13,7 +13,7 @@
 #
 #   jobs:
 #     policy:
-#       uses: kannan19302/unierp-workspace/.github/workflows/policy-gate.yml@main
+#       uses: kannan19302/unierp-workspace/.github/workflows/policy-gate.yml@0bb9682d45d50e23e6de344d71f10ec1a909bf04
 #       with:
 #         repo: unierp-web
 #
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out this repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           path: target
 
@@ -47,7 +47,7 @@ jobs:
       # none — all 30 CI files were independent hand copies, which is how 21 of them came
       # to declare a gate whose script existed in none.
       - name: Check out the gate
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: kannan19302/unierp-workspace
           path: gate
@@ -57,12 +57,12 @@ jobs:
       # report a clean pass over 658 real ones. The schema lives in unierp-data, so it is
       # checked out beside the target rather than guessed at.
       - name: Check out the schema
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: kannan19302/unierp-data
           path: schema
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ inputs.node-version }}
 

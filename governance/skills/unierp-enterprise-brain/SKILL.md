@@ -25,6 +25,13 @@ UniERP documents; it does not replace them or change their precedence.
      [knowledge lifecycle](references/knowledge-lifecycle.md).
    - Foundation sequencing or remediation work: read the
      [foundation remediation plan](../../UNIERP_FOUNDATION_REMEDIATION_PLAN.md).
+   - Before starting or resuming P0–P3 remediation, read and complete the
+     [SaaS prerequisite and readiness audit checklist](../../SAAS_PREREQUISITE_READINESS_AUDIT_CHECKLIST.md).
+     Read the current classified
+     [SaaS readiness audit report](../../UNIERP_SAAS_READINESS_AUDIT_2026-08-28.md); its development and production
+     The audit's broad-development and production `NO-GO` decisions remain binding. Ordered P0 remediation may
+     proceed only while the digest-bound [FND-PA-001 owner review](../../FND-PA-001_OWNER_REVIEW.md) is accepted and
+     its fail-closed acceptance gate passes.
 
 ## Operating contract
 

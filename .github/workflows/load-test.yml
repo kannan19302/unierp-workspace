@@ -37,11 +37,11 @@ jobs:
       run:
         working-directory: ./load-tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Run k6 smoke test
         if: inputs.scenario == 'smoke' || inputs.scenario == '' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/smoke-test.js
           flags: >
@@ -51,7 +51,7 @@ jobs:
 
       - name: Run k6 login load test
         if: inputs.scenario == 'login' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/login.js
           flags: >
@@ -61,7 +61,7 @@ jobs:
 
       - name: Run k6 list+paginate load test
         if: inputs.scenario == 'list' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/list-paginate.js
           flags: >
@@ -71,7 +71,7 @@ jobs:
 
       - name: Run k6 document post load test
         if: inputs.scenario == 'post' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/document-post.js
           flags: >
@@ -81,7 +81,7 @@ jobs:
 
       - name: Run k6 stress test
         if: inputs.scenario == 'stress' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/stress-test.js
           flags: >
@@ -91,7 +91,7 @@ jobs:
 
       - name: Run k6 tenant isolation test
         if: inputs.scenario == 'tenant' || inputs.scenario == 'all'
-        uses: grafana/k6-action@v0.3.0
+        uses: grafana/k6-action@2bd221c807b7cdbe4bb3abc6b3fa4d2da499fa9b
         with:
           filename: load-tests/scenarios/tenant-isolation.js
           flags: >
@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload k6 results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: k6-results-${{ inputs.scenario || 'smoke' }}-${{ github.run_id }}
           path: /tmp/k6-*-results.json

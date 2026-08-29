@@ -4,19 +4,24 @@
 
 - Status: `PARTIAL`
 - Cycle objective: establish current estate discovery and repair the audited false-green architecture/governance
-  gates that rely on retired repository topology.
-- Completed this cycle: contract and implementation work are in progress.
-- Incomplete this cycle: remaining P0 security, tenancy, authorization, audit/outbox, release and hygiene work.
-- Verification evidence: recorded as each gate is migrated and adversarially tested.
-- Next required action: implement the shared estate resolver, migrate the selected gates, and prove positive/negative
-  discovery behavior.
+  gates that relied on retired repository topology.
+- Completed this cycle: FND-P0-001 local acceptance is complete; FND-P0-002 discovery, immutable-reference and module
+  boundary implementation is complete in the working tree with adversarial proof.
+- Incomplete this cycle: downstream reusable-workflow callers are pinned to the latest committed workspace revision,
+  not these uncommitted edits. Exact-commit integration requires a reviewed workspace commit followed by a coordinated
+  pin refresh; committing or publishing was not authorized. Remaining P0 work is tracked separately.
+- Verification evidence: 31 repositories/28 manifests reconcile; dependency graph has zero upward edges/cycles;
+  workflow inventory has zero mutable/unregistered references; schema ownership scans 2,033 models; API boundary gate
+  scans 1,788 files with zero violations; discovery fixtures reject zero/missing/rogue targets.
+- Next required action: review and commit the workspace governance revision, refresh the registered workspace SHA in
+  all callers, then run the same gates in CI on that exact revision.
 
 | Claim | State | Evidence |
 | --- | --- | --- |
 | Designed | `YES` | FND-P0-001/002 in the remediation plan; current workspace inventory and failed gate evidence inspected. |
-| Implemented | `PARTIAL` | Pending this change. |
-| Tested | `NOT VERIFIED` | Pending this change. |
-| Integrated | `NOT VERIFIED` | Pending this change. |
+| Implemented | `YES` | Shared estate resolver, toolchain/non-active estate catalogs, fail-closed discovery gates, immutable workflow pin manifest and zero-baseline API module boundary are present. |
+| Tested | `YES` | Positive and adversarial local gates passed on 2026-08-29; exact commands are recorded below. |
+| Integrated | `PARTIAL` | Local consumers use current paths and pins; remote callers cannot reference the uncommitted workspace revision yet. |
 | Deployed | `NOT APPLICABLE` | Local governance/tooling change only. |
 | Released | `NOT APPLICABLE` | No release requested. |
 
@@ -111,10 +116,21 @@ Required adversarial cases:
 
 ## 7. Completion evidence
 
-To be completed only after all listed checks pass, affected consumers are migrated, and the P0 plan/traceability is
-updated from inspected evidence.
+- `node scripts/check-non-active-estate.mjs` — PASS, six explicitly classified non-active roots excluded.
+- `node scripts/check-repository-toolchain-policy.mjs` — PASS, 31 repositories and 28 manifests.
+- `node scripts/generate-repository-inventory.mjs --check` — PASS, 61 internal dependencies, zero upward edges/cycles.
+- `node scripts/test-discovery-gates.mjs` — PASS, zero/missing/rogue fixtures rejected.
+- `node scripts/check-workflow-immutability.mjs --test` and default mode — PASS, zero mutable/unregistered references.
+- `node scripts/ci/check-schema-ownership.mjs --verify` — PASS, 2,033 models across 46 Prisma files.
+- `node ../api/scripts/check-module-boundaries.mjs` — PASS, 1,788 files and zero legacy/new violations.
+- `node governance/skills/unierp-enterprise-brain/scripts/validate-brain.mjs` — PASS.
 
-> **This is not done.**
+Knowledge delta: `UPDATED`. `STD-REP-001`, machine policy, active/non-active estate catalogs, generated dependency
+inventory, workflow pin registry, API common/platform ownership and this change contract now describe current
+behavior. The enterprise-brain routing itself did not change.
+
+> **This is not done.** FND-P0-001 is locally complete; FND-P0-002 remains integration-partial until downstream
+> callers pin a committed revision containing these changes and exact-commit CI passes.
 
 ## Amendment — workflow immutability inventory
 

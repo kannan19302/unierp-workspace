@@ -79,11 +79,16 @@ jobs:
           add_field "Module" --data-type SINGLE_SELECT --single-select-options "$MODULES"
 
           echo "==> Attaching issues #42-92..."
+          EXISTING_ISSUES=$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER_FLAG" --limit 1000 --format json \
+            | jq -r '.items[] | select(.content.type == "Issue") | .content.number')
           for n in $(seq 42 92); do
+            if echo "$EXISTING_ISSUES" | grep -qxF "$n"; then
+              echo "    #$n already attached, skipping"
+              continue
+            fi
             gh project item-add "$PROJECT_NUMBER" --owner "$OWNER_FLAG" \
-              --url "https://github.com/${OWNER}/${REPO}/issues/${n}" \
-              && echo "    added #$n" \
-              || echo "    skipped #$n"
+              --url "https://github.com/${OWNER}/${REPO}/issues/${n}"
+            echo "    added #$n"
           done
 
           echo "==> Done: https://github.com/users/${OWNER}/projects/${PROJECT_NUMBER}"

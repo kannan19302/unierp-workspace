@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out governance repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           path: workspace/unierp-workspace
 
@@ -79,7 +79,7 @@ jobs:
           cp unierp-workspace/governance/AGENTS.md AGENTS.md
           cp unierp-workspace/governance/UniERP.code-workspace UniERP.code-workspace
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
 

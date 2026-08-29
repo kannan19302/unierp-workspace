@@ -19,7 +19,7 @@
 #
 #   jobs:
 #     cdc:
-#       uses: kannan19302/unierp-workspace/.github/workflows/cdc-gate.yml@main
+#       uses: kannan19302/unierp-workspace/.github/workflows/cdc-gate.yml@0bb9682d45d50e23e6de344d71f10ec1a909bf04
 
 name: CDC gate
 
@@ -37,12 +37,12 @@ jobs:
       # verified with whatever is already on main, and the gate would
       # verify nothing.
       - name: Check out the calling provider (the commit under test)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          path: unierp-workspace-siblings/${{ github.event.repository.name }}
+          path: unierp-workspace-siblings/.caller
 
       - name: Check out the CDC harness
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: kannan19302/unierp-workspace
           path: unierp-workspace-siblings/unierp-workspace
@@ -51,28 +51,45 @@ jobs:
       # (not actions/checkout — a matrix would fan this step out into
       # separate parallel JOBS, each with only one repo, when this gate
       # needs all of them present together in one job) into the same
-      # sibling layout the harness's own path resolution expects. A repo
-      # that has since been renamed or removed logs a warning below and
-      # does not fail every OTHER provider's CI — the harness itself
-      # already reports an "open surface" warning, not a hard failure, for
-      # a provider it cannot find.
+      # sibling layout declared by UniERP.code-workspace. GitHub repository
+      # names remain transport identifiers; checkout directories are the
+      # canonical estate names used by every local gate.
       - name: Check out the other CDC providers and consumers
         run: |
-          for repo in \
-            unierp-contracts unierp-kernel unierp-sdk unierp-extension-api \
-            unierp-sandbox unierp-framework unierp-data unierp-shared \
-            unierp-auth unierp-design-system unierp-web unierp-console \
-            unierp-developer unierp-api unierp-idp unierp-extensions; do
-            if [ "$repo" = "${{ github.event.repository.name }}" ]; then
+          set -euo pipefail
+          while read -r remote local; do
+            if [ "$remote" = "${{ github.event.repository.name }}" ]; then
+              mv unierp-workspace-siblings/.caller "unierp-workspace-siblings/${local}"
               continue
             fi
-            if ! git clone --depth 1 "https://github.com/kannan19302/${repo}.git" \
-              "unierp-workspace-siblings/${repo}"; then
-              echo "::warning::could not clone ${repo} — the harness reports it as an open surface, not a hard failure"
+            if ! git clone --depth 1 "https://github.com/kannan19302/${remote}.git" \
+              "unierp-workspace-siblings/${local}"; then
+              echo "::warning::could not clone ${remote} into ${local} — the harness reports it as an open surface"
             fi
-          done
+          done <<'REPOSITORIES'
+          unierp-contracts unierp-contracts
+          unierp-kernel kernel
+          unierp-sdk sdk
+          unierp-extension-api extension-api
+          unierp-sandbox sandbox
+          unierp-framework framework
+          unierp-data data
+          unierp-shared shared
+          unierp-auth auth
+          unierp-design-system design-system
+          unierp-web tenant-apps
+          unierp-console provider-admin-os
+          unierp-developer developer-platform
+          unierp-api api
+          unierp-idp idp
+          unierp-extensions extensions
+          REPOSITORIES
+          test ! -d unierp-workspace-siblings/.caller || {
+            echo "::error::calling repository is not declared in the CDC estate map"
+            exit 1
+          }
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
 

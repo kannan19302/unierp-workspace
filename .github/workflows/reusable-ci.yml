@@ -6,7 +6,7 @@ on:
       node-version:
         required: false
         type: string
-        default: '20'
+        default: '22'
       run-integration:
         required: false
         type: boolean
@@ -30,17 +30,17 @@ jobs:
           --health-timeout 3s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Use Node.js ${{ inputs.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ inputs.node-version }}
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Activate the governed pnpm version
+        run: corepack enable && corepack prepare pnpm@9.15.4 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Checkout unierp-workspace for CI scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: kannan19302/unierp-workspace
           path: unierp-workspace
@@ -51,7 +51,7 @@ jobs:
           pnpm run test
       - name: Check out data repository for integration tests
         if: inputs.run-integration
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: kannan19302/unierp-data
           path: .unierp-data

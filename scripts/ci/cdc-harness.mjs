@@ -12,7 +12,7 @@
  * ───────────────
  * Today the TypeScript compiler sees across every package boundary in this
  * monorepo, so a removed export fails the consumer's build. After the Phase 3
- * split it does not: `unierp-web` compiles against a *published* `@kannan19302/ui`,
+ * split it does not: `tenant-apps` compiles against a *published* `@kannan19302/ui`,
  * and a symbol deleted in the design system is discovered at runtime in
  * staging. M2 is what replaces the compiler, and § 14 forbids extracting any
  * repository before it demonstrably works.
@@ -83,10 +83,9 @@ const AS_JSON = process.argv.includes("--json");
  * connected to the polyrepo it now runs against.
  *
  * Every sibling repo this workspace's own AGENTS.md/README documents is
- * checked out beside this one on disk (the same layout policy-gate.yml
- * already assumes for its own cross-repo gates) — `../unierp-contracts`,
- * `../unierp-web`, etc. — so providers and consumers are named as sibling
- * directories instead of monorepo subpaths.
+ * checked out beside this one using the canonical directory names from
+ * UniERP.code-workspace, so providers and consumers are named as sibling
+ * directories instead of monorepo subpaths or GitHub transport names.
  */
 const SIBLING = (repo) => `../${repo}`;
 
@@ -103,45 +102,45 @@ const DIST = (repo) => {
 
 const PROVIDERS = {
   "@kannan19302/contracts": DIST("unierp-contracts"),
-  "@kannan19302/kernel": DIST("unierp-kernel"),
-  "@kannan19302/sdk": DIST("unierp-sdk"),
-  "@kannan19302/extension-api": DIST("unierp-extension-api"),
-  "@kannan19302/sandbox": DIST("unierp-sandbox"),
-  "@kannan19302/framework": DIST("unierp-framework"),
-  "@kannan19302/database": DIST("unierp-data"),
-  "@kannan19302/shared": DIST("unierp-shared"),
-  "@kannan19302/auth": DIST("unierp-auth"),
-  "@kannan19302/ui": { ...DIST("unierp-design-system"), subpathRoot: "dist" },
+  "@kannan19302/kernel": DIST("kernel"),
+  "@kannan19302/sdk": DIST("sdk"),
+  "@kannan19302/extension-api": DIST("extension-api"),
+  "@kannan19302/sandbox": DIST("sandbox"),
+  "@kannan19302/framework": DIST("framework"),
+  "@kannan19302/database": DIST("data"),
+  "@kannan19302/shared": DIST("shared"),
+  "@kannan19302/auth": DIST("auth"),
+  "@kannan19302/ui": { ...DIST("design-system"), subpathRoot: "dist" },
 };
 
 /** Consumers: anything that compiles against a provider's published artifact. */
 const CONSUMERS = [
-  { name: "@kannan19302/web", dir: SIBLING("unierp-web"), roots: ["app", "src"] },
-  { name: "@kannan19302/console", dir: SIBLING("unierp-console"), roots: ["app", "src"] },
-  { name: "@kannan19302/developer", dir: SIBLING("unierp-developer"), roots: ["src", "app"] },
-  { name: "@kannan19302/api", dir: SIBLING("unierp-api"), roots: ["src"] },
-  { name: "@kannan19302/idp", dir: SIBLING("unierp-idp"), roots: ["src"] },
-  { name: "@kannan19302/framework", dir: SIBLING("unierp-framework"), roots: ["src"] },
-  { name: "@kannan19302/sdk", dir: SIBLING("unierp-sdk"), roots: ["src"] },
-  { name: "@kannan19302/kernel", dir: SIBLING("unierp-kernel"), roots: ["src"] },
+  { name: "@kannan19302/web", dir: SIBLING("tenant-apps"), roots: ["app", "src"] },
+  { name: "@kannan19302/console", dir: SIBLING("provider-admin-os"), roots: ["app", "src"] },
+  { name: "@kannan19302/developer", dir: SIBLING("developer-platform"), roots: ["src", "app"] },
+  { name: "@kannan19302/api", dir: SIBLING("api"), roots: ["src"] },
+  { name: "@kannan19302/idp", dir: SIBLING("idp"), roots: ["src"] },
+  { name: "@kannan19302/framework", dir: SIBLING("framework"), roots: ["src"] },
+  { name: "@kannan19302/sdk", dir: SIBLING("sdk"), roots: ["src"] },
+  { name: "@kannan19302/kernel", dir: SIBLING("kernel"), roots: ["src"] },
   {
     name: "@kannan19302/ext-real-estate",
-    dir: SIBLING("unierp-extensions") + "/real-estate",
+    dir: SIBLING("extensions") + "/real-estate",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-education",
-    dir: SIBLING("unierp-extensions") + "/education",
+    dir: SIBLING("extensions") + "/education",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-healthcare",
-    dir: SIBLING("unierp-extensions") + "/healthcare",
+    dir: SIBLING("extensions") + "/healthcare",
     roots: ["src"],
   },
   {
     name: "@kannan19302/ext-field-service",
-    dir: SIBLING("unierp-extensions") + "/field-service",
+    dir: SIBLING("extensions") + "/field-service",
     roots: ["src"],
   },
 ];

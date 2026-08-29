@@ -3,7 +3,7 @@
 # Run this script ONCE after cloning. It configures the native Windows development environment.
 # No WSL required for building, testing, or verifying.
 #
-# Prerequisites: Node 22 LTS, pnpm, Flutter (optional), Git
+# Prerequisites: Node 22 LTS, pnpm 9.15.4, Flutter (optional), Git
 
 param(
     [switch]$SkipDefenderExclusions,
@@ -95,8 +95,8 @@ Write-Host "Setup complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  pnpm install                    # Install all dependencies"
-Write-Host "  pnpm run --filter @unerp/api dev # Start API (native Node, no WSL)"
-Write-Host "  pnpm run --filter @unerp/web dev # Start web (native Next.js, port 3000)"
+Write-Host "  pnpm run --filter @kannan19302/api dev # Start API (native Node, no WSL)"
+Write-Host "  pnpm run --filter @kannan19302/web dev # Start web (native Next.js, port 3000)"
 Write-Host "  cd apps\console && pnpm dev      # Start console (port 3001)"
 Write-Host ""
 Write-Host "DataStores (Docker Desktop required for these only):"

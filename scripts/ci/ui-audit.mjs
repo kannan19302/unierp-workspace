@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import assert from "node:assert/strict";
 
 const programmeRoot = process.cwd();
 const estateRoot = path.resolve(programmeRoot, "..");
 const inventoryPath = path.join(programmeRoot, "scripts", "ui-routes-inventory.json");
 const baselinePath = path.join(programmeRoot, "scripts", "ci", "ui-audit-baseline.json");
 const updateBaseline = process.argv.includes("--update-baseline");
+const checkInventory = process.argv.includes("--check");
+const runClassificationTests = process.argv.includes("--test");
 
 const ignoredDirectories = new Set([
   ".git",
@@ -19,17 +22,17 @@ const ignoredDirectories = new Set([
 ]);
 
 const surfaces = [
-  { repo: "infra/platform-wizard", anatomy: "launch-hero", shell: "LaunchShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "marketing-site", anatomy: "editorial", shell: "EditorialShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-apps", anatomy: "record", shell: "RecordShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-admin", anatomy: "settings", shell: "SettingsShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "provider-admin-os", anatomy: "ops", shell: "OpsShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "marketplace", anatomy: "catalog", shell: "CatalogShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "developer-platform", anatomy: "workspace-studio", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "web-studio", anatomy: "workspace-studio", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "tenant-sites", anatomy: "tenant-branded", noShell: true, route: /(?:^|\\|\/)page\.tsx$/ },
-  { repo: "unierp-mobile", anatomy: "mobile", shell: "AppShell", route: /(?:_page|_screen)\.dart$/ },
-  { repo: "desktop-app", anatomy: "desktop", shell: "data-ui-root=\"desktop-adapter\"", route: /public(?:\\|\/)index\.html$/ },
+  { repo: "infra/platform-wizard", anatomy: "launch-hero", floorplan: "non-product", density: "comfortable", shell: "LaunchShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "marketing-site", anatomy: "editorial", floorplan: "non-product", density: "comfortable", shell: "EditorialShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-apps", anatomy: "meridian-workbench", shell: "RecordShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-admin", anatomy: "settings", floorplan: "settings", density: "standard", shell: "SettingsShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "provider-admin-os", anatomy: "ops", floorplan: "operational", density: "compact", shell: "OpsShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "marketplace", anatomy: "catalog", floorplan: "data", density: "standard", shell: "CatalogShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "developer-platform", anatomy: "workspace-studio", floorplan: "studio", density: "standard", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "web-studio", anatomy: "workspace-studio", floorplan: "studio", density: "standard", shell: "PlatformShell|WorkspaceShell|StudioShell", route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "tenant-sites", anatomy: "tenant-branded", floorplan: "non-product", density: "comfortable", noShell: true, route: /(?:^|\\|\/)page\.tsx$/ },
+  { repo: "unierp-mobile", anatomy: "mobile", floorplan: "record", density: "comfortable", shell: "AppShell", route: /(?:_page|_screen)\.dart$/ },
+  { repo: "desktop-app", anatomy: "desktop", floorplan: "record", density: "standard", shell: "data-ui-root=\"desktop-adapter\"", route: /public(?:\\|\/)index\.html$/ },
 ];
 
 const approvedShellFiles = new Set([
@@ -72,6 +75,69 @@ function relative(file) {
   return path.relative(estateRoot, file).replaceAll("\\", "/");
 }
 
+const tenantCompactDomains = /\/(?:finance|fixed-assets|inventory|procurement|manufacturing|supply-chain|pos|field-service)(?:\/|$)/;
+const nonProductRoute = /\/(?:login|register|reset-password|verify-email|oauth|terms|privacy|public|onboarding)(?:\/|$)/;
+const studioRoute = /\/(?:studio|builder|designer|workflow-builder|form-builder|report-builder)(?:\/|$)/;
+const settingsRoute = /\/(?:settings|configuration|preferences|policies)(?:\/|$)/;
+const planningRoute = /\/(?:planning|calendar|schedule|timeline|capacity|forecast|budget)(?:\/|$)/;
+const operationalRoute = /\/(?:dashboard|analytics|monitoring|control-tower|operations|alerts|exceptions)(?:\/|$)/;
+const transactionRoute = /\/(?:new|create|edit|entry|journal|invoice|payment|order|receipt|issue|transfer|posting|reconcile|approval)(?:\/|$)/;
+const recordRoute = /\/\[[^/]+\](?:\/|$)|\/(?:detail|details|profile|view)(?:\/|$)/;
+
+function classifyTenantRoute(routeFile) {
+  const normalized = `/${routeFile.replaceAll("\\", "/").toLowerCase()}/`;
+  const compact = tenantCompactDomains.test(normalized);
+
+  if (nonProductRoute.test(normalized)) {
+    return { floorplan: "non-product", defaultDensity: "comfortable", classificationRule: "public-auth-onboarding" };
+  }
+  if (studioRoute.test(normalized)) {
+    return { floorplan: "studio", defaultDensity: "standard", classificationRule: "studio-keyword" };
+  }
+  if (settingsRoute.test(normalized)) {
+    return { floorplan: "settings", defaultDensity: "standard", classificationRule: "settings-keyword" };
+  }
+  if (planningRoute.test(normalized)) {
+    return { floorplan: "planning", defaultDensity: compact ? "compact" : "standard", classificationRule: "planning-keyword" };
+  }
+  if (operationalRoute.test(normalized)) {
+    return { floorplan: "operational", defaultDensity: compact ? "compact" : "standard", classificationRule: "operational-keyword" };
+  }
+  if (transactionRoute.test(normalized)) {
+    return { floorplan: "transaction", defaultDensity: compact ? "compact" : "standard", classificationRule: "transaction-keyword" };
+  }
+  if (recordRoute.test(normalized)) {
+    return { floorplan: "record", defaultDensity: compact ? "compact" : "standard", classificationRule: "record-keyword" };
+  }
+  return { floorplan: "data", defaultDensity: compact ? "compact" : "standard", classificationRule: "data-fallback" };
+}
+
+function classifyRoute(surface, routeFile) {
+  if (surface.repo === "tenant-apps") return classifyTenantRoute(routeFile);
+  return {
+    floorplan: surface.floorplan,
+    defaultDensity: surface.density,
+    classificationRule: `surface:${surface.repo}`,
+  };
+}
+
+if (runClassificationTests) {
+  assert.deepEqual(classifyTenantRoute("tenant-apps/app/(dashboard)/finance/journals/new/page.tsx"), {
+    floorplan: "transaction", defaultDensity: "compact", classificationRule: "transaction-keyword",
+  });
+  assert.deepEqual(classifyTenantRoute("tenant-apps/app/(dashboard)/inventory/items/[id]/page.tsx"), {
+    floorplan: "record", defaultDensity: "compact", classificationRule: "record-keyword",
+  });
+  assert.deepEqual(classifyTenantRoute("tenant-apps/app/(dashboard)/crm/customers/page.tsx"), {
+    floorplan: "data", defaultDensity: "standard", classificationRule: "data-fallback",
+  });
+  assert.deepEqual(classifyTenantRoute("tenant-apps/app/onboarding/page.tsx"), {
+    floorplan: "non-product", defaultDensity: "comfortable", classificationRule: "public-auth-onboarding",
+  });
+  console.log("UI route classification tests passed.");
+  process.exit(0);
+}
+
 function nearestRootContract(file, root, surface) {
   if (surface.noShell) return "tenant-site-no-shell";
   const marker = new RegExp(`(?:${surface.shell})`);
@@ -107,6 +173,7 @@ for (const surface of surfaces) {
     const content = fs.readFileSync(file, "utf8");
     const routeFile = relative(file);
     const rootAnatomy = nearestRootContract(file, root, surface);
+    const classification = classifyRoute(surface, routeFile);
     const stateCount = sixStates.filter((state) => content.includes(state)).length;
     const rawTables = countMatches(content, /<table(?:\s|>)/g);
     const inlineStyles = countMatches(content, /style\s*=\s*\{\{/g);
@@ -122,6 +189,10 @@ for (const surface of surfaces) {
       surface: surface.repo,
       file: routeFile,
       anatomy: surface.anatomy,
+      floorplan: classification.floorplan,
+      defaultDensity: classification.defaultDensity,
+      classificationRule: classification.classificationRule,
+      classificationState: "proposed",
       rootAnatomy,
       sharedUi,
       stateCount,
@@ -148,6 +219,9 @@ for (const surface of surfaces) {
 
 routes.sort((a, b) => a.file.localeCompare(b.file));
 const inventory = {
+  schemaVersion: 2,
+  generatedBy: "pnpm ui:audit",
+  sourceScope: "registered UI routes in scripts/ci/ui-audit.mjs",
   routeCount: routes.length,
   surfaces: Object.fromEntries(
     surfaces.map(({ repo, anatomy }) => [
@@ -155,9 +229,34 @@ const inventory = {
       { anatomy, routes: routes.filter((route) => route.surface === repo).length },
     ]),
   ),
+  classification: {
+    state: "proposed",
+    floorplans: Object.fromEntries(
+      [...new Set(routes.map((route) => route.floorplan))]
+        .sort()
+        .map((floorplan) => [floorplan, routes.filter((route) => route.floorplan === floorplan).length]),
+    ),
+    densities: Object.fromEntries(
+      [...new Set(routes.map((route) => route.defaultDensity))]
+        .sort()
+        .map((density) => [density, routes.filter((route) => route.defaultDensity === density).length]),
+    ),
+  },
   routes,
 };
-fs.writeFileSync(inventoryPath, `${JSON.stringify(inventory, null, 2)}\n`, "utf8");
+const serializedInventory = `${JSON.stringify(inventory, null, 2)}\n`;
+if (checkInventory) {
+  if (!fs.existsSync(inventoryPath)) {
+    console.error(`UI route inventory missing: ${inventoryPath}`);
+    process.exit(1);
+  }
+  if (fs.readFileSync(inventoryPath, "utf8") !== serializedInventory) {
+    console.error("UI route inventory is stale. Run pnpm ui:audit and review the generated classification.");
+    process.exit(1);
+  }
+} else {
+  fs.writeFileSync(inventoryPath, serializedInventory, "utf8");
+}
 
 if (updateBaseline) {
   fs.writeFileSync(

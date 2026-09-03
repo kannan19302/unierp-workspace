@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Schema structure, canonical client distribution, and lint/index ratchets enforced; resolving duplicated schema concepts, reducing quality ratchets, and production-volume expand/backfill/contract drills in progress)
 - Objective: enforce schema size limits, naming conventions, foreign key indexing ratchets, schema impact analysis, migration discipline, and deterministic seeding.
 - Risk class: `R2` — database schema stability, data integrity, and migration reversibility.
 - Accountable platforms: Data Platform and Business Services (`PLT-DATA`, `PLT-BIZ`).

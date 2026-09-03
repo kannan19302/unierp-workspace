@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Master data entities and 3-stage import lifecycle implemented; deduplication, merge stewardship, lineage, and downstream reconciliation events in progress)
 - Objective: establish canonical master data entity schemas, validation, deduplication, import/export lifecycle management, and downstream event consistency.
 - Risk class: `R2` — core master data integrity across customers, vendors, employees, products, and accounts.
 - Accountable platforms: Business Services (`PLT-BIZ`).

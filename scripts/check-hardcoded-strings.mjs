@@ -29,7 +29,9 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "
 import path from "node:path";
 
 const ROOT = path.resolve(process.cwd(), "..");
-const WEB_APP_DIR = path.join(ROOT, "unierp-web", "app");
+const WEB_APP_DIR = existsSync(path.join(ROOT, "tenant-apps", "app"))
+  ? path.join(ROOT, "tenant-apps", "app")
+  : path.join(ROOT, "unierp-web", "app");
 const BASELINE_PATH = path.resolve(
   process.cwd(),
   "evidence",

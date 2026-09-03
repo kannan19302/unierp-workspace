@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Connection pool fairness verified; multi-cell tenant placement, cross-cell outbox, and regional failover in progress)
 - Objective: establish cell taxonomy, tenant routing boundaries, connection fairness, and isolated cross-cell resiliency.
 - Risk class: `R2` — multi-cell placement and tenant fairness.
 - Accountable platforms: Architecture and Runtime Operations (`PLT-OPS`, `PLT-GOV`).
@@ -14,10 +14,14 @@
 2. **Cell Routing Topology**:
    - Architecture defined in `docs/architecture/repo-layer-graph.md` and `docs/architecture/event-flow.md`.
    - Cell-level tenant partition routing ensures independent failure domains.
+3. **Cell Routing Governor & Partition Isolation**:
+   - `scripts/check-cell-routing-governor.mjs`: Proves deterministic tenant cell affinity, data sovereignty jurisdiction enforcement (`US`, `EU`), cross-cell query mismatch rejection, and failure blast-radius isolation.
 
 ## Verification Evidence
 
 ```bash
 node scripts/check-connection-fairness.mjs
+node scripts/check-cell-routing-governor.mjs
 ```
-Connection pool fairness gate passes cleanly.
+Connection pool fairness and cell governor gates pass cleanly.
+

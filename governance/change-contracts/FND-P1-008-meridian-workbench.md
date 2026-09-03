@@ -2,9 +2,9 @@
 
 ## Cycle status
 
-- Status: `COMPLETE`
-- Cycle objective: establish and implement the authoritative, scalable and data-dense UniERP design language across
-  the Design Platform and all tenant applications.
+- Status: `DONE`
+> **Supersession Notice:** The transitional Meridian Workbench design language documented herein is superseded by ADR-0009 and the Strata Workbench Enterprise Design System (`FND-P1-009`). Meridian tokens and components are maintained for backward compatibility during phased migration.
+- Cycle objective: establish and implement the transitional UniERP design language across the Design Platform and tenant applications.
 - Completed this cycle:
   1. Repository and authority discovery; authoritative Design Platform PRD, requirements, architecture, experience, contracts, and traceability (ADR-0008).
   2. Token cascade and typography correction: aligned v2 typography with Meridian font triad (Instrument Sans / Inter / Martian Mono) and resolved DS-UX-010.

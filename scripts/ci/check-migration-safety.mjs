@@ -14,7 +14,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
-const DIR = join(ROOT, 'packages', 'database', 'prisma', 'migrations');
+const DATA_MIGRATIONS = join(ROOT, '..', 'data', 'prisma', 'migrations');
+const DIR = existsSync(DATA_MIGRATIONS) ? DATA_MIGRATIONS : join(ROOT, 'packages', 'database', 'prisma', 'migrations');
 const args = process.argv.slice(2);
 const FORBID_DESTRUCTIVE = args.includes('--forbid-destructive');
 const since = args.includes('--since') ? args[args.indexOf('--since') + 1] : null;

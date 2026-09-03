@@ -25,7 +25,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_ROOT = path.join(root, 'unierp-api');
+const API_ROOT = existsSync(path.join(root, 'api'))
+  ? path.join(root, 'api')
+  : path.join(root, 'unierp-api');
 const SCAN_DIR = path.join(API_ROOT, 'src');
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'controller-decomposition-baseline.json');
 

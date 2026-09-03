@@ -2,14 +2,15 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Canonical enterprise domain catalog, architecture maps, and 33 AST-derived module orientation specifications formalized and verified)
 - Objective: establish canonical bounded contexts, domain ownership, module dependency graphs, event flows, and orientation specifications across all active business services without documentation drift.
 - Risk class: `R2` — cross-module boundary governance and domain model clarity.
 - Accountable platforms: Data and Business Services (`PLT-DATA`, `PLT-BIZ`).
 
 ## Delivered Artifacts & Gates
 
-1. **Automated Drift-Proof Architecture Maps (`unierp-workspace/docs/architecture/`)**:
+1. **Automated Drift-Proof Architecture Maps & Domain Catalog (`unierp-workspace/docs/architecture/`)**:
+   - `canonical-domain-catalog.md`: Authoritative bounded contexts, primary aggregate roots, and cross-boundary SoR translation matrix.
    - `module-dependency-graph.md`: Static import dependency tracking across all 33 business modules in `api/src/modules`.
    - `event-flow.md`: Cross-module event emission (`.emit(...)`) to handler (`@OnEvent(...)`) catalog.
    - `permission-matrix.md`: Consolidated route-level `@Permissions(...)` authority mappings across all modules.

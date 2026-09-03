@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Prometheus metrics conventions, OpenTelemetry tracing bootstrap, incident response runbook, and alert routing rehearsal verified; removing raw tenant ID labels, end-to-end async trace propagation, and real failure injection in progress)
 - Objective: establish universal Prometheus metrics, OpenTelemetry distributed tracing, critical journey SLOs, error budgets, actionable paging, and incident response runbooks.
 - Risk class: `R2` — system observability and incident response readiness.
 - Accountable platforms: Runtime Operations (`PLT-OPS`).

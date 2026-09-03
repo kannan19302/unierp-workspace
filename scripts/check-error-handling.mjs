@@ -23,7 +23,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_ROOT = path.join(root, 'unierp-api');
+const API_ROOT = existsSync(path.join(root, 'api'))
+  ? path.join(root, 'api')
+  : path.join(root, 'unierp-api');
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'error-handling-baseline.json');
 const REPORT_FILE = path.join(root, 'unierp-workspace', 'evidence', 'error-handling-report.json');
 const RULE_IDS = ['no-empty', 'code-standards/no-swallowed-catch', 'code-standards/no-cause-loss-rethrow'];

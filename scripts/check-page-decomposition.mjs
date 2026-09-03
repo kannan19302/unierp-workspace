@@ -19,7 +19,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const WEB_ROOT = path.join(root, 'unierp-web');
+const WEB_ROOT = existsSync(path.join(root, 'tenant-apps'))
+  ? path.join(root, 'tenant-apps')
+  : path.join(root, 'unierp-web');
 const SCAN_DIR = path.join(WEB_ROOT, 'app');
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'page-decomposition-baseline.json');
 

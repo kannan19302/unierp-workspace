@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Repository claims and 31-repo code census measured and verified; fine-grained rosters for services, domains, datastores, contracts, and SLOs in progress)
 - Objective: measure and assign accountable ownership, role assignments, profile metrics, and rehearsal freshness across all 31 active estate repositories.
 - Risk class: `R2` — engineering governance and ownership clarity.
 - Accountable platforms: Platform Governance (`PLT-GOV`).

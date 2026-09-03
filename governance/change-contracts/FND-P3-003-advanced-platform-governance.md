@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Extension API versioning [1.0.0] and compatibility windows passing; extension marketplace sandboxing, escape/egress controls, and fine-grained capability licensing in progress)
 - Objective: enforce extension API contract versioning, sandbox isolation, and capability licensing.
 - Risk class: `R2` — extension safety and API contract compatibility.
 - Accountable platforms: Developer Platform (`PLT-DEV`).

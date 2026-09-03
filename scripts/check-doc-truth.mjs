@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { assertNonEmptyDiscovery, loadActiveEstate, requiredSourceDirectory } from "./lib/estate.mjs";
 
 const CURRENT_FILE = fileURLToPath(import.meta.url);
-const scriptReference = /`?((?:[a-z0-9_-]+\/)*scripts\/[a-zA-Z0-9_.\-/]+\.(?:mjs|js))`?/g;
+const scriptReference = /`?((?:[a-z0-9_-]+\/)*scripts\/[a-zA-Z0-9_.\-/]+\.(?:mjs|js))(?![a-zA-Z0-9_.-])`?/g;
 
 function markdownFiles(directory, found = []) {
   for (const entry of readdirSync(directory)) {

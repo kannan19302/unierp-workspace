@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Canonical contracts in @kannan19302/contracts published and control-center manifests verified; full boundary inventory and provider/consumer contract testing in progress)
 - Objective: publish single source of truth for versioned API contracts, event families, webhook schemas, idempotency tokens, error envelopes, and control-center manifests.
 - Risk class: `R2` — cross-package contract governance and external interface compatibility.
 - Accountable platforms: Business Services and Developer Platform (`PLT-BIZ`, `PLT-DEV`).

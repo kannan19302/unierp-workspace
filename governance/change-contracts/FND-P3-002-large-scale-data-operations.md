@@ -2,7 +2,7 @@
 
 ## Cycle status
 
-- Status: `DONE`
+- Status: `PARTIAL` (Online schema change benchmarks and volume profiles passing; real representative partitioning, live archiving/cold-tier drill, and actual lock-time measurements in progress)
 - Objective: prove non-blocking online schema evolution, high-volume performance profiles, and partition scaling for large-scale enterprise data.
 - Risk class: `R1` — database locks, query latency, and high-volume data operations.
 - Accountable platforms: Data Platform (`PLT-DATA`).

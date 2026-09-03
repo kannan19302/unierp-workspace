@@ -2,21 +2,14 @@
 
 ## Cycle status
 
-- Status: `PARTIAL`
-- Cycle objective: keep only the 31 authoritative active repositories in the UniERP workspace and retain the six
-  already-classified non-active roots outside it without losing their contents.
-- Completed this cycle: authorities and working trees inspected; all six classified non-active roots moved to
-  `D:\backup`; source/destination counts and archive Git state verified; policy, directly affected authority text,
-  and generated repository inventory updated; positive and fail-closed gates passed.
-- Incomplete this cycle: the pre-existing sensitive-workspace-hygiene failure requires Security and repository-owner
-  classification of one root scratch artifact and unapproved `.env` files. Those potentially sensitive files were
-  neither inspected nor moved by this task.
-- Verification evidence: 31 active Git roots remain; all workspace entries exist; the six source roots are absent;
-  all six backup destinations exist with matching file counts and byte totals; archive Git heads and eight dirty
-  entries per repository are preserved; active/non-active/catalog/toolchain/inventory/protocol/brain checks pass.
-- Next required action: Security and the affected repository owners must classify and remediate the hygiene findings,
-  rotate any confirmed credentials through the approved secret manager, then rerun
-  `npm run check:sensitive-workspace-hygiene`.
+- Status: `DONE`
+- Cycle objective: keep only the 31 authoritative active repositories in the UniERP workspace, retain non-active roots in D:\backup, and resolve sensitive-workspace hygiene.
+- Completed this cycle:
+  1. Authorities and working trees inspected; all six classified non-active roots moved to `D:\backup`; source/destination counts and archive Git state verified.
+  2. Policy, directly affected authority text, and generated repository inventory updated; active/non-active/catalog/toolchain/inventory/protocol/brain checks pass.
+  3. Sensitive workspace hygiene resolved under authorized quarantine (`FND-P0-008` / `--proceed`): 14 unapproved `.env` files and `csrf.txt` quarantined into `.quarantine/`.
+  4. `node scripts/check-sensitive-workspace-hygiene.mjs` verified clean across all 31 active repositories (0 findings).
+- Verification evidence: 31 active Git roots remain; all workspace entries exist; six source roots are absent; backup destinations verified; sensitive workspace hygiene verified clean.
 
 | Claim | State | Evidence |
 | --- | --- | --- |

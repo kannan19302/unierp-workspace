@@ -18,6 +18,7 @@ import { join } from "node:path";
 /** Absolute path to the schema folder, or null when the legacy layout is in use. */
 export function schemaDir(root) {
   const dirs = [
+    join(root, "..", "data", "prisma", "schema"),
     join(root, "..", "unierp-data", "prisma", "schema"),
     join(root, "prisma", "schema"),
     join(root, "packages", "database", "prisma", "schema"),
@@ -49,6 +50,8 @@ export function schemaFiles(root) {
  */
 export function idpSchemaFile(root) {
   const candidates = [
+    join(root, "..", "data", "prisma", "idp-schema.prisma"),
+    join(root, "..", "data", "src", "idp-client", "schema.prisma"),
     join(root, "..", "unierp-data", "prisma", "idp-schema.prisma"),
     join(root, "..", "unierp-data", "src", "idp-client", "schema.prisma"),
     join(root, "packages", "database", "prisma", "idp-schema.prisma"),

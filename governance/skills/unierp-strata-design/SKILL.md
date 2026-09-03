@@ -82,10 +82,10 @@ Before completing any UI change, execute:
 ```bash
 # In d:\UniERP\design-system:
 pnpm test                               # Vitest + Axe a11y (0 failures required)
-node scripts/check-contrast.mjs         # Theme contrast gate (WCAG 2.2 AA)
-node scripts/check-density.mjs          # Density constraints (Compact >= 11px)
-node scripts/check-tokens.mjs           # Zero raw hex/pixel literals
-node scripts/generate-cross-platform-tokens.mjs --check # Mobile/desktop token drift
+node design-system/scripts/check-contrast.mjs         # Theme contrast gate (WCAG 2.2 AA)
+node design-system/scripts/check-density.mjs          # Density constraints (Compact >= 11px)
+node design-system/scripts/check-tokens.mjs           # Zero raw hex/pixel literals
+node design-system/scripts/generate-cross-platform-tokens.mjs --check # Mobile/desktop token drift
 
 # In consuming applications (e.g. tenant-apps):
 pnpm typecheck                          # TypeScript compilation (0 errors)

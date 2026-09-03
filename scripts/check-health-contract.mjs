@@ -40,9 +40,10 @@ export function verifyHealthContracts() {
   }
 
   // 2. Verify health & readiness endpoints in unierp-api
-  const apiHealthPath = resolve(PARENT_DIR, "unierp-api/src/health.controller.ts");
+  const apiRepo = existsSync(resolve(PARENT_DIR, "api")) ? resolve(PARENT_DIR, "api") : resolve(PARENT_DIR, "unierp-api");
+  const apiHealthPath = resolve(apiRepo, "src/health.controller.ts");
   if (!existsSync(apiHealthPath)) {
-    violations.push("unierp-api health.controller.ts missing.");
+    violations.push("api health.controller.ts missing.");
   } else {
     const content = readFileSync(apiHealthPath, "utf8");
     if (!content.includes('@Get("health")') && !content.includes("@Get('health')")) {

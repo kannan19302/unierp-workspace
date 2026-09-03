@@ -27,7 +27,9 @@ import { createHash } from "node:crypto";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_DIR = resolve(__dirname, "..");
 const PARENT_DIR = resolve(WORKSPACE_DIR, "..");
-const DATA_REPO = resolve(PARENT_DIR, "unierp-data");
+const DATA_REPO = existsSync(resolve(PARENT_DIR, "data"))
+  ? resolve(PARENT_DIR, "data")
+  : resolve(PARENT_DIR, "unierp-data");
 const MIGRATIONS_DIR = join(DATA_REPO, "prisma/migrations");
 const CHECKSUMS_FILE = resolve(WORKSPACE_DIR, "scripts/migration-checksums.json");
 

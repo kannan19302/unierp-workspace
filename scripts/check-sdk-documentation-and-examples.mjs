@@ -27,24 +27,25 @@ const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
 export function verifySdkDocumentationAndExamples() {
-  const sdkReadmePath = join(PARENT_ROOT, "unierp-sdk", "README.md");
+  const sdkDir = existsSync(join(PARENT_ROOT, "sdk")) ? join(PARENT_ROOT, "sdk") : join(PARENT_ROOT, "unierp-sdk");
+  const sdkReadmePath = join(sdkDir, "README.md");
   if (!existsSync(sdkReadmePath)) {
-    return { valid: false, reason: "unierp-sdk README.md missing" };
+    return { valid: false, reason: "sdk README.md missing" };
   }
 
-  const examplePath = join(PARENT_ROOT, "unierp-sdk", "examples", "basic-usage.ts");
+  const examplePath = join(sdkDir, "examples", "basic-usage.ts");
   if (!existsSync(examplePath)) {
-    return { valid: false, reason: "unierp-sdk examples/basic-usage.ts missing" };
+    return { valid: false, reason: "sdk examples/basic-usage.ts missing" };
   }
 
-  const testPath = join(PARENT_ROOT, "unierp-sdk", "examples", "basic-usage.spec.ts");
+  const testPath = join(sdkDir, "examples", "basic-usage.spec.ts");
   if (!existsSync(testPath)) {
-    return { valid: false, reason: "unierp-sdk examples/basic-usage.spec.ts missing" };
+    return { valid: false, reason: "sdk examples/basic-usage.spec.ts missing" };
   }
 
   // Execute runnable example test suite in CI
   const proc = spawnSync("node", ["--test", "examples/basic-usage.spec.ts"], {
-    cwd: join(PARENT_ROOT, "unierp-sdk"),
+    cwd: sdkDir,
     encoding: "utf8",
     stdio: "pipe",
   });

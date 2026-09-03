@@ -11,37 +11,37 @@ Summary: 31 active repositories, 28 package identities and 61 internal dependenc
 
 | Repository | Layer | Package identity | Git head | Package manager | Node engine | Lock |
 | --- | ---: | --- | --- | --- | --- | --- |
-| unierp-contracts | L0 | @kannan19302/contracts | a88301541829 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| auth | L1 | @kannan19302/auth | 0c4070e35be7 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| config | L1 | @kannan19302/config | 417d3b4b3a58 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| design-system | L1 | @kannan19302/ui | f96aa6af46ab | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| kernel | L1 | @kannan19302/kernel | 4c8c594910d4 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| sdk | L1 | @kannan19302/sdk | d2c1c9fc1b2e | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| service-kit | L1 | @kannan19302/service-kit | 2713e97cad79 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| shared | L1 | @kannan19302/shared | 90ac38bf4a12 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| storybook | L1 | @kannan19302/storybook | e6ba68f53e22 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| blockchain | L2 | @kannan19302/blockchain | e4f21c069831 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| data | L2 | @kannan19302/database | 96520fe1f8fa | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| extension-api | L2 | @kannan19302/extension-api | 96e6fb433e4f | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| framework | L2 | @kannan19302/framework | a6abebfcd783 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| sandbox | L2 | @kannan19302/sandbox | d3e427475013 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| api | L3 | @kannan19302/api | 2e64475ecee8 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| idp | L3 | @kannan19302/idp | eb961129cbb2 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| developer-platform | L4 | @kannan19302/developer | 2162529a89d0 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| marketing-site | L4 | unierp-corporate-website | ebe2bb39e320 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| marketplace | L4 | @kannan19302/marketplace | c0f3ff89102e | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| provider-admin-os | L4 | @kannan19302/console | 5b64f5f33ca8 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| tenant-admin | L4 | @kannan19302/tenant-admin | e0244191dcfb | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| tenant-apps | L4 | @kannan19302/web | a3d02170bd21 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| tenant-site-template | L4 | @kannan19302/corporate-site-template | a15b13bc9b64 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| tenant-sites | L4 | @kannan19302/tenant-sites | 427a5e01e2c3 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| web-studio | L4 | @kannan19302/web-studio | ea0f6d9f9528 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| desktop-app | L5 | @kannan19302/desktop | 975b46d40b4a | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| unierp-mobile | L5 | — | c872b9dd7dc6 | — | — | — |
-| extensions | L6 | unierp-extensions | 009eb7333f49 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| infra | L7 | — | 07d710c71c73 | — | — | — |
-| unierp-workspace | L7 | unierp-programme | 0bb9682d45d5 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
-| unierp-platform | — | — | 956a65b4f665 | — | — | — |
+| unierp-contracts | L0 | @kannan19302/contracts | 9aff2649e8e5 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| auth | L1 | @kannan19302/auth | 47aab38b5d26 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| config | L1 | @kannan19302/config | 3dec7db7f156 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| design-system | L1 | @kannan19302/ui | 701f46ece625 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| kernel | L1 | @kannan19302/kernel | 30853b829777 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| sdk | L1 | @kannan19302/sdk | 4de37a896a81 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| service-kit | L1 | @kannan19302/service-kit | 22a4549f3702 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| shared | L1 | @kannan19302/shared | 7e98e40ee709 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| storybook | L1 | @kannan19302/storybook | 78018872dac3 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| blockchain | L2 | @kannan19302/blockchain | 85965c838d90 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| data | L2 | @kannan19302/database | 1ba98220a220 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| extension-api | L2 | @kannan19302/extension-api | 9d95ab8cd1aa | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| framework | L2 | @kannan19302/framework | 13adfd02d4d3 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| sandbox | L2 | @kannan19302/sandbox | 32e1369ddfd5 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| api | L3 | @kannan19302/api | 270e35de3db0 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| idp | L3 | @kannan19302/idp | 82bb8ff96a26 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| developer-platform | L4 | @kannan19302/developer | af8284a463f6 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| marketing-site | L4 | unierp-corporate-website | 0c463c413a7b | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| marketplace | L4 | @kannan19302/marketplace | 0bb3867ae592 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| provider-admin-os | L4 | @kannan19302/console | f6d58dbc6d99 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| tenant-admin | L4 | @kannan19302/tenant-admin | 0f0180e5a70b | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| tenant-apps | L4 | @kannan19302/web | c4e496fe466c | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| tenant-site-template | L4 | @kannan19302/corporate-site-template | 27cdf0bbf15e | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| tenant-sites | L4 | @kannan19302/tenant-sites | 7d2f21b91c20 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| web-studio | L4 | @kannan19302/web-studio | e67238485a08 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| desktop-app | L5 | @kannan19302/desktop | 3bf21bc84b5c | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| unierp-mobile | L5 | — | d60456c8d196 | — | — | — |
+| extensions | L6 | unierp-extensions | 7bc769841735 | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| infra | L7 | — | e12689b9d16d | — | — | — |
+| unierp-workspace | L7 | unierp-programme | 9656aa2d6fad | pnpm@9.15.4 | >=22 <23 | pnpm-lock.yaml |
+| unierp-platform | — | — | 9c27bbd9568c | — | — | — |
 
 ## Internal package dependencies
 

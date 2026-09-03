@@ -41,12 +41,12 @@ const FORBIDDEN_OPERATIONS = ['update', 'updateMany', 'delete', 'deleteMany', 'u
 function scanDirectory(dir, fileList = []) {
   const entries = readdirSync(dir);
   for (const entry of entries) {
-    if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
+    if (entry === 'node_modules' || entry === 'dist' || entry === '.git' || entry === 'main-client' || entry === 'idp-client') continue;
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
       scanDirectory(fullPath, fileList);
-    } else if (/\.(ts|tsx|js|mjs)$/.test(entry) && !entry.includes('.spec.') && !entry.includes('.test.')) {
+    } else if (/\.(ts|tsx|js|mjs)$/.test(entry) && !entry.endsWith('.d.ts') && !entry.includes('.spec.') && !entry.includes('.test.')) {
       fileList.push(fullPath);
     }
   }

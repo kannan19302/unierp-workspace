@@ -20,13 +20,15 @@
 //   node scripts/check-duplication.mjs --update-baseline    (record current count as the new baseline)
 //   node scripts/check-duplication.mjs --clusters            (print high-duplication module-pair clusters for L07-L10 triage)
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const SCAN_DIR = path.join(root, 'unierp-api', 'src', 'modules');
+const SCAN_DIR = existsSync(path.join(root, 'api', 'src', 'modules'))
+  ? path.join(root, 'api', 'src', 'modules')
+  : path.join(root, 'unierp-api', 'src', 'modules');
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'duplication-baseline.json');
 const MIN_LINES = 40;
 
@@ -165,6 +167,7 @@ if (updateBaseline) {
     recordedAt: new Date().toISOString(),
     clusterCount: clusters.length,
   };
+  mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
   writeFileSync(BASELINE_FILE, JSON.stringify(newBaseline, null, 2) + '\n', 'utf-8');
   console.log(`Baseline recorded: ${blocks.length} cross-module duplicate block(s) (>=${MIN_LINES} lines), ${clusters.length} cluster(s).`);
   process.exit(0);

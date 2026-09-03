@@ -45,12 +45,14 @@
 //   node scripts/check-context-budget.mjs                  (check against baseline)
 //   node scripts/check-context-budget.mjs --update-baseline  (record current per-module sizes)
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_MODULES = path.join(root, 'unierp-api', 'src', 'modules');
+const API_MODULES = existsSync(path.join(root, 'api', 'src', 'modules'))
+  ? path.join(root, 'api', 'src', 'modules')
+  : path.join(root, 'unierp-api', 'src', 'modules');
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'context-budget-baseline.json');
 
 const LINE_BUDGET = 10000;
@@ -97,6 +99,7 @@ const overBudgetCount = rows.filter((r) => r.overBudget).length;
 if (updateBaseline) {
   const perModule = {};
   for (const r of rows) perModule[r.module] = { codeLines: r.codeLines, testLines: r.testLines, totalLines: r.totalLines };
+  mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
   writeFileSync(
     BASELINE_FILE,
     JSON.stringify({ budget: LINE_BUDGET, moduleCount: rows.length, overBudgetCount, perModule, recordedAt: new Date().toISOString() }, null, 2) + '\n',

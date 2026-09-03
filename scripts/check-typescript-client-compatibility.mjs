@@ -26,9 +26,10 @@ const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
 export function verifyTypeScriptClientCompatibility() {
-  const sdkPkgPath = join(PARENT_ROOT, "unierp-sdk", "package.json");
+  const sdkDir = existsSync(join(PARENT_ROOT, "sdk")) ? join(PARENT_ROOT, "sdk") : join(PARENT_ROOT, "unierp-sdk");
+  const sdkPkgPath = join(sdkDir, "package.json");
   if (!existsSync(sdkPkgPath)) {
-    return { valid: false, reason: "unierp-sdk repository or package.json missing" };
+    return { valid: false, reason: "sdk repository or package.json missing" };
   }
 
   const sdkPkg = JSON.parse(readFileSync(sdkPkgPath, "utf8"));
@@ -37,7 +38,11 @@ export function verifyTypeScriptClientCompatibility() {
   }
 
   // Verify that downstream consumers depend on @kannan19302/sdk or @kannan19302/contracts
-  const consumers = ["unierp-web", "unierp-console", "unierp-developer"];
+  const consumers = [
+    existsSync(join(PARENT_ROOT, "tenant-apps")) ? "tenant-apps" : "unierp-web",
+    existsSync(join(PARENT_ROOT, "provider-admin-os")) ? "provider-admin-os" : "unierp-console",
+    existsSync(join(PARENT_ROOT, "developer-platform")) ? "developer-platform" : "unierp-developer",
+  ];
   for (const c of consumers) {
     const pkgPath = join(PARENT_ROOT, c, "package.json");
     if (existsSync(pkgPath)) {

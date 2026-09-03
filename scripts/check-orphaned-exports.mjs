@@ -21,16 +21,18 @@
 //   node scripts/check-orphaned-exports.mjs                (check against baseline)
 //   node scripts/check-orphaned-exports.mjs --update-baseline  (record current orphan list as the baseline)
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DS_ROOT = path.join(root, 'unierp-design-system');
+const DS_ROOT = existsSync(path.join(root, 'design-system'))
+  ? path.join(root, 'design-system')
+  : path.join(root, 'unierp-design-system');
 const BARREL_FILE = path.join(DS_ROOT, 'src', 'components', 'index.ts');
 const CONSUMER_ROOTS = [
-  path.join(root, 'unierp-web'),
-  path.join(root, 'unierp-console'),
+  existsSync(path.join(root, 'tenant-apps')) ? path.join(root, 'tenant-apps') : path.join(root, 'unierp-web'),
+  existsSync(path.join(root, 'provider-admin-os')) ? path.join(root, 'provider-admin-os') : path.join(root, 'unierp-console'),
 ];
 const BASELINE_FILE = path.join(root, 'unierp-workspace', 'evidence', 'orphaned-exports-baseline.json');
 
@@ -111,6 +113,7 @@ for (const name of exportedNames) {
 }
 
 if (updateBaseline) {
+  mkdirSync(path.dirname(BASELINE_FILE), { recursive: true });
   writeFileSync(
     BASELINE_FILE,
     JSON.stringify({ exportedCount: exportedNames.length, orphanedCount: orphaned.length, orphaned: orphaned.sort(), consumerFileCount, recordedAt: new Date().toISOString() }, null, 2) + '\n',

@@ -27,9 +27,21 @@ for (const entry of entries) {
   if (active.has(entry.path)) findings.push(`'${entry.path}' is both active and non-active`);
   if (!allowedStatuses.has(entry.status)) findings.push(`'${entry.path}' has unsupported status '${entry.status}'`);
   if (!entry.owner || !entry.disposition) findings.push(`'${entry.path}' lacks owner or disposition`);
+  if (entry.workspacePresent !== undefined && typeof entry.workspacePresent !== "boolean") {
+    findings.push(`'${entry.path}' has non-boolean workspacePresent`);
+  }
   const absolute = resolve(root, entry.path);
-  if ((!absolute.startsWith(`${root}${sep}`) && absolute !== root) || !existsSync(absolute) || !statSync(absolute).isDirectory()) {
-    findings.push(`classified non-active directory '${entry.path}' is unavailable`);
+  if (!absolute.startsWith(`${root}${sep}`) || absolute === root) {
+    findings.push(`classified non-active directory '${entry.path}' is outside the workspace root`);
+  } else {
+    const exists = existsSync(absolute);
+    const workspacePresent = entry.workspacePresent !== false;
+    if (workspacePresent && (!exists || !statSync(absolute).isDirectory())) {
+      findings.push(`classified non-active directory '${entry.path}' is unavailable`);
+    }
+    if (!workspacePresent && exists) {
+      findings.push(`externally retained directory '${entry.path}' has reappeared in the active workspace`);
+    }
   }
   if (entry.replacement && !active.has(entry.replacement)) findings.push(`'${entry.path}' names non-active replacement '${entry.replacement}'`);
 }
@@ -48,4 +60,7 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log(`Non-active estate verified: ${entries.length} classified roots excluded from ${active.size} active repositories.`);
+const externallyRetained = entries.filter((entry) => entry.workspacePresent === false).length;
+console.log(
+  `Non-active estate verified: ${entries.length} classified roots excluded from ${active.size} active repositories; ${externallyRetained} retained outside the workspace.`,
+);

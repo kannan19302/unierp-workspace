@@ -27,9 +27,10 @@ const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
 export function verifySdkErgonomics() {
-  const sdkSrcPath = join(PARENT_ROOT, "unierp-sdk", "src", "index.ts");
+  const sdkDir = existsSync(join(PARENT_ROOT, "sdk")) ? join(PARENT_ROOT, "sdk") : join(PARENT_ROOT, "unierp-sdk");
+  const sdkSrcPath = join(sdkDir, "src", "index.ts");
   if (!existsSync(sdkSrcPath)) {
-    return { valid: false, reason: "unierp-sdk src/index.ts missing" };
+    return { valid: false, reason: "sdk src/index.ts missing" };
   }
 
   const sdkSrc = readFileSync(sdkSrcPath, "utf8");

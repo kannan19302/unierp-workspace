@@ -26,19 +26,20 @@ const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
 export function verifySdkArchitecture() {
-  const sdkPkgPath = join(PARENT_ROOT, "unierp-sdk", "package.json");
+  const sdkDir = existsSync(join(PARENT_ROOT, "sdk")) ? join(PARENT_ROOT, "sdk") : join(PARENT_ROOT, "unierp-sdk");
+  const sdkPkgPath = join(sdkDir, "package.json");
   if (!existsSync(sdkPkgPath)) {
-    return { valid: false, reason: "unierp-sdk missing" };
+    return { valid: false, reason: "sdk missing" };
   }
 
   const sdkPkg = JSON.parse(readFileSync(sdkPkgPath, "utf8"));
   if (!sdkPkg.dependencies || !sdkPkg.dependencies["@kannan19302/contracts"]) {
-    return { valid: false, reason: "unierp-sdk must declare dependency on @kannan19302/contracts (L0)" };
+    return { valid: false, reason: "sdk must declare dependency on @kannan19302/contracts (L0)" };
   }
 
-  const sdkSrcPath = join(PARENT_ROOT, "unierp-sdk", "src", "index.ts");
+  const sdkSrcPath = join(sdkDir, "src", "index.ts");
   if (!existsSync(sdkSrcPath)) {
-    return { valid: false, reason: "unierp-sdk src/index.ts missing" };
+    return { valid: false, reason: "sdk src/index.ts missing" };
   }
 
   const sdkSrc = readFileSync(sdkSrcPath, "utf8");

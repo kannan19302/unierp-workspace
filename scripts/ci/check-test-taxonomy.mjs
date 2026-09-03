@@ -16,14 +16,16 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadActiveEstate } from "../lib/estate.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE = join(HERE, "..", "..");
-const FAMILY = join(WORKSPACE, "..");
+const estate = loadActiveEstate();
+const FAMILY = estate.root;
 const MANIFEST_FILE = join(WORKSPACE, "docs", "test-taxonomy.json");
 
 const TEST_RE = /\.(spec|test|e2e)\.ts$|_test\.dart$/;
-const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\/|\.plugin_symlinks/;
+const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\/|\.plugin_symlinks|ephemeral/;
 
 const TAXONOMY = new Set([
   "unit", "integration", "controller", "guard", "isolation",
@@ -51,14 +53,7 @@ const manifest = JSON.parse(readFileSync(MANIFEST_FILE, "utf8"));
 const declared = manifest.files ?? {};
 const problems = [];
 
-const family = readdirSync(FAMILY)
-  .filter(
-    (d) =>
-      d.startsWith("unierp-") &&
-      statSync(join(FAMILY, d)).isDirectory() &&
-      existsSync(join(FAMILY, d, ".git")),
-  )
-  .filter((d) => !["unierp-app-education", "unierp-app-fieldservice", "unierp-app-healthcare", "unierp-app-realestate"].includes(d));
+const family = [...estate.repositories.values()].map((r) => r.path);
 
 let scanned = 0;
 const onDisk = new Set();

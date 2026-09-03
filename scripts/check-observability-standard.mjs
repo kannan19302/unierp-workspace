@@ -25,13 +25,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const PARENT_DIR = resolve(ROOT, "..");
 
+const API_DIR = existsSync(resolve(PARENT_DIR, "api"))
+  ? resolve(PARENT_DIR, "api")
+  : resolve(PARENT_DIR, "unierp-api");
+
 export function verifyObservabilityStandards() {
   const violations = [];
 
-  // 1. Check metrics middleware & registry in unierp-api
-  const metricsPath = resolve(PARENT_DIR, "unierp-api/src/common/middleware/metrics.middleware.ts");
+  // 1. Check metrics middleware & registry in api
+  const metricsPath = resolve(API_DIR, "src/common/middleware/metrics.middleware.ts");
   if (!existsSync(metricsPath)) {
-    violations.push("unierp-api metrics.middleware.ts missing.");
+    violations.push("api metrics.middleware.ts missing.");
   } else {
     const content = readFileSync(metricsPath, "utf8");
     const requiredLabels = ["method", "route", "status_code", "tenant_id"];
@@ -42,10 +46,10 @@ export function verifyObservabilityStandards() {
     }
   }
 
-  // 2. Check metrics scrape endpoint controller in unierp-api
-  const metricsControllerPath = resolve(PARENT_DIR, "unierp-api/src/metrics.controller.ts");
+  // 2. Check metrics scrape endpoint controller in api
+  const metricsControllerPath = resolve(API_DIR, "src/metrics.controller.ts");
   if (!existsSync(metricsControllerPath)) {
-    violations.push("unierp-api metrics.controller.ts missing.");
+    violations.push("api metrics.controller.ts missing.");
   } else {
     const content = readFileSync(metricsControllerPath, "utf8");
     if (!content.includes("metrics") || !content.includes("metricsRegistry.metrics()")) {
@@ -53,10 +57,10 @@ export function verifyObservabilityStandards() {
     }
   }
 
-  // 3. Check OpenTelemetry distributed tracing bootstrap in unierp-api
-  const tracingPath = resolve(PARENT_DIR, "unierp-api/src/tracing.ts");
+  // 3. Check OpenTelemetry distributed tracing bootstrap in api
+  const tracingPath = resolve(API_DIR, "src/tracing.ts");
   if (!existsSync(tracingPath)) {
-    violations.push("unierp-api tracing.ts bootstrap missing.");
+    violations.push("api tracing.ts bootstrap missing.");
   } else {
     const content = readFileSync(tracingPath, "utf8");
     if (!content.includes("@opentelemetry/sdk-node") || !content.includes("OTLPTraceExporter")) {

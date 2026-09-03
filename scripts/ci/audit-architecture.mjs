@@ -106,7 +106,9 @@ row(
   uiPkgs.length <= 2 ? "OK" : "FAIL",
 );
 
-const schemaDir = join(ROOT, "unierp-data/prisma/schema");
+const schemaDir = existsSync(join(ROOT, "data/prisma/schema"))
+  ? join(ROOT, "data/prisma/schema")
+  : join(ROOT, "unierp-data/prisma/schema");
 const schemaFiles = existsSync(schemaDir)
   ? readdirSync(schemaDir).filter((f) => f.endsWith(".prisma"))
   : [];
@@ -138,7 +140,7 @@ row(
 );
 
 // ── § 3 / § 4 topology ───────────────────────────────────────────────────────
-const platformExists = existsSync(join(ROOT, "unierp-api/src/modules/api-platform")) || existsSync(join(ROOT, "unierp-api/src/platform"));
+const platformExists = existsSync(join(ROOT, "api/src/modules/api-platform")) || existsSync(join(ROOT, "api/src/platform")) || existsSync(join(ROOT, "unierp-api/src/modules/api-platform")) || existsSync(join(ROOT, "unierp-api/src/platform"));
 row(
   "3",
   "control plane router /api/platform/v1",
@@ -147,7 +149,7 @@ row(
     : "MISSING",
   platformExists ? "OK" : "FAIL",
 );
-const saasRoutes = existsSync(join(ROOT, "unierp-web/app/(dashboard)/saas"))
+const saasRoutes = existsSync(join(ROOT, "tenant-apps/app/(dashboard)/saas")) || existsSync(join(ROOT, "unierp-web/app/(dashboard)/saas"))
   ? "present"
   : "0 routes";
 row(
@@ -371,7 +373,9 @@ row(
 );
 
 // ── § 13.3 tests ─────────────────────────────────────────────────────────────
-const dbScripts = join(ROOT, "unierp-data/scripts");
+const dbScripts = existsSync(join(ROOT, "data/scripts"))
+  ? join(ROOT, "data/scripts")
+  : join(ROOT, "unierp-data/scripts");
 const genTest = existsSync(dbScripts)
   ? readdirSync(dbScripts).filter((f) => /isolation|generate/i.test(f))
   : [];

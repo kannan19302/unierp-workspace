@@ -27,12 +27,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
+function resolveConsumer(canonicalName, legacyName) {
+  const dir = existsSync(join(PARENT_ROOT, canonicalName, "src"))
+    ? join(PARENT_ROOT, canonicalName, "src")
+    : join(PARENT_ROOT, legacyName, "src");
+  return { name: canonicalName, dir };
+}
+
 const CONSUMER_REPOS = [
-  { name: "unierp-api", dir: join(PARENT_ROOT, "unierp-api", "src") },
-  { name: "unierp-web", dir: join(PARENT_ROOT, "unierp-web", "src") },
-  { name: "unierp-console", dir: join(PARENT_ROOT, "unierp-console", "src") },
-  { name: "unierp-developer", dir: join(PARENT_ROOT, "unierp-developer", "src") },
-  { name: "unierp-sdk", dir: join(PARENT_ROOT, "unierp-sdk", "src") },
+  resolveConsumer("api", "unierp-api"),
+  resolveConsumer("tenant-apps", "unierp-web"),
+  resolveConsumer("provider-admin-os", "unierp-console"),
+  resolveConsumer("developer-platform", "unierp-developer"),
+  resolveConsumer("sdk", "unierp-sdk"),
 ];
 
 function scanFiles(dir, fileList = []) {
@@ -105,8 +112,13 @@ export function verifySchemaImpactAnalysis() {
 
   // Ensure consumers are named explicitly
   const consumerNames = impact.affectedConsumers.map((c) => c.consumer);
-  if (!consumerNames.includes("unierp-api") && !consumerNames.includes("unierp-web")) {
-    return { valid: false, reason: "Expected unierp-api or unierp-web to be named as affected consumers" };
+  if (
+    !consumerNames.includes("api") &&
+    !consumerNames.includes("unierp-api") &&
+    !consumerNames.includes("tenant-apps") &&
+    !consumerNames.includes("unierp-web")
+  ) {
+    return { valid: false, reason: "Expected api or tenant-apps to be named as affected consumers" };
   }
 
   return { valid: true, impact };

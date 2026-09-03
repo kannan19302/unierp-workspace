@@ -33,7 +33,7 @@ const argValue = (flag, fallback) => {
   return index !== -1 && argv[index + 1] ? argv[index + 1] : fallback;
 };
 
-const container = argValue('--container', 'unerp-postgres');
+const container = argValue('--container', process.env.DATABASE_CONTAINER || 'postgres');
 const sourceDb = argValue('--database', 'unerp_dev');
 const user = argValue('--user', 'unerp');
 const label = argValue('--label', 'a22-rehearsal');
@@ -77,7 +77,7 @@ const fail = (message) => {
 let backupFile = argValue('--file', null);
 if (!backupFile) {
   console.log(`taking a fresh backup of ${sourceDb} (label: ${label})…`);
-  const out = execFileSync(process.execPath, ['scripts/backup-database.mjs', '--label', label], { cwd: root, encoding: 'utf8' });
+  const out = execFileSync(process.execPath, ['scripts/backup-database.mjs', '--label', label, '--container', container, '--user', user, '--database', sourceDb], { cwd: root, encoding: 'utf8' });
   const parsed = JSON.parse(out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1));
   backupFile = path.join(root, parsed.backup);
   console.log(`backup written: ${path.relative(root, backupFile)} (${parsed.bytes} bytes)`);

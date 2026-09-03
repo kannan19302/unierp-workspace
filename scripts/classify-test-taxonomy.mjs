@@ -26,16 +26,18 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadActiveEstate } from "./lib/estate.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE = join(HERE, "..");
-const FAMILY = join(WORKSPACE, "..");
+const estate = loadActiveEstate();
+const FAMILY = estate.root;
 const MANIFEST = join(WORKSPACE, "docs", "test-taxonomy.json");
 const WRITE = process.argv.includes("--write");
 const LIST_OTHER = process.argv.includes("--list-other");
 
 const TEST_RE = /\.(spec|test|e2e)\.ts$|_test\.dart$/;
-const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\//;
+const IGNORE = /node_modules|\.git\/|dist\/|build\/|coverage|\.next|\/load-tests\/|\.plugin_symlinks|ephemeral/;
 
 function walk(dir, out = []) {
   let entries;
@@ -71,9 +73,7 @@ function classify(repo, rel, source) {
   return "unit";
 }
 
-const family = readdirSync(FAMILY).filter(
-  (d) => d.startsWith("unierp-") && statSync(join(FAMILY, d)).isDirectory() && existsSync(join(FAMILY, d, ".git")),
-);
+const family = [...estate.repositories.values()].map((r) => r.path);
 
 const files = {};
 const other = [];

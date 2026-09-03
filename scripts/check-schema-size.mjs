@@ -10,7 +10,8 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
-const SCHEMA_DIR = join(ROOT, 'unierp-data', 'prisma', 'schema');
+const DATA_DIR = existsSync(join(ROOT, 'data')) ? join(ROOT, 'data') : join(ROOT, 'unierp-data');
+const SCHEMA_DIR = join(DATA_DIR, 'prisma', 'schema');
 
 if (!existsSync(SCHEMA_DIR)) {
   console.log(`  ℹ Schema size check: ${SCHEMA_DIR} does not exist.`);

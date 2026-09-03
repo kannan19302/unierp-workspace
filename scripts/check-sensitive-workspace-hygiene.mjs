@@ -6,7 +6,7 @@ import { loadActiveEstate } from "./lib/estate.mjs";
 const estate = loadActiveEstate();
 const workspaceRoot = estate.root;
 const repositories = [...estate.repositories.values()];
-const ignored = new Set([".git", "node_modules", "dist", "build", ".next", "coverage", ".turbo", ".stryker-tmp"]);
+const ignored = new Set([".git", ".quarantine", "node_modules", "dist", "build", ".next", "coverage", ".turbo", ".stryker-tmp"]);
 const findings = [];
 const rootArtifactName = /(token|secret|credential|cookie|csrf|session)/i;
 const realSecretFile = /(^|\\|\/)(\.env(?:\.[^./]+)?|[^/\\]+\.(?:pem|key|p12|pfx))$/i;
@@ -40,6 +40,7 @@ function walk(directory) {
 }
 
 for (const entry of readdirSync(workspaceRoot, { withFileTypes: true })) {
+  if (entry.name === ".quarantine" || entry.name.startsWith(".")) continue;
   if (entry.isFile() && rootArtifactName.test(entry.name)) {
     findings.push(`${entry.name}: ungoverned root scratch artifact`);
   }

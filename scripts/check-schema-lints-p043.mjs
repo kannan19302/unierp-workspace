@@ -28,7 +28,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const PARENT = resolve(ROOT, '..');
-const SCHEMA_DIR = join(PARENT, 'unierp-data', 'prisma', 'schema');
+const DATA_REPO = existsSync(join(PARENT, 'data')) ? join(PARENT, 'data') : join(PARENT, 'unierp-data');
+const SCHEMA_DIR = join(DATA_REPO, 'prisma', 'schema');
 const BASELINE_PATH = join(HERE, 'schema-lints-p043-baseline.json');
 
 const WRITE_BASELINE = process.argv.includes('--write-baseline');

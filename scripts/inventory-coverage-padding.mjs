@@ -8,13 +8,15 @@
 //
 //   node scripts/inventory-coverage-padding.mjs
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_ROOT = path.join(root, 'unierp-api');
+const API_ROOT = existsSync(path.join(root, 'api'))
+  ? path.join(root, 'api')
+  : path.join(root, 'unierp-api');
 const OUT_FILE = path.join(root, 'unierp-workspace', 'docs', 'programme', 'L11-COVERAGE-PADDING-INVENTORY.md');
 
 function walk(dir, out = []) {
@@ -214,6 +216,7 @@ for (const r of [...rows].sort((a, b) => b.alwaysPassingCount - a.alwaysPassingC
 }
 lines.push('');
 
+mkdirSync(path.dirname(OUT_FILE), { recursive: true });
 writeFileSync(OUT_FILE, lines.join('\n'), 'utf-8');
 console.log(`Wrote ${path.relative(root, OUT_FILE)}: ${rows.length} files, ${totalIt} it() blocks, ${totalAlwaysPassing} zero-expect() blocks.`);
 if (withPadding && withoutPadding) {

@@ -15,12 +15,14 @@
 //   node scripts/reconcile-module-tiers.mjs          (reconcile + write)
 //   node scripts/reconcile-module-tiers.mjs --check   (validate only, exit 1 on gap)
 
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_MODULES = path.join(root, 'unierp-api', 'src', 'modules');
+const API_MODULES = existsSync(path.join(root, 'api', 'src', 'modules'))
+  ? path.join(root, 'api', 'src', 'modules')
+  : path.join(root, 'unierp-api', 'src', 'modules');
 const MANIFEST_FILE = path.join(root, 'unierp-workspace', 'docs', 'module-tier-manifest.json');
 
 const checkOnly = process.argv.includes('--check');

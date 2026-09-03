@@ -35,7 +35,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_ROOT = path.join(root, 'unierp-api');
+const API_ROOT = existsSync(path.join(root, 'api'))
+  ? path.join(root, 'api')
+  : path.join(root, 'unierp-api');
 const API_MODULES = path.join(API_ROOT, 'src', 'modules');
 const OUT_DIR = path.join(root, 'unierp-workspace', 'docs', 'architecture');
 

@@ -27,9 +27,15 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_DIR = resolve(__dirname, "..");
 const PARENT_DIR = resolve(WORKSPACE_DIR, "..");
-const DATA_GATE = resolve(PARENT_DIR, "unierp-data/scripts/check-rls-verify.mjs");
-const CUSTOM_OBJ_SERVICE = resolve(PARENT_DIR, "unierp-api/src/developer/builder/services/custom-object-schema.service.ts");
-const EXT_SCHEMA_SERVICE = resolve(PARENT_DIR, "unierp-api/src/developer/extensions/services/extension-schema.service.ts");
+const DATA_DIR = existsSync(resolve(PARENT_DIR, "data")) ? resolve(PARENT_DIR, "data") : resolve(PARENT_DIR, "unierp-data");
+const API_DIR = existsSync(resolve(PARENT_DIR, "api")) ? resolve(PARENT_DIR, "api") : resolve(PARENT_DIR, "unierp-api");
+const DATA_GATE = resolve(DATA_DIR, "scripts/check-rls-verify.mjs");
+const CUSTOM_OBJ_SERVICE = existsSync(resolve(API_DIR, "src/modules/developer/services/custom-object-schema.service.ts"))
+  ? resolve(API_DIR, "src/modules/developer/services/custom-object-schema.service.ts")
+  : resolve(API_DIR, "src/developer/builder/services/custom-object-schema.service.ts");
+const EXT_SCHEMA_SERVICE = existsSync(resolve(API_DIR, "src/modules/extensions/services/extension-schema.service.ts"))
+  ? resolve(API_DIR, "src/modules/extensions/services/extension-schema.service.ts")
+  : resolve(API_DIR, "src/developer/extensions/services/extension-schema.service.ts");
 
 export function verifyRuntimeDdlRls() {
   const violations = [];

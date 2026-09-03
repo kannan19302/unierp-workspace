@@ -13,7 +13,10 @@ import { execSync } from "node:child_process";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const MANIFEST = join(ROOT, "..", "unierp-developer", "programme-2.manifest.json");
+const DEV_DIR = existsSync(join(ROOT, "..", "developer-platform"))
+  ? join(ROOT, "..", "developer-platform")
+  : join(ROOT, "..", "unierp-developer");
+const MANIFEST = join(DEV_DIR, "programme-2.manifest.json");
 
 if (!existsSync(MANIFEST)) {
   console.error("FAIL  programme-2.manifest.json is missing in unierp-developer.");

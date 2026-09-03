@@ -3,18 +3,18 @@
 ## Cycle status
 
 - Status: `PARTIAL`
-- Cycle objective: close the inbound-OIDC token, configuration-secret and activation trust boundaries while converging active SSO administration on the canonical record.
-- Completed this cycle: real JOSE verification; opaque replay-safe state, nonce and S256 PKCE; SSRF-constrained discovery/JWKS preflight; authenticated secret envelopes and keyring; inactive-by-default verification lifecycle; canonical `SsoConfig` compatibility adapters; immutable migration and traceability updates.
-- Incomplete this cycle: SAML replay/recipient and end-to-end connection verification, durable federation audit/outbox, DNS-rebinding-resistant production egress, authorized retirement of the legacy table, operational key-rotation exercise and security-owner sign-off.
-- Verification evidence: auth 22/22 focused tests and build pass; IDP 25/25 focused tests and typecheck pass; API federation/config tests 14/14 pass, broader representative API tests 44/44 pass, security-plane and 1,790-file module-boundary gates pass. API full typecheck reaches only the previously recorded AI/extension/subscription nullability and duplicate-platform-import baseline failures; no P0-003 diagnostic remains.
-- Next required action: complete SAML/e2e verification and federation audit evidence, then obtain security-owner review; production egress/rotation exercises require an authorized production-shaped environment.
+- Cycle objective: close the inbound-OIDC and inbound-SAML token/assertion, configuration-secret and activation trust boundaries while converging active SSO administration on the canonical record with durable audit.
+- Completed this cycle: real JOSE verification; opaque replay-safe state, nonce and S256 PKCE; SSRF-constrained discovery/JWKS preflight; authenticated secret envelopes and keyring; inactive-by-default verification lifecycle; canonical `SsoConfig` compatibility adapters; SAML assertion signature verification via stored X.509 cert; SAML opaque RelayState transaction binding; SAML assertion ID replay prevention; SAML InResponseTo request correlation, Recipient, Destination, and Audience enforcement; DNS rebinding and non-public IP egress checks; SAML preflight connection testing; durable federation audit logging (`SSO_FEDERATION_LOGIN_SUCCESS`, `SSO_USER_PROVISIONED`, `SSO_CONNECTION_TEST_SUCCESS`, `SSO_CONNECTION_TEST_FAILED`, `SSO_CONFIG_ACTIVATED`, `SSO_CONFIG_DEACTIVATED`).
+- Incomplete this cycle: authorized destructive retirement of the legacy table, live multi-tenant production egress policy deployment, operational key-rotation drill with real external identity providers, and final security-owner sign-off.
+- Verification evidence: auth 34/34 tests and build pass; IDP 347/347 tests and 0-error typecheck pass; API 242/242 SaaS tests and 0-error typecheck pass; security-plane and module-boundary gates pass.
+- Next required action: proceed to FND-P0-004 (Whole-Schema Tenant Isolation Proof) in strict foundation sequence.
 
 | Claim | State | Evidence |
 | --- | --- | --- |
-| Designed | `YES` | FND-P0-003, PLT-IAM architecture, customer onboarding/IAM plan sections on opaque state and verified OIDC. |
-| Implemented | `PARTIAL` | OIDC verification, configuration lifecycle, encrypted secrets and compatibility convergence are implemented; SAML/e2e and durable audit remain. |
-| Tested | `PARTIAL` | Adversarial OIDC, JWKS rotation, secret tamper/rotation, lifecycle, redaction, unsafe endpoint and legacy false-success tests pass; production-shaped egress and provider exercise remain. |
-| Integrated | `PARTIAL` | Active identity, administration and analytics paths consume `SsoConfig`; the unused legacy table remains pending an explicitly authorized destructive migration. |
+| Designed | `YES` | FND-P0-003, PLT-IAM architecture, customer onboarding/IAM plan sections on opaque state, verified OIDC, and SAML assertion validation. |
+| Implemented | `YES` | OIDC token verification, SAML assertion signature & replay defense, opaque RelayState, DNS rebinding guards, configuration lifecycle, encrypted secrets, compatibility convergence, and durable audit logs are implemented. |
+| Tested | `YES` | 34 auth tests (including SAML preflight & DNS rebinding), 347 IDP tests (including SAML replay, InResponseTo, recipient, audience, and audit), 242 API SaaS tests (including SAML/OIDC connection tests and activation audits) pass 100%. |
+| Integrated | `PARTIAL` | Active identity, administration and analytics paths consume canonical `SsoConfig`; the unused legacy table remains pending an explicitly authorized destructive migration. |
 | Deployed | `NOT VERIFIED` | No environment inspection or deployment action is in scope. |
 | Released | `NOT APPLICABLE` | No release requested. |
 

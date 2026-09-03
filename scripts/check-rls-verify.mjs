@@ -25,7 +25,9 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE = join(HERE, "..");
-const DATA_REPO = join(WORKSPACE, "..", "unierp-data");
+const DATA_REPO = existsSync(join(WORKSPACE, "..", "data"))
+  ? join(WORKSPACE, "..", "data")
+  : join(WORKSPACE, "..", "unierp-data");
 const DATA_GATE = join(DATA_REPO, "scripts", "check-rls-verify.mjs");
 
 if (!existsSync(DATA_GATE)) {

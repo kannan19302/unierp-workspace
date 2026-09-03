@@ -24,8 +24,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const API_MODULES = path.join(root, 'unierp-api', 'src', 'modules');
-const WEB_APP = path.join(root, 'unierp-web', 'app');
+const API_MODULES = existsSync(path.join(root, 'api', 'src', 'modules'))
+  ? path.join(root, 'api', 'src', 'modules')
+  : path.join(root, 'unierp-api', 'src', 'modules');
+const WEB_APP = existsSync(path.join(root, 'tenant-apps', 'app'))
+  ? path.join(root, 'tenant-apps', 'app')
+  : path.join(root, 'unierp-web', 'app');
 const MOBILE_ROOT = path.join(root, 'unierp-mobile');
 const PERF_RECORD_FILE = path.join(root, 'unierp-workspace', 'evidence', 'module-perf-scores.json');
 

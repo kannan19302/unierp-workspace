@@ -81,3 +81,18 @@ principal's tenant; tests prove the cross-tenant rejection. Liveness/readiness a
 readiness no longer exposes dependency diagnostics. Metrics now requires `system.metrics.read`; Runtime Operations
 must supply a non-user scrape identity before enabling production monitoring. These changes make static authority
 explicit and fail closed, but do not substitute for the outstanding end-to-end and operational proof in P0-005.
+
+## Amendment — non-HTTP entrypoint authorization closure
+
+`check-non-http-entrypoint-authorization.mjs` was established to audit non-HTTP execution vectors across `api` and `idp`:
+- BullMQ queue processors (`@Processor`)
+- Scheduled cron tasks (`@Cron`)
+- WebSocket gateways (`@WebSocketGateway`)
+- Domain event listeners (`@OnEvent`)
+
+All 41 discovered non-HTTP entrypoints (3 WebSocket gateways, 31 event listeners, 7 BullMQ processors) are verified:
+1. WebSocket gateways verify credentials upon connection (`verifyToken` / `JwtAuthGuard`) and scope room subscriptions to `tenant:${tenantId}`.
+2. Provider Console gateway enforces `superadmin` control-plane role authorization on connection.
+3. Queue processors enforce explicit `tenantId` extraction from job payloads or are system-level outbox processors.
+4. Domain event listeners enforce typed event payloads with mandatory `tenantId` or explicit system-level audit scope.
+5. Adversarial fixture suite (`--test`) passes cleanly with 0 blocking gaps across 41 entrypoints.

@@ -28,7 +28,10 @@ const WORKSPACE_ROOT = resolve(__dirname, "..");
 const PARENT_ROOT = resolve(WORKSPACE_ROOT, "..");
 
 export function verifyExtensionApiContract() {
-  const extensionApiDist = join(PARENT_ROOT, "unierp-extension-api", "dist", "versioning.js");
+  const extRepo = existsSync(join(PARENT_ROOT, "extension-api"))
+    ? "extension-api"
+    : "unierp-extension-api";
+  const extensionApiDist = join(PARENT_ROOT, extRepo, "dist", "versioning.js");
   if (!existsSync(extensionApiDist)) {
     return { valid: false, reason: `Extension API dist artifact missing at ${extensionApiDist}` };
   }

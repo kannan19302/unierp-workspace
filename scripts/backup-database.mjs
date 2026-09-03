@@ -25,7 +25,7 @@ const argValue = (flag, fallback) => {
   return index !== -1 && argv[index + 1] ? argv[index + 1] : fallback;
 };
 
-const container = argValue('--container', 'unerp-postgres');
+const container = argValue('--container', process.env.DATABASE_CONTAINER || 'postgres');
 const database = argValue('--database', 'unerp_dev');
 const user = argValue('--user', 'unerp');
 const label = argValue('--label', 'scheduled');

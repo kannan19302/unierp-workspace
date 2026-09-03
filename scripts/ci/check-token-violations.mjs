@@ -6,8 +6,12 @@ import path from "path";
  */
 const WORKSPACE_ROOT = path.resolve(process.cwd(), "..");
 const CONSUMER_DIRS = [
-  path.join(WORKSPACE_ROOT, "unierp-web", "app"),
-  path.join(WORKSPACE_ROOT, "unierp-web", "src"),
+  fs.existsSync(path.join(WORKSPACE_ROOT, "tenant-apps", "app"))
+    ? path.join(WORKSPACE_ROOT, "tenant-apps", "app")
+    : path.join(WORKSPACE_ROOT, "unierp-web", "app"),
+  fs.existsSync(path.join(WORKSPACE_ROOT, "tenant-apps", "src"))
+    ? path.join(WORKSPACE_ROOT, "tenant-apps", "src")
+    : path.join(WORKSPACE_ROOT, "unierp-web", "src"),
 ];
 
 const HEX_REGEX = /#(?:[0-9a-fA-F]{3,4}){1,2}\b/g;

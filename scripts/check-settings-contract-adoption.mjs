@@ -12,7 +12,7 @@
 //
 //   node scripts/check-settings-contract-adoption.mjs
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,8 +43,8 @@ function findSettingsPages(appDir) {
 }
 
 const targets = [
-  path.join(root, 'unierp-web', 'app'),
-  path.join(root, 'unierp-console', 'app'),
+  existsSync(path.join(root, 'tenant-apps', 'app')) ? path.join(root, 'tenant-apps', 'app') : path.join(root, 'unierp-web', 'app'),
+  existsSync(path.join(root, 'provider-admin-os', 'app')) ? path.join(root, 'provider-admin-os', 'app') : path.join(root, 'unierp-console', 'app'),
 ];
 
 let allPages = [];

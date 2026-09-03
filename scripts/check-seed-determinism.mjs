@@ -25,7 +25,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_DIR = resolve(__dirname, "..");
 const PARENT_DIR = resolve(WORKSPACE_DIR, "..");
 const CONTRACTS_REPO = resolve(PARENT_DIR, "unierp-contracts");
-const DATA_REPO = resolve(PARENT_DIR, "unierp-data");
+const DATA_REPO = existsSync(resolve(PARENT_DIR, "data"))
+  ? resolve(PARENT_DIR, "data")
+  : resolve(PARENT_DIR, "unierp-data");
 const SEED_FILES = [
   join(DATA_REPO, "prisma/seed.ts"),
   join(DATA_REPO, "prisma/seed-demo.ts"),

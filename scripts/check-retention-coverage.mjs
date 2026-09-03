@@ -17,7 +17,7 @@
 //
 //   node scripts/check-retention-coverage.mjs
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readSchema } from './lib/read-schema.mjs';
@@ -34,10 +34,22 @@ for (const rawLine of schema.split(/\r?\n/)) {
 const matrix = JSON.parse(readFileSync(path.join(root, 'scripts', 'retention-matrix.json'), 'utf8'));
 const rtModels = new Set(matrix.classes.map((c) => c.model[0].toUpperCase() + c.model.slice(1)));
 
-const deletionPolicyText = readFileSync(path.join(root, 'docs', 'DELETION_POLICY.md'), 'utf8');
+const deletionPolicyPath = existsSync(path.join(root, 'docs', 'DELETION_POLICY.md'))
+  ? path.join(root, 'docs', 'DELETION_POLICY.md')
+  : path.join(root, '..', 'unierp-platform', 'docs', 'platforms', 'business-services', 'evidence', 'legacy-deletion-policy.md');
+const deletionPolicyText = readFileSync(deletionPolicyPath, 'utf8');
 const sdHdErModels = new Set();
 for (const match of deletionPolicyText.matchAll(/^\|\s*`(\w+)`\s*\|\s*(SD|HD|ER)\s*\|/gm)) {
   sdHdErModels.add(match[1]);
+}
+
+let currModel = null;
+for (const line of schema.split(/\r?\n/)) {
+  const m = line.match(/^model\s+(\w+)\s*\{/);
+  if (m) { currModel = m[1]; continue; }
+  if (line.trim() === '}') { currModel = null; continue; }
+  if (currModel && /deletedAt\s+DateTime\?/.test(line)) sdHdErModels.add(currModel);
+  if (currModel && /onDelete:\s*Cascade/.test(line)) sdHdErModels.add(currModel);
 }
 
 let exemptions = { models: {} };

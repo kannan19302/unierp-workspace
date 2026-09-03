@@ -32,6 +32,9 @@
     "check:control-center-manifests": "node scripts/check-control-center-shell-manifests.mjs",
     "ui:audit": "node scripts/ci/ui-audit.mjs",
     "check:ui-audit": "node scripts/ci/ui-audit.mjs --check",
-    "test:ui-audit": "node scripts/ci/ui-audit.mjs --test"
+    "test:ui-audit": "node scripts/ci/ui-audit.mjs --test",
+    "overtake:market": "node scripts/run-enterprise-saas-engine.mjs",
+    "overtake:salesforce": "node scripts/run-enterprise-saas-engine.mjs",
+    "overtake:progress": "node scripts/run-enterprise-saas-engine.mjs --progress-only"
   }
 }

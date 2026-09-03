@@ -23,6 +23,22 @@ Every material change MUST classify its knowledge delta and follow
 contracts, traceability and evidence evolve with the codebase. If the project skill or knowledge-lifecycle standard
 is unavailable, the governance bundle is incomplete; stop before mutation and report the missing dependency.
 
+## Enterprise SAAS Master Standards (Market Dominance & 11 Pillars)
+
+Every AI agent working in this polyrepo must strictly adhere to the 11 pillars of the **Enterprise SAAS business platform** standard to achieve global market leadership:
+
+- **Rules & Inviolable Laws:** [`.agents/rules/ENTERPRISE_SAAS_RULES.md`](.agents/rules/ENTERPRISE_SAAS_RULES.md) (Non-stopping iteration, zero-mock mandate, PostgreSQL RLS universality, zero-trust `@Permissions`).
+- **End-to-End Workflow:** [`.agents/workflow/ENTERPRISE_SAAS_WORKFLOW.md`](.agents/workflow/ENTERPRISE_SAAS_WORKFLOW.md) (7-phase multi-repo delivery from L0 Contracts to L7 Operations).
+- **Operational Skill:** [`.agents/skills/salesforce-overtake-engine/SKILL.md`](.agents/skills/salesforce-overtake-engine/SKILL.md) (Run scripts, 10 super-platform moats, and recipes).
+- **Knowledge Base & Blueprints:** [`.agents/knowledge/SALESFORCE_OVERTAKE_KNOWLEDGE_BASE.md`](.agents/knowledge/SALESFORCE_OVERTAKE_KNOWLEDGE_BASE.md) (Market parity matrix & 15 industry clouds).
+- **Memory & Progress Ledger:** [`.agents/memory/ENTERPRISE_SAAS_EXECUTION_LEDGER.json`](.agents/memory/ENTERPRISE_SAAS_EXECUTION_LEDGER.json) (Real-time progress percentage tracking).
+- **Execution Flow:** [`.agents/flow/EXECUTION_FLOW_STATE_MACHINE.md`](.agents/flow/EXECUTION_FLOW_STATE_MACHINE.md) (Automated self-healing remediation loop).
+- **Reference Blueprints:** [`.agents/reference/ENTERPRISE_SAAS_REFERENCE_MANUAL.md`](.agents/reference/ENTERPRISE_SAAS_REFERENCE_MANUAL.md) (8 Strata floorplans, NestJS module, RLS tests).
+- **Quality Standards:** [`.agents/standards/ENTERPRISE_SAAS_STANDARDS.md`](.agents/standards/ENTERPRISE_SAAS_STANDARDS.md) (UI DL 2.0, DB safe DDL, API Pino/Otel, Tests).
+- **Governance & Formulation:** [`.agents/governance/ENTERPRISE_SAAS_GOVERNANCE.md`](.agents/governance/ENTERPRISE_SAAS_GOVERNANCE.md) (Mathematical percentage scoring engine).
+- **Agent Fleet Personas:** [`.agents/agents/ENTERPRISE_AGENT_FLEET.md`](.agents/agents/ENTERPRISE_AGENT_FLEET.md) (7 specialized autonomous roles).
+- **Automated Runner:** Run `pnpm run overtake:market` or `node unierp-workspace/scripts/run-enterprise-saas-engine.mjs`.
+
 ## Instruction precedence
 
 Apply the first relevant authority in this order:

@@ -27,6 +27,7 @@
     "classify:ai-change": "node scripts/classify-ai-change.mjs",
     "test:ai-change-classifier": "node scripts/test-ai-change-classifier.mjs",
     "test:ai-agent-protocol": "node scripts/test-ai-agent-protocol.mjs",
+    "test:migration-safety": "node scripts/test-migration-safety.mjs",
     "check:control-center-routes": "node scripts/check-control-center-route-ownership.mjs",
     "check:control-center-boundaries": "node scripts/check-control-center-route-ownership.mjs --verify-boundaries",
     "check:control-center-manifests": "node scripts/check-control-center-shell-manifests.mjs",

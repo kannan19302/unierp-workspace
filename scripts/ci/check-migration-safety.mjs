@@ -83,8 +83,11 @@ function analyseRlsCoverage(migrations) {
       if (!/tenant_id/i.test(end === -1 ? body : body.slice(0, end))) continue;
       if (!created.has(table)) created.set(table, name);
     }
-    for (const m of code.matchAll(/(?:CREATE POLICY|ENABLE ROW LEVEL SECURITY)[^;]{0,200}?"?(\w+)"?/gi)) {
-      explicit.add(m[1]);
+    for (const m of code.matchAll(/ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?"?([\w.]+)"?\s+(?:ENABLE|FORCE)\s+ROW\s+LEVEL\s+SECURITY/gi)) {
+      explicit.add(m[1].replace(/.*\./, ''));
+    }
+    for (const m of code.matchAll(/CREATE\s+POLICY\s+"?[\w.]+"?\s+ON\s+"?([\w.]+)"?/gi)) {
+      explicit.add(m[1].replace(/.*\./, ''));
     }
     for (const m of code.matchAll(/enable_tenant_rls\s*\(\s*'(\w+)'/gi)) explicit.add(m[1]);
     // A dynamic loop: iterates the catalogue rather than naming tables.
